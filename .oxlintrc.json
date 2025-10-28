@@ -1,0 +1,51 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "import",
+    "typescript",
+    "unicorn",
+    "vue"
+  ],
+  "categories": {
+    "correctness": "error",
+    "pedantic": "warn",
+    "suspicious": "warn",
+    "style": "warn",
+    "perf": "warn"
+  },
+  "env": {
+    "browser": true
+  },
+  "globals": {
+    "foo": "readonly"
+  },
+  "settings": {},
+  "rules": {
+    "eqeqeq": "warn",
+    "import/no-cycle": "error",
+    "import/no-unassigned-import": "off",
+    "unicorn/filename-case": "off",
+    "no-unused-vars": "off",
+    "sort-keys": "off"
+  },
+  "overrides": [
+    {
+      "files": [
+        "*.test.ts",
+        "*.spec.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": [
+        "src/entrypoints/**/*.ts",
+        "src/entrypoints/**/*.vue"
+      ],
+      "rules": {
+        "import/no-unassigned-import": "off"
+      }
+    }
+  ]
+}
