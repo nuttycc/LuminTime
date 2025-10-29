@@ -10,8 +10,6 @@
       },
       "devDependencies": {
         "@iconify-json/tabler": "^1.2.23",
-        "@unocss/preset-icons": "^66.5.4",
-        "@unocss/preset-wind4": "^66.5.4",
         "@wxt-dev/module-vue": "^1.0.2",
         "oxlint": "^1.24.0",
         "oxlint-tsgolint": "^0.3.0",
