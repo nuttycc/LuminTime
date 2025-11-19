@@ -8,6 +8,9 @@ export default defineConfig({
   webExt: {
     disabled: true
   },
+  manifest: {
+    permissions: ['webNavigation', 'idle', 'alarms']
+  },
   vite: () =>({
     plugins: [
       // oxlint-disable-next-line new-cap

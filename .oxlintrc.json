@@ -27,7 +27,8 @@
     "unicorn/filename-case": "off",
     "no-unused-vars": "off",
     "sort-keys": "off",
-    "new-cap": "off"
+    "new-cap": "off",
+    "func-style": "off"
   },
   "overrides": [
     {

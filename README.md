@@ -13,6 +13,8 @@ LuminTime is a privacy-first browser extension that automatically tracks your on
 
 ## Built with
 
-- [WXT](https://wxt.dev/): A modern, open-source framework for building web extensions
-- [Vue 3](https://vuejs.org/): The Progressive JavaScript Framework
-- [Dexie](https://github.com/dexie/Dexie.js): A minimalistic wrapper library for IndexedDB
+- [WXT](https://wxt.dev/): A modern, open-source framework for building web extensions.
+- [Vue 3](https://vuejs.org/): The Progressive JavaScript Framework.
+- [Dexie](https://github.com/dexie/Dexie.js): A minimalistic wrapper library for IndexedDB.
+- [Arktype](https://github.com/arktypeio/arktype)：A runtime validation library that parses optimized validators from familiar, type-safe syntax.
+- [UnoCSS](https://unocss.dev/): A utility-first CSS framework.
