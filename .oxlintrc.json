@@ -10,7 +10,7 @@
     "correctness": "error",
     "pedantic": "warn",
     "suspicious": "warn",
-    "style": "warn",
+    "style": "off",
     "perf": "warn"
   },
   "env": {
@@ -28,7 +28,16 @@
     "no-unused-vars": "off",
     "sort-keys": "off",
     "new-cap": "off",
-    "func-style": "off"
+    "func-style": "off",
+    "max-lines-per-function": [
+      "warn",
+      {
+        "max": 70,
+        "skipBlankLines": true,
+        "skipComments": true,
+        "IIFEs": true
+      }
+    ]
   },
   "overrides": [
     {
