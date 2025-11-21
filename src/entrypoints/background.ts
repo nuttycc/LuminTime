@@ -1,3 +1,4 @@
+// oxlint-disable no-magic-numbers
 // oxlint-disable max-lines-per-function
 export default defineBackground(() => {
   console.log('Hello background!', { id: browser.runtime.id });
@@ -25,7 +26,8 @@ export default defineBackground(() => {
       return
     }
 
-    browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 1 });
+    await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 1 });
+
     browser.alarms.onAlarm.addListener((alarm) => {
       console.log('Alarm created:', alarm);
       const now = Date.now()
@@ -75,6 +77,8 @@ export default defineBackground(() => {
 
   checkAlarmState().then(() => {
     console.log('Alarm checked');
+  }).catch((error) => {
+    console.error('Error checking alarm:', error);
   })
 
   // focus changes
@@ -86,7 +90,7 @@ export default defineBackground(() => {
     browser.tabs.get(activeInfo.tabId)
       .then((tab) => {
         console.log('Tab activated, get tab:', tab);
-        if (!tab.url) {
+        if (tab.url === undefined) {
           throw new Error('Tab url is undefined.');
         }
         startTracking(tab.url);
@@ -104,7 +108,7 @@ export default defineBackground(() => {
 
         if (tab.active && window.focused) {
           endTracking();
-          if (!tab.url) {
+          if (tab.url === undefined) {
             throw new Error('Tab url is undefined.');
           }
           startTracking(tab.url);
@@ -126,7 +130,7 @@ export default defineBackground(() => {
       browser.tabs.query({ active: true, currentWindow: true })
         .then((tabs) => {
           console.log('Window focus changed, get tab:', tabs);
-          if (!tabs[0].url) {
+          if (tabs[0].url === undefined) {
             throw new Error('Tab url is undefined.');
           }
           startTracking(tabs[0].url);
@@ -143,8 +147,8 @@ export default defineBackground(() => {
       // Fetch the current active tab instead of using stale activeSession.url
       browser.tabs.query({ active: true, currentWindow: true })
         .then((tabs) => {
-          const tab = tabs[0];
-          if (!tab || !tab.url) {
+          const [tab] = tabs;
+          if (tab.url === undefined) {
             console.warn('No active tab or tab URL available on idle resume');
             return;
           }
