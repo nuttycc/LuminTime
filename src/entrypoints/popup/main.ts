@@ -1,9 +1,20 @@
-import 'virtual:uno.css';
 import './style.css';
 
-import App from './App.vue';
+import ui from '@nuxt/ui/vue-plugin'
+import { createRouter, createWebHistory } from 'vue-router'
 
+import App from './App.vue';
 import { createApp } from 'vue';
 
 // oxlint-disable-next-line no-unsafe-argument
-createApp(App).mount('#app');
+const app = createApp(App)
+
+const router = createRouter({
+  routes: [],
+  history: createWebHistory()
+})
+
+app.use(router)
+app.use(ui)
+
+app.mount('#app');
