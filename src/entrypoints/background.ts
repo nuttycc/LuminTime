@@ -71,6 +71,7 @@ export default defineBackground(() => {
 
   interface ActiveSession {
     url: string;
+    title: string;
     startTime: number;
     lastUpdateTime: number;
     duration: number;
@@ -78,6 +79,7 @@ export default defineBackground(() => {
 
   const activeSession: ActiveSession = {
     url: "",
+    title: "",
     startTime: 0,
     lastUpdateTime: 0,
     duration: 0
@@ -112,11 +114,12 @@ export default defineBackground(() => {
     });
   }
 
-  const startTracking = (url: string) => {
+  const startTracking = (url: string, title?: string) => {
     activeSession.startTime = Date.now();
     activeSession.lastUpdateTime = Date.now();
     activeSession.duration = 0;
     activeSession.url = url
+    activeSession.title = title ?? ""
     console.log('start tracking:', activeSession)
   }
 
@@ -131,12 +134,8 @@ export default defineBackground(() => {
     activeSession.duration += now - activeSession.lastUpdateTime;
     activeSession.lastUpdateTime = now;
 
-    // Get the latest title from current active tab
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-    const title = tabs[0]?.title
-
     //write to db...
-    await recordActivity(activeSession.url, activeSession.duration, title)
+    await recordActivity(activeSession.url, activeSession.duration, activeSession.title || undefined)
 
     console.log('end tracking, write to db:', activeSession)
 
@@ -145,6 +144,7 @@ export default defineBackground(() => {
     activeSession.startTime = 0;
     activeSession.lastUpdateTime = 0;
     activeSession.url = "";
+    activeSession.title = "";
   }
 
   checkAlarmState().then(() => {
@@ -167,7 +167,7 @@ export default defineBackground(() => {
           throw new Error('Tab url is undefined.')
         }
 
-        startTracking(tab.url)
+        startTracking(tab.url, tab.title)
       } catch (error) {
         console.error('Error in tab activation:', error)
       }
@@ -186,7 +186,7 @@ export default defineBackground(() => {
           if (tab.url === undefined) {
             throw new Error('Tab url is undefined.')
           }
-          startTracking(tab.url)
+          startTracking(tab.url, tab.title)
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -206,10 +206,10 @@ export default defineBackground(() => {
           await endTracking()
           const tabs = await browser.tabs.query({ active: true, currentWindow: true })
           console.log('Window focus changed, get tab:', tabs)
-          if (tabs[0].url === undefined) {
+          if (!tabs[0] || tabs[0].url === undefined) {
             throw new Error('Tab url is undefined.')
           }
-          startTracking(tabs[0].url)
+          startTracking(tabs[0].url, tabs[0].title)
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -229,9 +229,7 @@ export default defineBackground(() => {
             console.warn('No active tab or tab URL available on idle resume')
             return
           }
-          // Update activeSession with fresh URL and start tracking
-          activeSession.url = tab.url
-          startTracking(tab.url)
+          startTracking(tab.url, tab.title)
         } else {
           await endTracking()
         }
