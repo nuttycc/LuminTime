@@ -100,7 +100,6 @@ export default defineBackground(() => {
     browser.alarms.onAlarm.addListener((alarm) => {
       console.log('Alarm created:', alarm);
       const now = Date.now()
-      activeSession.lastUpdateTime = now;
 
       const duration = now - activeSession.lastUpdateTime;
 
@@ -111,6 +110,7 @@ export default defineBackground(() => {
         activeSession.duration += duration
       }
 
+      activeSession.lastUpdateTime = now;
     });
   }
 
