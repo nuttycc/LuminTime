@@ -58,6 +58,17 @@ const debugTools = {
   }
 };
 
+const getActiveTabUrl = async () => {
+  const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+  if (tabs.length === 0) {
+    return null
+  }
+  const tab = tabs[0]
+  if (tab.url === undefined || tab.url === '') {
+    return null
+  }
+  return { url: tab.url, title: tab.title }
+}
 
 // oxlint-disable-next-line max-lines-per-function
 export default defineBackground(() => {
@@ -129,22 +140,24 @@ export default defineBackground(() => {
       return;
     }
 
-
     const now = Date.now()
     activeSession.duration += now - activeSession.lastUpdateTime;
     activeSession.lastUpdateTime = now;
 
-    //write to db...
-    await recordActivity(activeSession.url, activeSession.duration, activeSession.title || undefined)
+    // Snapshot before async I/O to prevent race condition
+    const sessionSnapshot = { ...activeSession };
 
-    console.log('end tracking, write to db:', activeSession)
-
-    // reset
+    // Reset immediately after snapshot so concurrent startTracking() won't be erased
     activeSession.duration = 0;
     activeSession.startTime = 0;
     activeSession.lastUpdateTime = 0;
     activeSession.url = "";
     activeSession.title = "";
+
+    // Write to db using snapshot
+    await recordActivity(sessionSnapshot.url, sessionSnapshot.duration, sessionSnapshot.title || undefined)
+
+    console.log('end tracking, write to db:', sessionSnapshot)
   }
 
   checkAlarmState().then(() => {
@@ -204,12 +217,12 @@ export default defineBackground(() => {
           await endTracking()
         } else {
           await endTracking()
-          const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-          console.log('Window focus changed, get tab:', tabs)
-          if (!tabs[0] || tabs[0].url === undefined) {
+          const result = await getActiveTabUrl()
+          console.log('Window focus changed, get tab:', result)
+          if (!result) {
             throw new Error('Tab url is undefined.')
           }
-          startTracking(tabs[0].url, tabs[0].title)
+          startTracking(result.url, result.title)
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -223,13 +236,12 @@ export default defineBackground(() => {
         console.log('Idle state changed, state:', state)
         if (state === 'active') {
           // Fetch the current active tab instead of using stale activeSession.url
-          const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-          const [tab] = tabs
-          if (tab.url === undefined) {
+          const result = await getActiveTabUrl()
+          if (!result) {
             console.warn('No active tab or tab URL available on idle resume')
             return
           }
-          startTracking(tab.url, tab.title)
+          startTracking(result.url, result.title)
         } else {
           await endTracking()
         }
