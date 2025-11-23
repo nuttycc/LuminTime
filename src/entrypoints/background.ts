@@ -131,8 +131,12 @@ export default defineBackground(() => {
     activeSession.duration += now - activeSession.lastUpdateTime;
     activeSession.lastUpdateTime = now;
 
+    // Get the latest title from current active tab
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+    const title = tabs[0]?.title
+
     //write to db...
-    await recordActivity(activeSession.url, activeSession.duration)
+    await recordActivity(activeSession.url, activeSession.duration, title)
 
     console.log('end tracking, write to db:', activeSession)
 
