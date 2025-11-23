@@ -1,7 +1,8 @@
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
 import HomeView from './pages/HomeView.vue'
 
-const routes = [
+// oxlint-disable typescript-eslint/no-unsafe-assignment
+const routes: RouteRecordRaw[] = [
   { path: '/', component: HomeView }
 ]
 

@@ -1,26 +1,16 @@
 <script lang="ts" setup>
-import HelloWorld from '@/components/HelloWorld.vue';
 </script>
 
 <template>
-  <UApp>
-    <router-view></router-view>
+  <UApp class="h-screen w-screen overflow-hidden flex flex-col">
+    <router-view class="flex-1 overflow-hidden flex flex-col" />
   </UApp>
 </template>
 
 <style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-
-.logo:hover {
-  filter: drop-shadow(0 0 2em #54bc4ae0);
-}
-
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+:deep(body) {
+  width: 400px;
+  height: 600px;
+  overflow: hidden;
 }
 </style>
