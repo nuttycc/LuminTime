@@ -7,10 +7,4 @@
   </UApp>
 </template>
 
-<style scoped>
-:deep(body) {
-  width: 400px;
-  height: 600px;
-  overflow: hidden;
-}
-</style>
+

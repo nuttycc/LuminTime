@@ -46,6 +46,15 @@ const sitePercentage = (duration: number): number => {
   return Math.round((duration / totalTime.value) * 100);
 };
 
+// Calculate page percentage relative to selected site duration
+const pagePercentage = (pageDuration: number): number => {
+  const denom = selectedSite.value?.duration;
+  if (typeof denom === 'number' && denom > 0) {
+    return Math.min(100, (pageDuration / denom) * 100);
+  }
+  return 0;
+};
+
 // Skeleton loading rows
 const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
 </script>
@@ -252,13 +261,13 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
                 {{ prettyMs(page.duration) }}
               </span>
               <span class="text-gray-500 dark:text-gray-400">
-                {{ page.visitCount }}{{ page.visitCount > 1 ? 'x' : ' visit' }}
+                {{ page.visitCount }} {{ page.visitCount === 1 ? 'visit' : 'visits' }}
               </span>
             </div>
 
             <!-- Progress Bar -->
             <UProgress
-              :model-value="Math.min(100, (page.duration / (selectedSite?.duration || 1)) * 100)"
+              :model-value="pagePercentage(page.duration)"
               :max="100"
               color="success"
               size="xs"
