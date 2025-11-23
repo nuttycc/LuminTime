@@ -99,17 +99,9 @@ export default defineBackground(() => {
 
   const SESSION_TICK_ALARM = "session-update";
   const checkAlarmState = async () => {
-    const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
-
-    if (alarm) {
-      console.log('Alarm already exists, skip creating:', alarm)
-      return
-    }
-
-    await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 1 });
-
+    // Always register the listener, regardless of alarm existence
     browser.alarms.onAlarm.addListener((alarm) => {
-      console.log('Alarm created:', alarm);
+      console.log('Alarm fired:', alarm);
       const now = Date.now()
 
       const duration = now - activeSession.lastUpdateTime;
@@ -123,6 +115,15 @@ export default defineBackground(() => {
 
       activeSession.lastUpdateTime = now;
     });
+
+    // Only create alarm if it doesn't exist
+    const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
+    if (!alarm) {
+      await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 1 });
+      console.log('Alarm created');
+    } else {
+      console.log('Alarm already exists:', alarm);
+    }
   }
 
   const startTracking = (url: string, title?: string) => {
