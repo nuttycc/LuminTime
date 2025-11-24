@@ -13,7 +13,7 @@ interface ActiveSessionData {
   startTime: number;
   lastUpdateTime: number;
   duration: number;
-  isStoped: boolean;
+  isStopped: boolean;
 }
 
 const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSession", {
@@ -23,7 +23,7 @@ const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSess
     startTime: 0,
     lastUpdateTime: 0,
     duration: 0,
-    isStoped: false
+    isStopped: false
   }
 });
 
@@ -111,7 +111,7 @@ export default defineBackground(() => {
     startTime: 0,
     lastUpdateTime: 0,
     duration: 0,
-    isStoped: false
+    isStopped: false
   };
 
   // Restore session from storage on SW startup
@@ -146,7 +146,7 @@ export default defineBackground(() => {
     activeSession.duration = 0;
     activeSession.url = url
     activeSession.title = title ?? ""
-    activeSession.isStoped = false
+    activeSession.isStopped = false
     console.log('start tracking:', activeSession)
     // Persist to storage for crash recovery
     await sessionStorage.setValue(activeSession);
@@ -157,7 +157,7 @@ export default defineBackground(() => {
 
     // Validate activeSession before processing
     if (!activeSession.url || activeSession.startTime <= 0 || activeSession.lastUpdateTime <= 0) {
-      console.log('end tracking, skip null data:', activeSession )
+      console.log('end tracking, skip null data:', activeSession)
       return;
     }
 
@@ -174,7 +174,7 @@ export default defineBackground(() => {
     activeSession.lastUpdateTime = 0;
     activeSession.url = "";
     activeSession.title = "";
-    activeSession.isStoped = true;
+    activeSession.isStopped = true;
 
     // Clear from persistent storage after snapshot
     await sessionStorage.removeValue();
@@ -182,7 +182,7 @@ export default defineBackground(() => {
     // Write to db using snapshot
     await recordActivity(sessionSnapshot.url, sessionSnapshot.duration, sessionSnapshot.title || undefined)
 
-    console.log('end tracking, writed to db:', sessionSnapshot)
+    console.log('end tracking, write to db:', sessionSnapshot)
   }
 
   // Session tick handler: periodically settle and restart tracking for data reliability
@@ -191,12 +191,13 @@ export default defineBackground(() => {
       try {
         console.log('tick...')
 
-        if (alarm.name !== SESSION_TICK_ALARM || activeSession.isStoped) {
+        if (alarm.name !== SESSION_TICK_ALARM || activeSession.isStopped) {
           return;
         }
 
-        // Skip if no active session
-        if (!activeSession.url || activeSession.startTime <= 0 || activeSession.duration < 1000) {
+        // Skip if no active session or the session is too short (<1s)
+        const elapsed = Date.now() - activeSession.lastUpdateTime;
+        if (!activeSession.url || activeSession.startTime <= 0 || elapsed < 1000) {
           return;
         }
 
