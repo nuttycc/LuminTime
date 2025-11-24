@@ -5,6 +5,25 @@ import { recordActivity, getTodayTopSites, getSitePagesDetail } from "@/db/servi
 import { db } from "@/db";
 import { getTodayStr } from "@/db/utils";
 
+// Define persistent session storage for SW crash recovery
+interface ActiveSessionData {
+  url: string;
+  title: string;
+  startTime: number;
+  lastUpdateTime: number;
+  duration: number;
+}
+
+const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSession", {
+  fallback: {
+    url: "",
+    title: "",
+    startTime: 0,
+    lastUpdateTime: 0,
+    duration: 0
+  }
+});
+
 // 挂载调试工具到全局
 const debugTools = {
   async stats() {
@@ -80,15 +99,8 @@ export default defineBackground(() => {
 
   console.log('💡 调试工具已加载.');
 
-  interface ActiveSession {
-    url: string;
-    title: string;
-    startTime: number;
-    lastUpdateTime: number;
-    duration: number;
-  }
-
-  const activeSession: ActiveSession = {
+  // Initialize activeSession (restore from storage immediately without await in setup)
+  let activeSession: ActiveSessionData = {
     url: "",
     title: "",
     startTime: 0,
@@ -96,43 +108,40 @@ export default defineBackground(() => {
     duration: 0
   };
 
+  // Restore session from storage on SW startup
+  void (async () => {
+    try {
+      const saved = await sessionStorage.getValue();
+      if (saved.url && saved.startTime > 0) {
+        Object.assign(activeSession, saved);
+        console.log('📦 Recovered active session from storage:', activeSession);
+      }
+    } catch (error) {
+      console.error('Error recovering session from storage:', error);
+    }
+  })();
 
   const SESSION_TICK_ALARM = "session-update";
   const checkAlarmState = async () => {
-    // Always register the listener, regardless of alarm existence
-    browser.alarms.onAlarm.addListener((alarm) => {
-      console.log('Alarm fired:', alarm);
-      const now = Date.now()
-
-      const duration = now - activeSession.lastUpdateTime;
-
-      // ignore long duration
-      if (duration - 60 * 1000 > 30 * 1000) {
-        activeSession.duration += 0
-      } else {
-        activeSession.duration += duration
-      }
-
-      activeSession.lastUpdateTime = now;
-    });
-
     // Only create alarm if it doesn't exist
     const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
-    if (!alarm) {
-      await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 1 });
-      console.log('Alarm created');
-    } else {
+    if (alarm) {
       console.log('Alarm already exists:', alarm);
+    } else {
+      await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 5 });
+      console.log('Alarm created: 5 min intervals');
     }
   }
 
-  const startTracking = (url: string, title?: string) => {
+  const startTracking = async (url: string, title?: string) => {
     activeSession.startTime = Date.now();
     activeSession.lastUpdateTime = Date.now();
     activeSession.duration = 0;
     activeSession.url = url
     activeSession.title = title ?? ""
     console.log('start tracking:', activeSession)
+    // Persist to storage for crash recovery
+    await sessionStorage.setValue(activeSession);
   }
 
   const endTracking = async () => {
@@ -155,17 +164,44 @@ export default defineBackground(() => {
     activeSession.url = "";
     activeSession.title = "";
 
+    // Clear from persistent storage after snapshot
+    await sessionStorage.removeValue();
+
     // Write to db using snapshot
     await recordActivity(sessionSnapshot.url, sessionSnapshot.duration, sessionSnapshot.title || undefined)
 
     console.log('end tracking, write to db:', sessionSnapshot)
   }
 
-  checkAlarmState().then(() => {
-    console.log('Alarm checked');
-  }).catch((error) => {
-    console.error('Error checking alarm:', error);
-  })
+  // Session tick handler: periodically settle and restart tracking for data reliability
+  browser.alarms.onAlarm.addListener((alarm) => {
+    void (async () => {
+      try {
+        if (alarm.name !== SESSION_TICK_ALARM) {
+          return;
+        }
+
+        // Skip if no active session
+        if (!activeSession.url || activeSession.startTime <= 0) {
+          return;
+        }
+
+        // Save current session context before endTracking() resets
+        const sessionUrl = activeSession.url;
+        const sessionTitle = activeSession.title;
+
+        // Settle current session and write to db
+        await endTracking();
+
+        // Restart tracking the same URL to maintain continuity
+        await startTracking(sessionUrl, sessionTitle);
+
+        console.log(`✅ Session ticked: ${sessionUrl}`);
+      } catch (error) {
+        console.error('Error in session tick:', error);
+      }
+    })();
+  });
 
   // focus changes
   browser.tabs.onActivated.addListener((activeInfo) => {
@@ -181,7 +217,7 @@ export default defineBackground(() => {
           throw new Error('Tab url is undefined.')
         }
 
-        startTracking(tab.url, tab.title)
+        await startTracking(tab.url, tab.title)
       } catch (error) {
         console.error('Error in tab activation:', error)
       }
@@ -200,7 +236,7 @@ export default defineBackground(() => {
           if (tab.url === undefined) {
             throw new Error('Tab url is undefined.')
           }
-          startTracking(tab.url, tab.title)
+          await startTracking(tab.url, tab.title)
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -223,7 +259,7 @@ export default defineBackground(() => {
           if (!result) {
             throw new Error('Tab url is undefined.')
           }
-          startTracking(result.url, result.title)
+          await startTracking(result.url, result.title)
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -242,7 +278,7 @@ export default defineBackground(() => {
             console.warn('No active tab or tab URL available on idle resume')
             return
           }
-          startTracking(result.url, result.title)
+          await startTracking(result.url, result.title)
         } else {
           await endTracking()
         }
@@ -251,4 +287,11 @@ export default defineBackground(() => {
       }
     })()
   });
+
+
+  checkAlarmState().then(() => {
+    console.log('Alarm checked');
+  }).catch((error) => {
+    console.error('Error checking alarm:', error);
+  })
 });
