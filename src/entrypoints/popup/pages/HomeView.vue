@@ -60,226 +60,172 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-white dark:bg-gray-900">
+  <div class="flex flex-col h-full bg-base-100">
     <!-- Header -->
-    <div class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
-      <div class="px-4 py-3 sm:px-5">
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2 min-w-0 flex-1">
-            <Transition
-              name="fade"
-              mode="out-in"
-            >
-              <UButton
-                v-if="selectedDomain"
-                key="back"
-                icon="i-tabler-arrow-left"
-                color="gray"
-                variant="ghost"
-                size="sm"
-                square
-                @click="goBack"
-              />
-            </Transition>
-            <div class="min-w-0 flex-1">
-              <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate leading-tight">
-                {{ selectedDomain || "Today's Activity" }}
-              </h1>
-              <p
-                v-if="!selectedDomain"
-                class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"
-              >
-                {{ totalTime > 0 ? prettyMs(totalTime) : 'No activity yet' }}
-              </p>
+    <div class="navbar bg-base-100 sticky top-0 z-10 border-b border-base-200 min-h-12 px-2">
+      <div class="navbar-start w-1/4">
+        <Transition name="fade" mode="out-in">
+          <button
+            v-if="selectedDomain"
+            key="back"
+            class="btn btn-ghost btn-circle btn-sm"
+            @click="goBack"
+            aria-label="Go back"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </Transition>
+      </div>
+      <div class="navbar-center w-2/4 justify-center">
+        <h1 class="text-base font-bold truncate">
+          {{ selectedDomain || "LuminTime" }}
+        </h1>
+      </div>
+      <div class="navbar-end w-1/4"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto p-4">
+
+      <!-- Top Sites View -->
+      <template v-if="!selectedDomain">
+        <!-- Total Time Hero -->
+        <div class="stats w-full shadow-sm bg-base-200/50 mb-6">
+          <div class="stat place-items-center py-4">
+            <div class="stat-title text-base-content/60">Today's Activity</div>
+            <div class="stat-value text-primary text-3xl">
+              {{ topSites ? prettyMs(totalTime, { compact: true }) : '...' }}
+            </div>
+            <div class="stat-desc mt-1">Total browsing time</div>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="!topSites" class="flex flex-col gap-4">
+          <div v-for="i in skeletonRows" :key="`skeleton-${i}`" class="flex items-center gap-4">
+            <div class="skeleton h-10 w-10 rounded-full shrink-0"></div>
+            <div class="flex flex-col gap-2 w-full">
+              <div class="skeleton h-4 w-28"></div>
+              <div class="skeleton h-3 w-full"></div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto">
-      <!-- Top Sites View -->
-      <div v-if="!selectedDomain" class="p-3 sm:p-4 space-y-2">
-        <!-- Loading State -->
-        <template v-if="!topSites">
-          <div
-            v-for="i in skeletonRows"
-            :key="`skeleton-${i}`"
-            class="p-3 rounded-md bg-gray-50 dark:bg-gray-800/50 space-y-2"
-          >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <USkeleton class="h-5 w-5 rounded" />
-                <USkeleton class="h-4 flex-1 max-w-32" />
-              </div>
-              <USkeleton class="h-4 w-8" />
-            </div>
-            <USkeleton class="h-2 w-full" />
-            <USkeleton class="h-3 w-12" />
-          </div>
-        </template>
 
         <!-- Empty State -->
-        <template v-else-if="topSites.length === 0">
-          <div class="flex flex-col items-center justify-center py-16 text-center">
-            <UIcon
-              name="i-tabler-browser-off"
-              class="w-10 h-10 text-gray-400 dark:text-gray-600 mb-3"
-            />
-            <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">
-              No activity recorded
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Start browsing to see statistics
-            </p>
+        <div v-else-if="topSites.length === 0" class="hero py-10">
+          <div class="hero-content text-center">
+            <div class="max-w-md">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-base-content/20 mx-auto mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path>
+                <path d="M12 7v5l3 3"></path>
+              </svg>
+              <p class="py-2 text-base-content/60">No activity recorded today.</p>
+            </div>
           </div>
-        </template>
+        </div>
 
         <!-- Sites List -->
-        <template v-else>
-          <div
+        <ul v-else class="list bg-base-100 w-full">
+          <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200">
+            <div class="w-8 text-center">#</div>
+            <div class="flex-1">Domain</div>
+            <div class="w-16 text-right">Time</div>
+            <!-- Spacer to align with arrow icon in rows -->
+            <div class="w-4"></div>
+          </li>
+
+          <li
             v-for="(site, index) in topSites"
             :key="`${site.date}-${site.domain}`"
-            class="group rounded-md bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 p-3 cursor-pointer transition-colors"
+            class="list-row hover:bg-base-200/50 cursor-pointer rounded-box transition-colors p-2"
             @click="selectedDomain = site.domain"
           >
-            <!-- Header: Rank and Domain -->
-            <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center gap-2 min-w-0 flex-1">
-                <UBadge
-                  :label="String(index + 1)"
-                  color="primary"
-                  variant="subtle"
-                  size="xs"
-                />
-                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                  {{ site.domain }}
-                </p>
-              </div>
-              <UIcon
-                name="i-tabler-chevron-right"
-                class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors shrink-0 ml-2"
+            <div class="w-8 flex items-center justify-center font-mono text-base-content/40 text-sm">
+              {{ index + 1 }}
+            </div>
+
+            <div class="flex flex-col gap-1 flex-1 min-w-0 justify-center">
+              <div class="font-medium truncate">{{ site.domain }}</div>
+              <progress 
+                class="progress progress-primary h-1.5 w-full bg-base-200"
+                :value="sitePercentage(site.duration)"
+                max="100"
               />
             </div>
 
-            <!-- Duration and Percentage -->
-            <div class="flex items-center justify-between mb-2 text-xs">
-              <span class="font-medium text-gray-700 dark:text-gray-300">
-                {{ prettyMs(site.duration) }}
-              </span>
-              <span class="text-gray-500 dark:text-gray-400">
-                {{ sitePercentage(site.duration) }}%
-              </span>
+            <div class="w-16 text-right font-medium text-sm self-center">
+               {{ prettyMs(site.duration, { compact: true }) }}
             </div>
 
-            <!-- Progress Bar -->
-            <UProgress
-              :model-value="sitePercentage(site.duration)"
-              :max="100"
-              color="primary"
-              size="xs"
-              class="mb-2"
-            />
-
-            <!-- Visit Count -->
-            <div class="text-xs text-gray-500 dark:text-gray-400">
-              {{ site.visitCount }} visit{{ site.visitCount !== 1 ? 's' : '' }}
+            <div class="text-xs text-base-content/40 self-center">
+               <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
             </div>
-          </div>
-        </template>
-      </div>
+          </li>
+        </ul>
+      </template>
 
       <!-- Page Details View -->
-      <div v-else class="p-3 sm:p-4 space-y-2">
+      <template v-else>
         <!-- Loading State -->
-        <template v-if="!pageDetails">
-          <div
-            v-for="i in skeletonRows"
-            :key="`skeleton-detail-${i}`"
-            class="p-3 rounded-md bg-gray-50 dark:bg-gray-800/50 space-y-2"
-          >
-            <div class="flex items-start gap-2">
-              <USkeleton class="h-5 w-5 rounded" />
-              <div class="flex-1 space-y-1 min-w-0">
-                <USkeleton class="h-3 w-full" />
-                <USkeleton class="h-3 w-2/3" />
-              </div>
+        <div v-if="!pageDetails" class="flex flex-col gap-4">
+           <div v-for="i in skeletonRows" :key="`skeleton-detail-${i}`" class="flex items-center gap-4">
+             <div class="flex flex-col gap-2 w-full">
+              <div class="skeleton h-4 w-3/4"></div>
+              <div class="skeleton h-3 w-1/2"></div>
             </div>
-            <USkeleton class="h-2 w-full" />
-          </div>
-        </template>
+           </div>
+        </div>
 
         <!-- Empty State -->
-        <template v-else-if="pageDetails.length === 0">
-          <div class="flex flex-col items-center justify-center py-16 text-center">
-            <UIcon
-              name="i-tabler-file-off"
-              class="w-10 h-10 text-gray-400 dark:text-gray-600 mb-3"
-            />
-            <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">
-              No pages recorded
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              No page activity found
-            </p>
+        <div v-else-if="pageDetails.length === 0" class="hero py-10">
+          <div class="hero-content text-center">
+             <div class="max-w-md">
+               <p class="py-2 text-base-content/60">No pages visited for this domain.</p>
+             </div>
           </div>
-        </template>
+        </div>
 
         <!-- Pages List -->
-        <template v-else>
-          <div
+        <ul v-else class="list bg-base-100 w-full">
+           <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200 items-end">
+            <div class="flex-1">Pages visited</div>
+            <div class="text-right">Duration</div>
+          </li>
+
+          <li
             v-for="(page, index) in pageDetails"
             :key="`${page.date}-${page.domain}-${page.path}`"
-            class="rounded-md bg-gray-50 dark:bg-gray-800/50 p-3 space-y-2"
+            class="list-row flex justify-between hover:bg-base-200/50 rounded-box transition-colors p-2"
           >
-            <!-- Page Index and Title -->
-            <div class="flex items-start gap-2 min-w-0">
-              <UBadge
-                :label="String(index + 1)"
-                color="secondary"
-                variant="subtle"
-                size="xs"
-                square
+            <div class="flex flex-col gap-1 flex-1 min-w-0">
+               <div class="font-medium truncate text-sm" :title="page.title || 'Untitled'">
+                 {{ page.title || 'Untitled' }}
+               </div>
+               <div class="text-xs text-base-content/60 truncate font-mono" :title="page.fullPath">
+                 {{ page.path }}
+               </div>
+               <progress
+                class="progress progress-secondary h-1 w-full bg-base-200 mt-1"
+                :value="pagePercentage(page.duration)"
+                max="100"
               />
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {{ page.title || 'Untitled' }}
-                </p>
-                <p
-                  class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5"
-                  :title="page.fullPath"
-                >
-                  {{ page.fullPath }}
-                </p>
-              </div>
             </div>
-
-            <!-- Duration and Visit Count -->
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-medium text-gray-700 dark:text-gray-300">
-                {{ prettyMs(page.duration) }}
-              </span>
-              <span class="text-gray-500 dark:text-gray-400">
-                {{ page.visitCount }} {{ page.visitCount === 1 ? 'visit' : 'visits' }}
-              </span>
+             <div class="w-16 text-right font-medium text-sm self-center mt-0.5">
+               {{ prettyMs(page.duration, { compact: true }) }}
             </div>
+          </li>
+        </ul>
+      </template>
 
-            <!-- Progress Bar -->
-            <UProgress
-              :model-value="pagePercentage(page.duration)"
-              :max="100"
-              color="success"
-              size="xs"
-            />
-          </div>
-        </template>
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Scoped styles mainly for transition, everything else is utility classes */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 200ms ease;

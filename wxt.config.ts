@@ -1,5 +1,4 @@
 import tailwindcss from '@tailwindcss/vite'
-import ui from '@nuxt/ui/vite'
 import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
@@ -10,13 +9,12 @@ export default defineConfig({
     disabled: true
   },
   manifest: {
-    permissions: ['webNavigation', 'idle', 'alarms']
+    permissions: ['tabs', 'storage', 'webNavigation', 'idle', 'alarms']
   },
   vite: () =>({
     plugins: [
       // oxlint-disable-next-line new-cap
-      tailwindcss(),
-      ui()
+      tailwindcss()
     ]
   })
 });

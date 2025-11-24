@@ -18,7 +18,6 @@ export const SiteStat = type({
   domain: "string", // [date+domain] 主键一部分
   date: "string",
   duration: "number",
-  visitCount: "number",
   lastVisit: "number",
   "iconUrl?": "string"
 });
@@ -31,7 +30,6 @@ export const PageStat = type({
   date: "string",
   fullPath: "string", // 完整URL用于展示
   duration: "number",
-  visitCount: "number",
   "title?": "string"
 });
 export type IPageStat = typeof PageStat.infer;
