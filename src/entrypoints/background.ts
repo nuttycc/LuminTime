@@ -39,7 +39,7 @@ const debugTools = {
     console.table(sites.map(s => ({
       domain: s.domain,
       duration: `${(s.duration / 1000 / 60).toFixed(2)}分`,
-      visits: s.visitCount
+      lastVisit: new Date(s.lastVisit).toLocaleTimeString()
     })));
     return sites;
   },

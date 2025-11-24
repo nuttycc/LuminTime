@@ -42,7 +42,6 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
     if (siteStat) {
       await db.sites.update(siteKey, {
         duration: siteStat.duration + durationToAdd,
-        visitCount: siteStat.visitCount + 1,
         lastVisit: now
       });
     } else {
@@ -50,7 +49,6 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
         date: today,
         domain,
         duration: durationToAdd,
-        visitCount: 1,
         lastVisit: now,
         // iconUrl: 这里后续可以加获取 favicon 的逻辑
       });
@@ -63,7 +61,6 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
     if (pageStat) {
       await db.pages.update(pageKey, {
         duration: pageStat.duration + durationToAdd,
-        visitCount: pageStat.visitCount + 1,
         title: title ?? pageStat.title // 优先更新为最新的标题
       });
     } else {
@@ -73,7 +70,6 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
         path,
         fullPath, // 存储完整路径供展示
         duration: durationToAdd,
-        visitCount: 1,
         title
       });
     }

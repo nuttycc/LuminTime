@@ -182,10 +182,6 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
               class="mb-2"
             />
 
-            <!-- Visit Count -->
-            <div class="text-xs text-gray-500 dark:text-gray-400">
-              {{ site.visitCount }} visit{{ site.visitCount !== 1 ? 's' : '' }}
-            </div>
           </div>
         </template>
       </div>
@@ -255,13 +251,10 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
               </div>
             </div>
 
-            <!-- Duration and Visit Count -->
-            <div class="flex items-center justify-between text-xs">
+            <!-- Duration -->
+            <div class="flex items-center text-xs">
               <span class="font-medium text-gray-700 dark:text-gray-300">
                 {{ prettyMs(page.duration) }}
-              </span>
-              <span class="text-gray-500 dark:text-gray-400">
-                {{ page.visitCount }} {{ page.visitCount === 1 ? 'visit' : 'visits' }}
               </span>
             </div>
 

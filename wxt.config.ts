@@ -10,7 +10,7 @@ export default defineConfig({
     disabled: true
   },
   manifest: {
-    permissions: ['webNavigation', 'idle', 'alarms']
+    permissions: ['tabs', 'storage', 'webNavigation', 'idle', 'alarms']
   },
   vite: () =>({
     plugins: [

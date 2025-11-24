@@ -1,5 +1,7 @@
 # LuminTime Browser Extension - Agent Guidelines
 
+- Always reply in Chinese.
+
 ## Build/Lint/Test Commands
 - **Development**: `bun run dev` (wxt dev server)
 - **Build**: `bun run build` (wxt build)
