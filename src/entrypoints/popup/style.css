@@ -32,20 +32,6 @@ body {
   @apply transition-colors duration-200;
 }
 
-/* Card compact adjustments */
-.card-body {
-  padding: 0.75rem;
-}
-
-.card-compact .card-body {
-  gap: 0.5rem;
-}
-
-/* Progress bar styling */
-.progress {
-  @apply transition-all duration-300;
-}
-
 /* Fade transition for navigation */
 .fade-enter-active,
 .fade-leave-active {
