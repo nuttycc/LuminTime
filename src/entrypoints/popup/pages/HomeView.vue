@@ -60,40 +60,32 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-white dark:bg-gray-900">
+  <div class="flex flex-col h-full">
     <!-- Header -->
-    <div class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
-      <div class="px-4 py-3 sm:px-5">
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2 min-w-0 flex-1">
-            <Transition
-              name="fade"
-              mode="out-in"
-            >
-              <button
-                v-if="selectedDomain"
-                key="back"
-                class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                @click="goBack"
-                aria-label="Go back"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            </Transition>
-            <div class="min-w-0 flex-1">
-              <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate leading-tight">
-                {{ selectedDomain || "Today's Activity" }}
-              </h1>
-              <p
-                v-if="!selectedDomain"
-                class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"
-              >
-                {{ totalTime > 0 ? prettyMs(totalTime) : 'No activity yet' }}
-              </p>
-            </div>
-          </div>
+    <div class="navbar sticky top-0 z-10 bg-base-100 border-b border-base-300 shrink-0">
+      <div class="flex-1">
+        <Transition name="fade" mode="out-in">
+          <button
+            v-if="selectedDomain"
+            key="back"
+            class="btn btn-ghost btn-sm"
+            @click="goBack"
+            aria-label="Go back"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </Transition>
+      </div>
+      <div class="flex-none">
+        <div class="text-center">
+          <h1 class="text-base font-semibold truncate">
+            {{ selectedDomain || "Today's Activity" }}
+          </h1>
+          <p v-if="!selectedDomain" class="text-xs text-base-content/60 mt-0.5">
+            {{ totalTime > 0 ? prettyMs(totalTime) : 'No activity yet' }}
+          </p>
         </div>
       </div>
     </div>
@@ -107,32 +99,33 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
           <div
             v-for="i in skeletonRows"
             :key="`skeleton-${i}`"
-            class="p-3 rounded-md bg-gray-50 dark:bg-gray-800/50 space-y-2 animate-pulse"
+            class="card card-compact bg-base-200 animate-pulse"
           >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <div class="h-5 w-5 rounded bg-gray-300 dark:bg-gray-600" />
-                <div class="h-4 flex-1 max-w-32 bg-gray-300 dark:bg-gray-600 rounded" />
+            <div class="card-body space-y-2">
+              <div class="flex items-center gap-2">
+                <div class="h-5 w-5 rounded bg-base-300" />
+                <div class="h-4 flex-1 max-w-32 bg-base-300 rounded" />
               </div>
-              <div class="h-4 w-8 bg-gray-300 dark:bg-gray-600 rounded" />
+              <div class="h-2 w-full bg-base-300 rounded" />
+              <div class="h-3 w-12 bg-base-300 rounded" />
             </div>
-            <div class="h-2 w-full bg-gray-300 dark:bg-gray-600 rounded" />
-            <div class="h-3 w-12 bg-gray-300 dark:bg-gray-600 rounded" />
           </div>
         </template>
 
         <!-- Empty State -->
         <template v-else-if="topSites.length === 0">
-          <div class="flex flex-col items-center justify-center py-16 text-center">
-            <svg class="w-10 h-10 text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">
-              No activity recorded
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Start browsing to see statistics
-            </p>
+          <div class="card bg-base-200">
+            <div class="card-body items-center text-center">
+              <svg class="w-10 h-10 text-base-content/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <p class="text-sm font-medium mb-1">
+                No activity recorded
+              </p>
+              <p class="text-xs text-base-content/60">
+                Start browsing to see statistics
+              </p>
+            </div>
           </div>
         </template>
 
@@ -141,42 +134,42 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
           <div
             v-for="(site, index) in topSites"
             :key="`${site.date}-${site.domain}`"
-            class="group rounded-md bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 p-3 cursor-pointer transition-colors"
+            class="card card-compact bg-base-100 border border-base-300 hover:border-primary transition-colors cursor-pointer hover:shadow-md"
             @click="selectedDomain = site.domain"
           >
-            <!-- Header: Rank and Domain -->
-            <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center gap-2 min-w-0 flex-1">
-                <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded">
-                  {{ index + 1 }}
-                </span>
-                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                  {{ site.domain }}
-                </p>
+            <div class="card-body gap-2">
+              <!-- Header: Rank and Domain -->
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 min-w-0 flex-1">
+                  <div class="badge badge-primary badge-sm">
+                    {{ index + 1 }}
+                  </div>
+                  <p class="text-sm font-semibold truncate">
+                    {{ site.domain }}
+                  </p>
+                </div>
+                <svg class="w-4 h-4 text-base-content/40 shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-              <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
 
-            <!-- Duration and Percentage -->
-            <div class="flex items-center justify-between mb-2 text-xs">
-              <span class="font-medium text-gray-700 dark:text-gray-300">
-                {{ prettyMs(site.duration) }}
-              </span>
-              <span class="text-gray-500 dark:text-gray-400">
-                {{ sitePercentage(site.duration) }}%
-              </span>
-            </div>
+              <!-- Duration and Percentage -->
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium">
+                  {{ prettyMs(site.duration) }}
+                </span>
+                <span class="text-base-content/60">
+                  {{ sitePercentage(site.duration) }}%
+                </span>
+              </div>
 
-            <!-- Progress Bar -->
-            <div class="mb-2 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div 
-                class="h-full bg-blue-500 transition-all duration-300"
-                :style="{ width: sitePercentage(site.duration) + '%' }"
+              <!-- Progress Bar -->
+              <progress 
+                class="progress progress-primary w-full h-1"
+                :value="sitePercentage(site.duration)"
+                max="100"
               />
             </div>
-
           </div>
         </template>
       </div>
@@ -188,31 +181,35 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
           <div
             v-for="i in skeletonRows"
             :key="`skeleton-detail-${i}`"
-            class="p-3 rounded-md bg-gray-50 dark:bg-gray-800/50 space-y-2 animate-pulse"
+            class="card card-compact bg-base-200 animate-pulse"
           >
-            <div class="flex items-start gap-2">
-              <div class="h-5 w-5 rounded bg-gray-300 dark:bg-gray-600" />
-              <div class="flex-1 space-y-1 min-w-0">
-                <div class="h-3 w-full bg-gray-300 dark:bg-gray-600 rounded" />
-                <div class="h-3 w-2/3 bg-gray-300 dark:bg-gray-600 rounded" />
+            <div class="card-body space-y-2">
+              <div class="flex items-start gap-2">
+                <div class="h-5 w-5 rounded bg-base-300" />
+                <div class="flex-1 space-y-1 min-w-0">
+                  <div class="h-3 w-full bg-base-300 rounded" />
+                  <div class="h-3 w-2/3 bg-base-300 rounded" />
+                </div>
               </div>
+              <div class="h-2 w-full bg-base-300 rounded" />
             </div>
-            <div class="h-2 w-full bg-gray-300 dark:bg-gray-600 rounded" />
           </div>
         </template>
 
         <!-- Empty State -->
         <template v-else-if="pageDetails.length === 0">
-          <div class="flex flex-col items-center justify-center py-16 text-center">
-            <svg class="w-10 h-10 text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">
-              No pages recorded
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              No page activity found
-            </p>
+          <div class="card bg-base-200">
+            <div class="card-body items-center text-center">
+              <svg class="w-10 h-10 text-base-content/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p class="text-sm font-medium mb-1">
+                No pages recorded
+              </p>
+              <p class="text-xs text-base-content/60">
+                No page activity found
+              </p>
+            </div>
           </div>
         </template>
 
@@ -221,38 +218,37 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
           <div
             v-for="(page, index) in pageDetails"
             :key="`${page.date}-${page.domain}-${page.path}`"
-            class="rounded-md bg-gray-50 dark:bg-gray-800/50 p-3 space-y-2"
+            class="card card-compact bg-base-100 border border-base-300"
           >
-            <!-- Page Index and Title -->
-            <div class="flex items-start gap-2 min-w-0">
-              <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 rounded">
-                {{ index + 1 }}
-              </span>
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {{ page.title || 'Untitled' }}
-                </p>
-                <p
-                  class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5"
-                  :title="page.fullPath"
-                >
-                  {{ page.fullPath }}
-                </p>
+            <div class="card-body gap-2">
+              <!-- Page Index and Title -->
+              <div class="flex items-start gap-2 min-w-0">
+                <div class="badge badge-success badge-sm">
+                  {{ index + 1 }}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-medium truncate">
+                    {{ page.title || 'Untitled' }}
+                  </p>
+                  <p
+                    class="text-xs text-base-content/60 truncate mt-0.5"
+                    :title="page.fullPath"
+                  >
+                    {{ page.fullPath }}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <!-- Duration -->
-            <div class="flex items-center text-xs">
-              <span class="font-medium text-gray-700 dark:text-gray-300">
+              <!-- Duration -->
+              <div class="flex items-center text-xs font-medium">
                 {{ prettyMs(page.duration) }}
-              </span>
-            </div>
+              </div>
 
-            <!-- Progress Bar -->
-            <div class="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div 
-                class="h-full bg-green-500 transition-all duration-300"
-                :style="{ width: pagePercentage(page.duration) + '%' }"
+              <!-- Progress Bar -->
+              <progress 
+                class="progress progress-success w-full h-1"
+                :value="pagePercentage(page.duration)"
+                max="100"
               />
             </div>
           </div>

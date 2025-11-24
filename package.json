@@ -29,6 +29,7 @@
     "@iconify-json/tabler": "^1.2.23",
     "@tailwindcss/vite": "^4.1.17",
     "@wxt-dev/module-vue": "^1.0.2",
+    "daisyui": "^5.5.5",
     "oxlint": "^1.29.0",
     "oxlint-tsgolint": "^0.8.0",
     "tailwindcss": "^4.1.17",
