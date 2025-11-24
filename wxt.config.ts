@@ -1,5 +1,4 @@
 import tailwindcss from '@tailwindcss/vite'
-import ui from '@nuxt/ui/vite'
 import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
@@ -15,8 +14,7 @@ export default defineConfig({
   vite: () =>({
     plugins: [
       // oxlint-disable-next-line new-cap
-      tailwindcss(),
-      ui()
+      tailwindcss()
     ]
   })
 });
