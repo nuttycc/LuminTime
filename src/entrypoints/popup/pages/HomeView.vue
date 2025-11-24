@@ -129,10 +129,12 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
 
         <!-- Sites List -->
         <ul v-else class="list bg-base-100 w-full">
-          <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 border-b border-base-200">
+          <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200">
             <div class="w-8 text-center">#</div>
             <div class="flex-1">Domain</div>
             <div class="w-16 text-right">Time</div>
+            <!-- Spacer to align with arrow icon in rows -->
+            <div class="w-4"></div>
           </li>
 
           <li
@@ -188,7 +190,7 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
 
         <!-- Pages List -->
         <ul v-else class="list bg-base-100 w-full">
-           <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 border-b border-base-200">
+           <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200">
             <div class="flex-1">Page</div>
             <div class="w-16 text-right">Time</div>
           </li>
