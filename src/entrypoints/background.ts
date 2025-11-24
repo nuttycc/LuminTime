@@ -1,3 +1,4 @@
+// oxlint-disable max-lines
 // oxlint-disable no-magic-numbers
 // oxlint-disable no-unsafe-member-access, no-explicit-any
 
@@ -12,6 +13,7 @@ interface ActiveSessionData {
   startTime: number;
   lastUpdateTime: number;
   duration: number;
+  isStoped: boolean;
 }
 
 const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSession", {
@@ -20,9 +22,12 @@ const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSess
     title: "",
     startTime: 0,
     lastUpdateTime: 0,
-    duration: 0
+    duration: 0,
+    isStoped: false
   }
 });
+
+const IDLE_DETECTION_INTERVAL = 30
 
 // 挂载调试工具到全局
 const debugTools = {
@@ -105,7 +110,8 @@ export default defineBackground(() => {
     title: "",
     startTime: 0,
     lastUpdateTime: 0,
-    duration: 0
+    duration: 0,
+    isStoped: false
   };
 
   // Restore session from storage on SW startup
@@ -122,14 +128,15 @@ export default defineBackground(() => {
   })();
 
   const SESSION_TICK_ALARM = "session-update";
+  const SESSION_PER_MINUTE = 1;
   const checkAlarmState = async () => {
     // Only create alarm if it doesn't exist
     const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
     if (alarm) {
       console.log('Alarm already exists:', alarm);
     } else {
-      await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 5 });
-      console.log('Alarm created: 5 min intervals');
+      await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: SESSION_PER_MINUTE });
+      console.log(`Alarm created: ${SESSION_PER_MINUTE} min intervals`);
     }
   }
 
@@ -139,14 +146,18 @@ export default defineBackground(() => {
     activeSession.duration = 0;
     activeSession.url = url
     activeSession.title = title ?? ""
+    activeSession.isStoped = false
     console.log('start tracking:', activeSession)
     // Persist to storage for crash recovery
     await sessionStorage.setValue(activeSession);
   }
 
   const endTracking = async () => {
+
+
     // Validate activeSession before processing
     if (!activeSession.url || activeSession.startTime <= 0 || activeSession.lastUpdateTime <= 0) {
+      console.log('end tracking, skip null data:', activeSession )
       return;
     }
 
@@ -163,6 +174,7 @@ export default defineBackground(() => {
     activeSession.lastUpdateTime = 0;
     activeSession.url = "";
     activeSession.title = "";
+    activeSession.isStoped = true;
 
     // Clear from persistent storage after snapshot
     await sessionStorage.removeValue();
@@ -170,19 +182,21 @@ export default defineBackground(() => {
     // Write to db using snapshot
     await recordActivity(sessionSnapshot.url, sessionSnapshot.duration, sessionSnapshot.title || undefined)
 
-    console.log('end tracking, write to db:', sessionSnapshot)
+    console.log('end tracking, writed to db:', sessionSnapshot)
   }
 
   // Session tick handler: periodically settle and restart tracking for data reliability
   browser.alarms.onAlarm.addListener((alarm) => {
     void (async () => {
       try {
-        if (alarm.name !== SESSION_TICK_ALARM) {
+        console.log('tick...')
+
+        if (alarm.name !== SESSION_TICK_ALARM || activeSession.isStoped) {
           return;
         }
 
         // Skip if no active session
-        if (!activeSession.url || activeSession.startTime <= 0) {
+        if (!activeSession.url || activeSession.startTime <= 0 || activeSession.duration < 1000) {
           return;
         }
 
@@ -196,7 +210,7 @@ export default defineBackground(() => {
         // Restart tracking the same URL to maintain continuity
         await startTracking(sessionUrl, sessionTitle);
 
-        console.log(`✅ Session ticked: ${sessionUrl}`);
+        console.log(`✅ Session ticked.`);
       } catch (error) {
         console.error('Error in session tick:', error);
       }
@@ -207,11 +221,10 @@ export default defineBackground(() => {
   browser.tabs.onActivated.addListener((activeInfo) => {
     void (async () => {
       try {
-        console.log('Tab activated, activeInfo:', activeInfo)
-        await endTracking()
-
         const tab = await browser.tabs.get(activeInfo.tabId)
         console.log('Tab activated, get tab:', tab)
+
+        await endTracking()
 
         if (tab.url === undefined) {
           throw new Error('Tab url is undefined.')
@@ -249,13 +262,13 @@ export default defineBackground(() => {
   browser.windows.onFocusChanged.addListener((windowId) => {
     void (async () => {
       try {
-        console.log('Window focus changed, windowId:', windowId)
+        console.log('Window focus changed, current:', windowId)
+
         if (windowId === browser.windows.WINDOW_ID_NONE) {
           await endTracking()
         } else {
           await endTracking()
           const result = await getActiveTabUrl()
-          console.log('Window focus changed, get tab:', result)
           if (!result) {
             throw new Error('Tab url is undefined.')
           }
@@ -294,4 +307,6 @@ export default defineBackground(() => {
   }).catch((error) => {
     console.error('Error checking alarm:', error);
   })
+
+  browser.idle.setDetectionInterval(IDLE_DETECTION_INTERVAL)
 });
