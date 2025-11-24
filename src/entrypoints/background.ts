@@ -104,29 +104,6 @@ export default defineBackground(() => {
 
   console.log('💡 调试工具已加载.');
 
-  // Initialize activeSession (restore from storage immediately without await in setup)
-  let activeSession: ActiveSessionData = {
-    url: "",
-    title: "",
-    startTime: 0,
-    lastUpdateTime: 0,
-    duration: 0,
-    isStopped: false
-  };
-
-  // Restore session from storage on SW startup
-  void (async () => {
-    try {
-      const saved = await sessionStorage.getValue();
-      if (saved.url && saved.startTime > 0) {
-        Object.assign(activeSession, saved);
-        console.log('📦 Recovered active session from storage:', activeSession);
-      }
-    } catch (error) {
-      console.error('Error recovering session from storage:', error);
-    }
-  })();
-
   const SESSION_TICK_ALARM = "session-update";
   const SESSION_PER_MINUTE = 1;
   const checkAlarmState = async () => {
@@ -141,69 +118,58 @@ export default defineBackground(() => {
   }
 
   const startTracking = async (url: string, title?: string) => {
-    activeSession.startTime = Date.now();
-    activeSession.lastUpdateTime = Date.now();
-    activeSession.duration = 0;
-    activeSession.url = url
-    activeSession.title = title ?? ""
-    activeSession.isStopped = false
-    console.log('start tracking:', activeSession)
-    // Persist to storage for crash recovery
-    await sessionStorage.setValue(activeSession);
+    const newSession: ActiveSessionData = {
+      url,
+      title: title ?? "",
+      startTime: Date.now(),
+      lastUpdateTime: Date.now(),
+      duration: 0,
+      isStopped: false
+    };
+    await sessionStorage.setValue(newSession);
+    console.log('start tracking:', newSession);
   }
 
   const endTracking = async () => {
+    const session = await sessionStorage.getValue();
 
-
-    // Validate activeSession before processing
-    if (!activeSession.url || activeSession.startTime <= 0 || activeSession.lastUpdateTime <= 0) {
-      console.log('end tracking, skip null data:', activeSession)
+    // Validate session before processing
+    if (!session.url || session.startTime <= 0 || session.lastUpdateTime <= 0) {
+      console.log('end tracking, skip null data:', session);
       return;
     }
 
-    const now = Date.now()
-    activeSession.duration += now - activeSession.lastUpdateTime;
-    activeSession.lastUpdateTime = now;
+    const now = Date.now();
+    const duration = (session.duration ?? 0) + (now - session.lastUpdateTime);
 
-    // Snapshot before async I/O to prevent race condition
-    const sessionSnapshot = { ...activeSession };
-
-    // Reset immediately after snapshot so concurrent startTracking() won't be erased
-    activeSession.duration = 0;
-    activeSession.startTime = 0;
-    activeSession.lastUpdateTime = 0;
-    activeSession.url = "";
-    activeSession.title = "";
-    activeSession.isStopped = true;
-
-    // Clear from persistent storage after snapshot
+    // Clear from persistent storage
     await sessionStorage.removeValue();
 
-    // Write to db using snapshot
-    await recordActivity(sessionSnapshot.url, sessionSnapshot.duration, sessionSnapshot.title || undefined)
+    // Write to db
+    await recordActivity(session.url, duration, session.title || undefined);
 
-    console.log('end tracking, write to db:', sessionSnapshot)
+    console.log('end tracking, write to db:', { ...session, duration });
   }
 
   // Session tick handler: periodically settle and restart tracking for data reliability
   browser.alarms.onAlarm.addListener((alarm) => {
     void (async () => {
       try {
-        console.log('tick...')
-
-        if (alarm.name !== SESSION_TICK_ALARM || activeSession.isStopped) {
+        if (alarm.name !== SESSION_TICK_ALARM) {
           return;
         }
+
+        const session = await sessionStorage.getValue();
 
         // Skip if no active session or the session is too short (<1s)
-        const elapsed = Date.now() - activeSession.lastUpdateTime;
-        if (!activeSession.url || activeSession.startTime <= 0 || elapsed < 1000) {
+        const elapsed = Date.now() - session.lastUpdateTime;
+        if (!session.url || session.startTime <= 0 || elapsed < 1000) {
           return;
         }
 
-        // Save current session context before endTracking() resets
-        const sessionUrl = activeSession.url;
-        const sessionTitle = activeSession.title;
+        // Save current session context before endTracking() clears
+        const sessionUrl = session.url;
+        const sessionTitle = session.title;
 
         // Settle current session and write to db
         await endTracking();
