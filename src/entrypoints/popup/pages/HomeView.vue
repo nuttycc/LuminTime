@@ -190,9 +190,9 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
 
         <!-- Pages List -->
         <ul v-else class="list bg-base-100 w-full">
-           <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200">
-            <div class="flex-1">Page</div>
-            <div class="w-16 text-right">Time</div>
+           <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200 items-end">
+            <div class="flex-1">Pages visited</div>
+            <div class="w-16 text-right">Duration</div>
           </li>
 
           <li
