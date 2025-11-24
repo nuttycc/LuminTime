@@ -60,15 +60,15 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full bg-base-100">
     <!-- Header -->
-    <div class="navbar sticky top-0 z-10 bg-base-100 border-b border-base-300 shrink-0">
-      <div class="flex-1">
+    <div class="navbar bg-base-100 sticky top-0 z-10 border-b border-base-200 min-h-12 px-2">
+      <div class="navbar-start w-1/4">
         <Transition name="fade" mode="out-in">
           <button
             v-if="selectedDomain"
             key="back"
-            class="btn btn-ghost btn-sm"
+            class="btn btn-ghost btn-circle btn-sm"
             @click="goBack"
             aria-label="Go back"
           >
@@ -78,187 +78,154 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
           </button>
         </Transition>
       </div>
-      <div class="flex-none">
-        <div class="text-center">
-          <h1 class="text-base font-semibold truncate">
-            {{ selectedDomain || "Today's Activity" }}
-          </h1>
-          <p v-if="!selectedDomain" class="text-xs text-base-content/60 mt-0.5">
-            {{ totalTime > 0 ? prettyMs(totalTime) : 'No activity yet' }}
-          </p>
-        </div>
+      <div class="navbar-center w-2/4 justify-center">
+        <h1 class="text-base font-bold truncate">
+          {{ selectedDomain || "LuminTime" }}
+        </h1>
       </div>
+      <div class="navbar-end w-1/4"></div>
     </div>
 
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto">
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto p-4">
+
       <!-- Top Sites View -->
-      <div v-if="!selectedDomain" class="p-3 sm:p-4 space-y-2">
+      <template v-if="!selectedDomain">
+        <!-- Total Time Hero -->
+        <div class="stats w-full shadow-sm bg-base-200/50 mb-6">
+          <div class="stat place-items-center py-4">
+            <div class="stat-title text-base-content/60">Today's Activity</div>
+            <div class="stat-value text-primary text-3xl">
+              {{ topSites ? prettyMs(totalTime, { compact: true }) : '...' }}
+            </div>
+            <div class="stat-desc mt-1">Total browsing time</div>
+          </div>
+        </div>
+
         <!-- Loading State -->
-        <template v-if="!topSites">
-          <div
-            v-for="i in skeletonRows"
-            :key="`skeleton-${i}`"
-            class="card card-compact bg-base-200 animate-pulse"
-          >
-            <div class="card-body space-y-2">
-              <div class="flex items-center gap-2">
-                <div class="h-5 w-5 rounded bg-base-300" />
-                <div class="h-4 flex-1 max-w-32 bg-base-300 rounded" />
-              </div>
-              <div class="h-2 w-full bg-base-300 rounded" />
-              <div class="h-3 w-12 bg-base-300 rounded" />
+        <div v-if="!topSites" class="flex flex-col gap-4">
+          <div v-for="i in skeletonRows" :key="`skeleton-${i}`" class="flex items-center gap-4">
+            <div class="skeleton h-10 w-10 rounded-full shrink-0"></div>
+            <div class="flex flex-col gap-2 w-full">
+              <div class="skeleton h-4 w-28"></div>
+              <div class="skeleton h-3 w-full"></div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- Empty State -->
-        <template v-else-if="topSites.length === 0">
-          <div class="card bg-base-200">
-            <div class="card-body items-center text-center">
-              <svg class="w-10 h-10 text-base-content/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <div v-else-if="topSites.length === 0" class="hero py-10">
+          <div class="hero-content text-center">
+            <div class="max-w-md">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-base-content/20 mx-auto mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path>
+                <path d="M12 7v5l3 3"></path>
               </svg>
-              <p class="text-sm font-medium mb-1">
-                No activity recorded
-              </p>
-              <p class="text-xs text-base-content/60">
-                Start browsing to see statistics
-              </p>
+              <p class="py-2 text-base-content/60">No activity recorded today.</p>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- Sites List -->
-        <template v-else>
-          <div
+        <ul v-else class="list bg-base-100 w-full">
+          <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200">
+            <div class="w-8 text-center">#</div>
+            <div class="flex-1">Domain</div>
+            <div class="w-16 text-right">Time</div>
+            <!-- Spacer to align with arrow icon in rows -->
+            <div class="w-4"></div>
+          </li>
+
+          <li
             v-for="(site, index) in topSites"
             :key="`${site.date}-${site.domain}`"
-            class="card card-compact bg-base-100 border border-base-300 hover:border-primary transition-colors cursor-pointer hover:shadow-md"
+            class="list-row hover:bg-base-200/50 cursor-pointer rounded-box transition-colors p-2"
             @click="selectedDomain = site.domain"
           >
-            <div class="card-body gap-2">
-              <!-- Header: Rank and Domain -->
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 min-w-0 flex-1">
-                  <div class="badge badge-primary badge-sm">
-                    {{ index + 1 }}
-                  </div>
-                  <p class="text-sm font-semibold truncate">
-                    {{ site.domain }}
-                  </p>
-                </div>
-                <svg class="w-4 h-4 text-base-content/40 shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+            <div class="w-8 flex items-center justify-center font-mono text-base-content/40 text-sm">
+              {{ index + 1 }}
+            </div>
 
-              <!-- Duration and Percentage -->
-              <div class="flex items-center justify-between text-xs">
-                <span class="font-medium">
-                  {{ prettyMs(site.duration) }}
-                </span>
-                <span class="text-base-content/60">
-                  {{ sitePercentage(site.duration) }}%
-                </span>
-              </div>
-
-              <!-- Progress Bar -->
+            <div class="flex flex-col gap-1 flex-1 min-w-0 justify-center">
+              <div class="font-medium truncate">{{ site.domain }}</div>
               <progress 
-                class="progress progress-primary w-full h-1"
+                class="progress progress-primary h-1.5 w-full bg-base-200"
                 :value="sitePercentage(site.duration)"
                 max="100"
               />
             </div>
-          </div>
-        </template>
-      </div>
+
+            <div class="w-16 text-right font-medium text-sm self-center">
+               {{ prettyMs(site.duration, { compact: true }) }}
+            </div>
+
+            <div class="text-xs text-base-content/40 self-center">
+               <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </div>
+          </li>
+        </ul>
+      </template>
 
       <!-- Page Details View -->
-      <div v-else class="p-3 sm:p-4 space-y-2">
+      <template v-else>
         <!-- Loading State -->
-        <template v-if="!pageDetails">
-          <div
-            v-for="i in skeletonRows"
-            :key="`skeleton-detail-${i}`"
-            class="card card-compact bg-base-200 animate-pulse"
-          >
-            <div class="card-body space-y-2">
-              <div class="flex items-start gap-2">
-                <div class="h-5 w-5 rounded bg-base-300" />
-                <div class="flex-1 space-y-1 min-w-0">
-                  <div class="h-3 w-full bg-base-300 rounded" />
-                  <div class="h-3 w-2/3 bg-base-300 rounded" />
-                </div>
-              </div>
-              <div class="h-2 w-full bg-base-300 rounded" />
+        <div v-if="!pageDetails" class="flex flex-col gap-4">
+           <div v-for="i in skeletonRows" :key="`skeleton-detail-${i}`" class="flex items-center gap-4">
+             <div class="flex flex-col gap-2 w-full">
+              <div class="skeleton h-4 w-3/4"></div>
+              <div class="skeleton h-3 w-1/2"></div>
             </div>
-          </div>
-        </template>
+           </div>
+        </div>
 
         <!-- Empty State -->
-        <template v-else-if="pageDetails.length === 0">
-          <div class="card bg-base-200">
-            <div class="card-body items-center text-center">
-              <svg class="w-10 h-10 text-base-content/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <p class="text-sm font-medium mb-1">
-                No pages recorded
-              </p>
-              <p class="text-xs text-base-content/60">
-                No page activity found
-              </p>
-            </div>
+        <div v-else-if="pageDetails.length === 0" class="hero py-10">
+          <div class="hero-content text-center">
+             <div class="max-w-md">
+               <p class="py-2 text-base-content/60">No pages visited for this domain.</p>
+             </div>
           </div>
-        </template>
+        </div>
 
         <!-- Pages List -->
-        <template v-else>
-          <div
+        <ul v-else class="list bg-base-100 w-full">
+           <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200 items-end">
+            <div class="flex-1">Pages visited</div>
+            <div class="w-16 text-right">Duration</div>
+          </li>
+
+          <li
             v-for="(page, index) in pageDetails"
             :key="`${page.date}-${page.domain}-${page.path}`"
-            class="card card-compact bg-base-100 border border-base-300"
+            class="list-row hover:bg-base-200/50 rounded-box transition-colors p-2"
           >
-            <div class="card-body gap-2">
-              <!-- Page Index and Title -->
-              <div class="flex items-start gap-2 min-w-0">
-                <div class="badge badge-success badge-sm">
-                  {{ index + 1 }}
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium truncate">
-                    {{ page.title || 'Untitled' }}
-                  </p>
-                  <p
-                    class="text-xs text-base-content/60 truncate mt-0.5"
-                    :title="page.fullPath"
-                  >
-                    {{ page.fullPath }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Duration -->
-              <div class="flex items-center text-xs font-medium">
-                {{ prettyMs(page.duration) }}
-              </div>
-
-              <!-- Progress Bar -->
-              <progress 
-                class="progress progress-success w-full h-1"
+            <div class="flex flex-col gap-1 flex-1 min-w-0">
+               <div class="font-medium truncate text-sm" :title="page.title || 'Untitled'">
+                 {{ page.title || 'Untitled' }}
+               </div>
+               <div class="text-xs text-base-content/60 truncate font-mono" :title="page.fullPath">
+                 {{ page.path }}
+               </div>
+               <progress
+                class="progress progress-secondary h-1 w-full bg-base-200 mt-1"
                 :value="pagePercentage(page.duration)"
                 max="100"
               />
             </div>
-          </div>
-        </template>
-      </div>
+             <div class="w-16 text-right font-medium text-sm self-start mt-0.5">
+               {{ prettyMs(page.duration, { compact: true }) }}
+            </div>
+          </li>
+        </ul>
+      </template>
+
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Scoped styles mainly for transition, everything else is utility classes */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 200ms ease;
