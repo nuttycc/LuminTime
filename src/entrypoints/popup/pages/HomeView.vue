@@ -192,13 +192,13 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
         <ul v-else class="list bg-base-100 w-full">
            <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200 items-end">
             <div class="flex-1">Pages visited</div>
-            <div class="w-16 text-right">Duration</div>
+            <div class="text-right">Duration</div>
           </li>
 
           <li
             v-for="(page, index) in pageDetails"
             :key="`${page.date}-${page.domain}-${page.path}`"
-            class="list-row hover:bg-base-200/50 rounded-box transition-colors p-2"
+            class="list-row flex justify-between hover:bg-base-200/50 rounded-box transition-colors p-2"
           >
             <div class="flex flex-col gap-1 flex-1 min-w-0">
                <div class="font-medium truncate text-sm" :title="page.title || 'Untitled'">
@@ -213,7 +213,7 @@ const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
                 max="100"
               />
             </div>
-             <div class="w-16 text-right font-medium text-sm self-start mt-0.5">
+             <div class="w-16 text-right font-medium text-sm self-center mt-0.5">
                {{ prettyMs(page.duration, { compact: true }) }}
             </div>
           </li>
