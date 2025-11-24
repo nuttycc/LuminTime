@@ -58,6 +58,17 @@ const debugTools = {
   }
 };
 
+const getActiveTabUrl = async () => {
+  const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+  if (tabs.length === 0) {
+    return null
+  }
+  const tab = tabs[0]
+  if (tab.url === undefined || tab.url === '') {
+    return null
+  }
+  return { url: tab.url, title: tab.title }
+}
 
 // oxlint-disable-next-line max-lines-per-function
 export default defineBackground(() => {
@@ -71,6 +82,7 @@ export default defineBackground(() => {
 
   interface ActiveSession {
     url: string;
+    title: string;
     startTime: number;
     lastUpdateTime: number;
     duration: number;
@@ -78,6 +90,7 @@ export default defineBackground(() => {
 
   const activeSession: ActiveSession = {
     url: "",
+    title: "",
     startTime: 0,
     lastUpdateTime: 0,
     duration: 0
@@ -86,19 +99,10 @@ export default defineBackground(() => {
 
   const SESSION_TICK_ALARM = "session-update";
   const checkAlarmState = async () => {
-    const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
-
-    if (alarm) {
-      console.log('Alarm already exists, skip creating:', alarm)
-      return
-    }
-
-    await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 1 });
-
+    // Always register the listener, regardless of alarm existence
     browser.alarms.onAlarm.addListener((alarm) => {
-      console.log('Alarm created:', alarm);
+      console.log('Alarm fired:', alarm);
       const now = Date.now()
-      activeSession.lastUpdateTime = now;
 
       const duration = now - activeSession.lastUpdateTime;
 
@@ -109,14 +113,25 @@ export default defineBackground(() => {
         activeSession.duration += duration
       }
 
+      activeSession.lastUpdateTime = now;
     });
+
+    // Only create alarm if it doesn't exist
+    const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
+    if (!alarm) {
+      await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: 1 });
+      console.log('Alarm created');
+    } else {
+      console.log('Alarm already exists:', alarm);
+    }
   }
 
-  const startTracking = (url: string) => {
+  const startTracking = (url: string, title?: string) => {
     activeSession.startTime = Date.now();
     activeSession.lastUpdateTime = Date.now();
     activeSession.duration = 0;
     activeSession.url = url
+    activeSession.title = title ?? ""
     console.log('start tracking:', activeSession)
   }
 
@@ -126,21 +141,24 @@ export default defineBackground(() => {
       return;
     }
 
-
     const now = Date.now()
     activeSession.duration += now - activeSession.lastUpdateTime;
     activeSession.lastUpdateTime = now;
 
-    //write to db...
-    await recordActivity(activeSession.url, activeSession.duration)
+    // Snapshot before async I/O to prevent race condition
+    const sessionSnapshot = { ...activeSession };
 
-    console.log('end tracking, write to db:', activeSession)
-
-    // reset
+    // Reset immediately after snapshot so concurrent startTracking() won't be erased
     activeSession.duration = 0;
     activeSession.startTime = 0;
     activeSession.lastUpdateTime = 0;
     activeSession.url = "";
+    activeSession.title = "";
+
+    // Write to db using snapshot
+    await recordActivity(sessionSnapshot.url, sessionSnapshot.duration, sessionSnapshot.title || undefined)
+
+    console.log('end tracking, write to db:', sessionSnapshot)
   }
 
   checkAlarmState().then(() => {
@@ -163,7 +181,7 @@ export default defineBackground(() => {
           throw new Error('Tab url is undefined.')
         }
 
-        startTracking(tab.url)
+        startTracking(tab.url, tab.title)
       } catch (error) {
         console.error('Error in tab activation:', error)
       }
@@ -182,7 +200,7 @@ export default defineBackground(() => {
           if (tab.url === undefined) {
             throw new Error('Tab url is undefined.')
           }
-          startTracking(tab.url)
+          startTracking(tab.url, tab.title)
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -200,12 +218,12 @@ export default defineBackground(() => {
           await endTracking()
         } else {
           await endTracking()
-          const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-          console.log('Window focus changed, get tab:', tabs)
-          if (tabs[0].url === undefined) {
+          const result = await getActiveTabUrl()
+          console.log('Window focus changed, get tab:', result)
+          if (!result) {
             throw new Error('Tab url is undefined.')
           }
-          startTracking(tabs[0].url)
+          startTracking(result.url, result.title)
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -219,15 +237,12 @@ export default defineBackground(() => {
         console.log('Idle state changed, state:', state)
         if (state === 'active') {
           // Fetch the current active tab instead of using stale activeSession.url
-          const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-          const [tab] = tabs
-          if (tab.url === undefined) {
+          const result = await getActiveTabUrl()
+          if (!result) {
             console.warn('No active tab or tab URL available on idle resume')
             return
           }
-          // Update activeSession with fresh URL and start tracking
-          activeSession.url = tab.url
-          startTracking(tab.url)
+          startTracking(result.url, result.title)
         } else {
           await endTracking()
         }

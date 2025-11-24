@@ -3,6 +3,10 @@ docs/
 repomix.config.json
 repomix-output.xml
 
+# Auto-generated type declarations
+auto-imports.d.ts
+components.d.ts
+
 # Logs
 logs
 *.log

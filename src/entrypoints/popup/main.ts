@@ -1,9 +1,17 @@
-import 'virtual:uno.css';
 import './style.css';
 
-import App from './App.vue';
+import ui from '@nuxt/ui/vue-plugin'
 
+import App from './App.vue';
 import { createApp } from 'vue';
 
+import { router } from './router';
+
 // oxlint-disable-next-line no-unsafe-argument
-createApp(App).mount('#app');
+const app = createApp(App)
+
+
+app.use(router)
+app.use(ui)
+
+app.mount('#app');
