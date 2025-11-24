@@ -2,19 +2,10 @@
 // oxlint-disable no-magic-numbers
 // oxlint-disable no-unsafe-member-access, no-explicit-any
 
-import { recordActivity, getTodayTopSites, getSitePagesDetail } from "@/db/service";
+import { recordActivity, getTodayTopSites } from "@/db/service";
 import { db } from "@/db";
 import { getTodayStr } from "@/db/utils";
-
-// Define persistent session storage for SW crash recovery
-interface ActiveSessionData {
-  url: string;
-  title: string;
-  startTime: number;
-  lastUpdateTime: number;
-  duration: number;
-  isStopped: boolean;
-}
+import { SessionManager, type ActiveSessionData } from "@/utils/SessionManager";
 
 const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSession", {
   fallback: {
@@ -101,11 +92,17 @@ export default defineBackground(() => {
   (globalThis as any).lumintime = debugTools;
 
   console.log('Hello background!', { id: browser.runtime.id });
-
   console.log('💡 调试工具已加载.');
+
+  // Initialize SessionManager with dependencies
+  const sessionManager = new SessionManager({
+    storage: sessionStorage,
+    recordActivity
+  });
 
   const SESSION_TICK_ALARM = "session-update";
   const SESSION_PER_MINUTE = 1;
+
   const checkAlarmState = async () => {
     // Only create alarm if it doesn't exist
     const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
@@ -117,87 +114,23 @@ export default defineBackground(() => {
     }
   }
 
-  const startTracking = async (url: string, title?: string) => {
-    const newSession: ActiveSessionData = {
-      url,
-      title: title ?? "",
-      startTime: Date.now(),
-      lastUpdateTime: Date.now(),
-      duration: 0,
-      isStopped: false
-    };
-    await sessionStorage.setValue(newSession);
-    console.log('start tracking:', newSession);
-  }
-
-  const endTracking = async () => {
-    const session = await sessionStorage.getValue();
-
-    // Validate session before processing
-    if (!session.url || session.startTime <= 0 || session.lastUpdateTime <= 0) {
-      console.log('end tracking, skip null data:', session);
-      return;
-    }
-
-    const now = Date.now();
-    const duration = (session.duration ?? 0) + (now - session.lastUpdateTime);
-
-    // Clear from persistent storage
-    await sessionStorage.removeValue();
-
-    // Write to db
-    await recordActivity(session.url, duration, session.title || undefined);
-
-    console.log('end tracking, write to db:', { ...session, duration });
-  }
-
   // Session tick handler: periodically settle and restart tracking for data reliability
   browser.alarms.onAlarm.addListener((alarm) => {
-    void (async () => {
-      try {
-        if (alarm.name !== SESSION_TICK_ALARM) {
-          return;
-        }
-
-        const session = await sessionStorage.getValue();
-
-        // Skip if no active session or the session is too short (<1s)
-        const elapsed = Date.now() - session.lastUpdateTime;
-        if (!session.url || session.startTime <= 0 || elapsed < 1000) {
-          return;
-        }
-
-        // Save current session context before endTracking() clears
-        const sessionUrl = session.url;
-        const sessionTitle = session.title;
-
-        // Settle current session and write to db
-        await endTracking();
-
-        // Restart tracking the same URL to maintain continuity
-        await startTracking(sessionUrl, sessionTitle);
-
-        console.log(`✅ Session ticked.`);
-      } catch (error) {
-        console.error('Error in session tick:', error);
-      }
-    })();
+    if (alarm.name === SESSION_TICK_ALARM) {
+       // Use special 'alarm' type which internally handles the "Restart Current" logic
+       sessionManager.handleEvent('alarm');
+    }
   });
 
   // focus changes
   browser.tabs.onActivated.addListener((activeInfo) => {
     void (async () => {
       try {
-        const tab = await browser.tabs.get(activeInfo.tabId)
-        console.log('Tab activated, get tab:', tab)
+        const tab = await browser.tabs.get(activeInfo.tabId);
+        console.log('Tab activated:', tab.url);
 
-        await endTracking()
-
-        if (tab.url === undefined) {
-          throw new Error('Tab url is undefined.')
-        }
-
-        await startTracking(tab.url, tab.title)
+        // Pass the explicit URL/Title (Snapshot) to the manager
+        sessionManager.handleEvent('switch', { url: tab.url ?? null, title: tab.title });
       } catch (error) {
         console.error('Error in tab activation:', error)
       }
@@ -206,17 +139,16 @@ export default defineBackground(() => {
 
   // url changes
   browser.webNavigation.onCompleted.addListener((details) => {
+    // Step 4: Fix Iframe Bug - Ignore non-top-level navigation
+    if (details.frameId !== 0) return;
+
     void (async () => {
       try {
         const tab = await browser.tabs.get(details.tabId)
         const window = await browser.windows.get(tab.windowId)
 
         if (tab.active && window.focused) {
-          await endTracking()
-          if (tab.url === undefined) {
-            throw new Error('Tab url is undefined.')
-          }
-          await startTracking(tab.url, tab.title)
+          sessionManager.handleEvent('switch', { url: tab.url ?? null, title: tab.title });
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -225,21 +157,19 @@ export default defineBackground(() => {
   });
 
 
-  // no url changes
+  // Window focus changes
   browser.windows.onFocusChanged.addListener((windowId) => {
     void (async () => {
       try {
         console.log('Window focus changed, current:', windowId)
 
         if (windowId === browser.windows.WINDOW_ID_NONE) {
-          await endTracking()
+          // Stop tracking immediately
+          sessionManager.handleEvent('idle', { url: null });
         } else {
-          await endTracking()
+          // Switch to the new window's active tab
           const result = await getActiveTabUrl()
-          if (!result) {
-            throw new Error('Tab url is undefined.')
-          }
-          await startTracking(result.url, result.title)
+          sessionManager.handleEvent('switch', { url: result?.url ?? null, title: result?.title });
         }
       } catch (error) {
         console.error('Error getting tab:', error)
@@ -247,20 +177,22 @@ export default defineBackground(() => {
     })()
   });
 
+  // Idle state changes
   browser.idle.onStateChanged.addListener((state) => {
     void (async () => {
       try {
         console.log('Idle state changed, state:', state)
         if (state === 'active') {
-          // Fetch the current active tab instead of using stale activeSession.url
+          // Fetch the current active tab
           const result = await getActiveTabUrl()
           if (!result) {
             console.warn('No active tab or tab URL available on idle resume')
             return
           }
-          await startTracking(result.url, result.title)
+          sessionManager.handleEvent('idle', { url: result.url, title: result.title });
         } else {
-          await endTracking()
+          // Stop tracking
+          sessionManager.handleEvent('idle', { url: null });
         }
       } catch (error) {
         console.error('Error getting active tab on idle resume:', error)

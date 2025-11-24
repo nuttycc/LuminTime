@@ -16,6 +16,7 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@tanstack/pacer": "^0.16.3",
     "@vueuse/rxjs": "^14.0.0",
     "arktype": "^2.1.27",
     "dexie": "^4.2.1",
