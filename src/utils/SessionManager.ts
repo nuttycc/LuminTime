@@ -112,6 +112,7 @@ export class SessionManager {
 
     // Clear from storage
     await this.deps.storage.removeValue();
+    console.log('SessionManager: Tracking ended:', session.url);
   }
 
   private async _startSession(url: string, title?: string) {
@@ -124,6 +125,6 @@ export class SessionManager {
       isStopped: false
     };
     await this.deps.storage.setValue(newSession);
-    console.log('[SessionManager] Tracking started:', url);
+    console.log('SessionManager: Tracking started:', url);
   }
 }
