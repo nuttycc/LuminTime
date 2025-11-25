@@ -1,11 +1,13 @@
 // oxlint-disable max-lines
 // oxlint-disable no-magic-numbers
-// oxlint-disable no-unsafe-member-access, no-explicit-any
-
-import { recordActivity, getTodayTopSites } from "@/db/service";
-import { db } from "@/db";
-import { getTodayStr } from "@/db/utils";
+import { recordActivity } from "@/db/service";
 import { SessionManager, type ActiveSessionData } from "@/utils/SessionManager";
+import { debugTools } from "@/utils/debugTools";
+
+
+const IDLE_DETECTION_INTERVAL = 30
+const SESSION_TICK_ALARM_NAME = "session-update";
+const SESSION_PER_MINUTE = 1;
 
 const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSession", {
   fallback: {
@@ -14,64 +16,8 @@ const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSess
     startTime: 0,
     lastUpdateTime: 0,
     duration: 0,
-    isStopped: false
   }
 });
-
-const IDLE_DETECTION_INTERVAL = 30
-
-// 挂载调试工具到全局
-const debugTools = {
-  async stats() {
-    const today = getTodayStr();
-    const historyCount = await db.history.where('date').equals(today).count();
-    const sitesCount = await db.sites.where('date').equals(today).count();
-    const pagesCount = await db.pages.where('date').equals(today).count();
-    console.log(`📊 今日统计: 历史${historyCount}条, 站点${sitesCount}个, 页面${pagesCount}个`);
-    return { historyCount, sitesCount, pagesCount };
-  },
-  async topSites(limit = 10) {
-    const sites = await getTodayTopSites(limit);
-    console.table(sites.map(s => ({
-      domain: s.domain,
-      duration: `${(s.duration / 1000 / 60).toFixed(2)}分`,
-      lastVisit: new Date(s.lastVisit).toLocaleTimeString()
-    })));
-    return sites;
-  },
-  async clear() {
-    const today = getTodayStr();
-    await db.transaction('rw', db.history, db.sites, db.pages, async () => {
-      await db.history.where('date').equals(today).delete();
-      await db.sites.where('date').equals(today).delete();
-      await db.pages.where('date').equals(today).delete();
-    });
-    console.log('✓ 已清空今日数据');
-  },
-  raw: {
-    async history() {
-      const today = getTodayStr();
-      const data = await db.history.where('date').equals(today).toArray();
-      console.log(`📋 原始历史表 (${data.length}条):`);
-      console.table(data);
-      return data;
-    },
-    async sites() {
-      const today = getTodayStr();
-      const data = await db.sites.where('date').equals(today).toArray();
-      console.log(`📋 原始站点表 (${data.length}个):`);
-      console.table(data);
-      return data;
-    },
-    async pages() {
-      const today = getTodayStr();
-      const data = await db.pages.where('date').equals(today).toArray();
-      console.log(`📋 原始页面表 (${data.length}个):`);
-      console.table(data);
-      return data;
-    }
-  }
-};
 
 const getActiveTabUrl = async () => {
   const tabs = await browser.tabs.query({ active: true, currentWindow: true })
@@ -88,7 +34,7 @@ const getActiveTabUrl = async () => {
 // oxlint-disable-next-line max-lines-per-function
 export default defineBackground(() => {
 
-  // oxlint-disable-next-line no-unsafe-type-assertion
+  // oxlint-disable-next-line no-unsafe-type-assertion oxlint-disable-next-line no-unsafe-member-access
   (globalThis as any).lumintime = debugTools;
 
   console.log('Hello background!', { id: browser.runtime.id });
@@ -97,32 +43,29 @@ export default defineBackground(() => {
   // Initialize SessionManager with dependencies
   const sessionManager = new SessionManager({
     storage: sessionStorage,
-    recordActivity
+    recordActivity,
   });
 
-  const SESSION_TICK_ALARM = "session-update";
-  const SESSION_PER_MINUTE = 1;
-
   const checkAlarmState = async () => {
-    // Only create alarm if it doesn't exist
-    const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
+    // create alarm if not exists
+    const alarm = await browser.alarms.get(SESSION_TICK_ALARM_NAME);
     if (alarm) {
       console.log('Alarm already exists:', alarm);
     } else {
-      await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: SESSION_PER_MINUTE });
+      await browser.alarms.create(SESSION_TICK_ALARM_NAME, { periodInMinutes: SESSION_PER_MINUTE });
       console.log(`Alarm created: ${SESSION_PER_MINUTE} min intervals`);
     }
   }
 
   // Session tick handler: periodically settle and restart tracking for data reliability
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === SESSION_TICK_ALARM) {
-       // Use special 'alarm' type which internally handles the "Restart Current" logic
-       sessionManager.handleEvent('alarm');
+    if (alarm.name === SESSION_TICK_ALARM_NAME) {
+      // Use special 'alarm' type which internally handles the "Restart Current" logic
+      sessionManager.handleEvent('alarm');
     }
   });
 
-  // focus changes
+  // tab activates
   browser.tabs.onActivated.addListener((activeInfo) => {
     void (async () => {
       try {
@@ -137,7 +80,7 @@ export default defineBackground(() => {
     })()
   });
 
-  // url changes
+  // navigation
   browser.webNavigation.onCompleted.addListener((details) => {
     // Step 4: Fix Iframe Bug - Ignore non-top-level navigation
     if (details.frameId !== 0) return;
@@ -156,28 +99,24 @@ export default defineBackground(() => {
     })()
   });
 
-
-  // Window focus changes
+  // window focus state changes
   browser.windows.onFocusChanged.addListener((windowId) => {
     void (async () => {
       try {
         console.log('Window focus changed, current:', windowId)
-
         if (windowId === browser.windows.WINDOW_ID_NONE) {
-          // Stop tracking immediately
           sessionManager.handleEvent('idle', { url: null });
         } else {
-          // Switch to the new window's active tab
           const result = await getActiveTabUrl()
           sessionManager.handleEvent('switch', { url: result?.url ?? null, title: result?.title });
         }
       } catch (error) {
-        console.error('Error getting tab:', error)
+        console.error('Window focus change, Error getting tab:', error)
       }
     })()
   });
 
-  // Idle state changes
+  // system state changes
   browser.idle.onStateChanged.addListener((state) => {
     void (async () => {
       try {
@@ -202,7 +141,7 @@ export default defineBackground(() => {
 
 
   checkAlarmState().then(() => {
-    console.log('Alarm checked');
+    console.log('Alarm check completed successfully.');
   }).catch((error) => {
     console.error('Error checking alarm:', error);
   })

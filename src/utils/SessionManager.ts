@@ -6,7 +6,6 @@ export interface ActiveSessionData {
   startTime: number;
   lastUpdateTime: number;
   duration: number;
-  isStopped: boolean;
 }
 
 export interface SessionDependencies {
@@ -29,7 +28,7 @@ export class SessionManager {
     // Concurrency 1 guarantees that _processTransition runs serially
     // AsyncQueuer expects a processor function as the first argument
     this.queue = new AsyncQueuer(async (task: () => Promise<void>) => {
-        await task();
+      await task();
     }, {
       concurrency: 1,
     });
@@ -37,7 +36,7 @@ export class SessionManager {
 
   /**
    * Main entry point for events.
-   * @param type - 'switch': Debounced tab switch/nav. 'alarm': Periodic save. 'idle': State change.
+   * @param type - 'switch': Debounced tab switch/nav. 'alarm': Periodic save. 'idle': State change(windows/system).
    * @param data - Snapshot of the target state (e.g. the new URL to track).
    *               For 'alarm', this can be omitted to imply "keep tracking current".
    */
@@ -122,7 +121,6 @@ export class SessionManager {
       startTime: Date.now(),
       lastUpdateTime: Date.now(),
       duration: 0,
-      isStopped: false
     };
     await this.deps.storage.setValue(newSession);
     console.log('SessionManager: Tracking started:', url);
