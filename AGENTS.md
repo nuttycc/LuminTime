@@ -8,7 +8,7 @@
 - **Package**: `bun run zip` (create extension package)
 - **Type Check**: `bun run compile` (vue-tsc --noEmit)
 - **Lint**: `bun run lint` (oxlint --type-aware)
-- **Tests**: No test framework configured yet
+- **Tests**: `bun run test` (vitest)
 
 ## Architecture & Structure
 - **Framework**: WXT (Web Extension Toolkit) with Vue 3
