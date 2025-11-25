@@ -22,8 +22,8 @@
     "dexie": "^4.2.1",
     "pretty-ms": "^9.3.0",
     "rxjs": "^7.8.2",
-    "tldts": "^7.0.18",
-    "vue": "^3.5.24",
+    "tldts": "^7.0.19",
+    "vue": "^3.5.25",
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
@@ -31,12 +31,12 @@
     "@tailwindcss/vite": "^4.1.17",
     "@wxt-dev/module-vue": "^1.0.2",
     "daisyui": "^5.5.5",
-    "oxlint": "^1.29.0",
-    "oxlint-tsgolint": "^0.8.0",
+    "oxlint": "^1.30.0",
+    "oxlint-tsgolint": "^0.8.2",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.2",
-    "vitest": "^4.0.12",
-    "vue-tsc": "^3.1.4",
+    "vitest": "^4.0.13",
+    "vue-tsc": "^3.1.5",
     "wxt": "^0.20.6"
   },
   "trustedDependencies": [
