@@ -13,15 +13,8 @@ describe("SessionManager", () => {
 
   // Helper to ensure async queue tasks have processed
   const flushQueue = async () => {
-    vi.advanceTimersByTime(1000); // Trigger debounce
-    // Allow promises to settle
-    await new Promise((resolve) => {
-      vi.useRealTimers();
-      setTimeout(() => {
-        vi.useFakeTimers();
-        resolve(true);
-      }, 10);
-    });
+    // Trigger debounce and wait for promises
+    await vi.advanceTimersByTimeAsync(1000);
   };
 
   beforeEach(() => {
