@@ -28,6 +28,8 @@ const getActiveTabUrl = async () => {
   if (tab.url === undefined || tab.url === '') {
     return null
   }
+
+  console.log('Got active tab:', tab);
   return { url: tab.url, title: tab.title }
 }
 
@@ -75,26 +77,28 @@ export default defineBackground(() => {
         // Pass the explicit URL/Title (Snapshot) to the manager
         sessionManager.handleEvent('switch', { url: tab.url ?? null, title: tab.title });
       } catch (error) {
-        console.error('Error in tab activation:', error)
+        console.error('Failed to handle tab activation:', error)
       }
     })()
   });
 
   // navigation
   browser.webNavigation.onCompleted.addListener((details) => {
-    // Step 4: Fix Iframe Bug - Ignore non-top-level navigation
+    // Ignore non-top-level navigation
     if (details.frameId !== 0) return;
 
     void (async () => {
       try {
-        const tab = await browser.tabs.get(details.tabId)
-        const window = await browser.windows.get(tab.windowId)
+        const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+        if (tabs.length === 0) return;
 
-        if (tab.active && window.focused) {
-          sessionManager.handleEvent('switch', { url: tab.url ?? null, title: tab.title });
-        }
+        const [activeTab] = tabs
+        const window = await browser.windows.get(activeTab.windowId)
+        if (!window.focused || activeTab.id !== details.tabId) return;
+
+        sessionManager.handleEvent('switch', { url: activeTab.url ?? null, title: activeTab.title });
       } catch (error) {
-        console.error('Error getting tab:', error)
+        console.error(`Failed to process navigation to ${details.url}:`, error)
       }
     })()
   });
@@ -111,7 +115,7 @@ export default defineBackground(() => {
           sessionManager.handleEvent('switch', { url: result?.url ?? null, title: result?.title });
         }
       } catch (error) {
-        console.error('Window focus change, Error getting tab:', error)
+        console.error('Failed to process window focus change:', error)
       }
     })()
   });
@@ -134,16 +138,15 @@ export default defineBackground(() => {
           sessionManager.handleEvent('idle', { url: null });
         }
       } catch (error) {
-        console.error('Error getting active tab on idle resume:', error)
+        console.error('Failed to handle idle state change:', error)
       }
     })()
   });
 
-
-  checkAlarmState().then(() => {
-    console.log('Alarm check completed successfully.');
-  }).catch((error) => {
-    console.error('Error checking alarm:', error);
+  checkAlarmState()
+  .then(() => {})
+  .catch((error) => {
+    console.error('Failed to check alarm state:', error);
   })
 
   browser.idle.setDetectionInterval(IDLE_DETECTION_INTERVAL)
