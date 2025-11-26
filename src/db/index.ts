@@ -13,7 +13,7 @@ export class LuminTimeDB extends Dexie {
     this.version(1).stores({
       // L1: 原始流水
       // 索引: date (按天删), [date+domain] (按天查某站流水)
-      history: "++id, date, [date+domain], timestamp",
+      history: "++id, date, [date+domain], startTime",
 
       // L2: 站点概览
       // 主键: [date+domain] 确保每天每个根域名只有一条

@@ -9,7 +9,7 @@ describe("SessionManager", () => {
   let manager: SessionManager;
   let mockStorageData: ActiveSessionData;
   let mockStorage: SessionDependencies["storage"];
-  let mockRecordActivity: ReturnType<typeof vi.fn>;
+  let mockRecordActivity: SessionDependencies["recordActivity"];
 
   // Helper to ensure async queue tasks have processed
   const flushQueue = async () => {
@@ -32,31 +32,31 @@ describe("SessionManager", () => {
       title: "",
       startTime: 0,
       lastUpdateTime: 0,
-      duration: 0,
-      isStopped: true,
+      duration: 0
     };
 
     mockStorage = {
-      getValue: vi.fn(async () => ({ ...mockStorageData })),
-      setValue: vi.fn(async (val) => {
+      getValue: vi.fn(() => Promise.resolve({ ...mockStorageData })),
+      setValue: vi.fn((val) => {
         mockStorageData = val;
+        return Promise.resolve();
       }),
-      removeValue: vi.fn(async () => {
+      removeValue: vi.fn(() => {
         mockStorageData = {
           url: "",
           title: "",
           startTime: 0,
           lastUpdateTime: 0,
           duration: 0,
-          isStopped: true,
         };
+        return Promise.resolve();
       }),
     };
 
-    mockRecordActivity = vi.fn(async (url, dur) => {
-      console.log(`[Mock] recordActivity: ${url} (${dur}ms)`);
+    mockRecordActivity = vi.fn((url: string, duration: number, title?: string) => {
+      console.log(`[Mock] recordActivity: ${url} (${duration}ms)`);
       return Promise.resolve();
-    });
+    }) as SessionDependencies["recordActivity"];
 
     manager = new SessionManager({
       storage: mockStorage,
@@ -76,7 +76,6 @@ describe("SessionManager", () => {
       expect.objectContaining({
         url: "https://example.com",
         title: "Example",
-        isStopped: false,
       }),
     );
   });
@@ -89,7 +88,6 @@ describe("SessionManager", () => {
       startTime: startTime - 10000,
       lastUpdateTime: startTime - 10000,
       duration: 5000,
-      isStopped: false,
     };
 
     manager.handleEvent("switch", { url: "https://new.com", title: "New" });
@@ -129,7 +127,6 @@ describe("SessionManager", () => {
       startTime: 1000,
       lastUpdateTime: 1000,
       duration: 0,
-      isStopped: false,
     };
 
     manager.handleEvent("alarm");
@@ -156,7 +153,6 @@ describe("SessionManager", () => {
       startTime: 1000,
       lastUpdateTime: 1000,
       duration: 0,
-      isStopped: false,
     };
 
     manager.handleEvent("idle", { url: null });
@@ -174,7 +170,6 @@ describe("SessionManager", () => {
       startTime: 1000,
       lastUpdateTime: 1000,
       duration: 0,
-      isStopped: false,
     };
 
     const originalGetValue = mockStorage.getValue;

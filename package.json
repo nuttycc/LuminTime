@@ -11,7 +11,7 @@
     "compile": "vue-tsc --noEmit",
     "lint": "oxlint --type-aware .",
     "format": "oxfmt",
-    "test": "vitest",
+    "test": "vitest run",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
