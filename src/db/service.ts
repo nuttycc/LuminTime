@@ -1,8 +1,8 @@
 // oxlint-disable no-array-reverse
 // oxlint-disable max-lines-per-function
-import { db } from './index';
-import type { SiteKey, PageKey } from './types';
-import { normalizeUrl, getTodayStr } from './utils';
+import { db } from "./index";
+import type { SiteKey, PageKey } from "./types";
+import { normalizeUrl, getTodayStr } from "./utils";
 
 /**
  * 核心写入方法：原子性更新三层数据
@@ -14,15 +14,14 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
   if (!rawUrl || durationToAdd <= 0) return;
 
   // 忽略非 http/https 协议 (如 chrome://, about:)
-  if (!rawUrl.startsWith('http')) return;
+  if (!rawUrl.startsWith("http")) return;
 
   const { domain, subdomain, path, fullPath } = normalizeUrl(rawUrl);
   const today = getTodayStr();
   const now = Date.now();
 
   // Transaction: 只要有一个失败，全部回滚。确保数据一致性。
-  await db.transaction('rw', db.history, db.sites, db.pages, async () => {
-
+  await db.transaction("rw", db.history, db.sites, db.pages, async () => {
     // 1. L1: 插入流水 (总是新增)
     await db.history.add({
       date: today,
@@ -31,7 +30,7 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
       path,
       startTime: now - durationToAdd,
       duration: durationToAdd,
-      title
+      title,
     });
 
     // 2. L2: 更新站点概览 (Upsert)
@@ -42,7 +41,7 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
     if (siteStat) {
       await db.sites.update(siteKey, {
         duration: siteStat.duration + durationToAdd,
-        lastVisit: now
+        lastVisit: now,
       });
     } else {
       await db.sites.add({
@@ -61,7 +60,7 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
     if (pageStat) {
       await db.pages.update(pageKey, {
         duration: pageStat.duration + durationToAdd,
-        title: title ?? pageStat.title // 优先更新为最新的标题
+        title: title ?? pageStat.title, // 优先更新为最新的标题
       });
     } else {
       await db.pages.add({
@@ -70,7 +69,7 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
         path,
         fullPath, // 存储完整路径供展示
         duration: durationToAdd,
-        title
+        title,
       });
     }
   });
@@ -85,10 +84,10 @@ export function getTodayTopSites(limit = 10) {
 
   // 利用 IndexedDB 索引直接排序，性能极快
   return db.sites
-    .where('date')
+    .where("date")
     .equals(today)
-    .sortBy('duration')
-    .then(list => list.reverse().slice(0, limit));
+    .sortBy("duration")
+    .then((list) => list.reverse().slice(0, limit));
 }
 
 /**
@@ -100,8 +99,8 @@ export function getSitePagesDetail(domain: string) {
 
   // 利用 [date+domain] 复合索引前缀查询
   return db.pages
-    .where('[date+domain]')
+    .where("[date+domain]")
     .equals([today, domain])
-    .sortBy('duration')
-    .then(list => list.reverse());
+    .sortBy("duration")
+    .then((list) => list.reverse());
 }

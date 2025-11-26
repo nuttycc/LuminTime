@@ -1,11 +1,12 @@
 // oxlint-disable max-lines
 // oxlint-disable no-magic-numbers
-// oxlint-disable no-unsafe-member-access, no-explicit-any
-
-import { recordActivity, getTodayTopSites } from "@/db/service";
-import { db } from "@/db";
-import { getTodayStr } from "@/db/utils";
+import { recordActivity } from "@/db/service";
 import { SessionManager, type ActiveSessionData } from "@/utils/SessionManager";
+import { debugTools } from "@/utils/debugTools";
+
+const IDLE_DETECTION_INTERVAL = 30;
+const SESSION_TICK_ALARM_NAME = "session-update";
+const SESSION_PER_MINUTE = 1;
 
 const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSession", {
   fallback: {
@@ -14,198 +15,140 @@ const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSess
     startTime: 0,
     lastUpdateTime: 0,
     duration: 0,
-    isStopped: false
-  }
+  },
 });
 
-const IDLE_DETECTION_INTERVAL = 30
-
-// 挂载调试工具到全局
-const debugTools = {
-  async stats() {
-    const today = getTodayStr();
-    const historyCount = await db.history.where('date').equals(today).count();
-    const sitesCount = await db.sites.where('date').equals(today).count();
-    const pagesCount = await db.pages.where('date').equals(today).count();
-    console.log(`📊 今日统计: 历史${historyCount}条, 站点${sitesCount}个, 页面${pagesCount}个`);
-    return { historyCount, sitesCount, pagesCount };
-  },
-  async topSites(limit = 10) {
-    const sites = await getTodayTopSites(limit);
-    console.table(sites.map(s => ({
-      domain: s.domain,
-      duration: `${(s.duration / 1000 / 60).toFixed(2)}分`,
-      lastVisit: new Date(s.lastVisit).toLocaleTimeString()
-    })));
-    return sites;
-  },
-  async clear() {
-    const today = getTodayStr();
-    await db.transaction('rw', db.history, db.sites, db.pages, async () => {
-      await db.history.where('date').equals(today).delete();
-      await db.sites.where('date').equals(today).delete();
-      await db.pages.where('date').equals(today).delete();
-    });
-    console.log('✓ 已清空今日数据');
-  },
-  raw: {
-    async history() {
-      const today = getTodayStr();
-      const data = await db.history.where('date').equals(today).toArray();
-      console.log(`📋 原始历史表 (${data.length}条):`);
-      console.table(data);
-      return data;
-    },
-    async sites() {
-      const today = getTodayStr();
-      const data = await db.sites.where('date').equals(today).toArray();
-      console.log(`📋 原始站点表 (${data.length}个):`);
-      console.table(data);
-      return data;
-    },
-    async pages() {
-      const today = getTodayStr();
-      const data = await db.pages.where('date').equals(today).toArray();
-      console.log(`📋 原始页面表 (${data.length}个):`);
-      console.table(data);
-      return data;
-    }
-  }
-};
-
 const getActiveTabUrl = async () => {
-  const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+  const tabs = await browser.tabs.query({ active: true, currentWindow: true });
   if (tabs.length === 0) {
-    return null
+    return null;
   }
-  const tab = tabs[0]
-  if (tab.url === undefined || tab.url === '') {
-    return null
+  const tab = tabs[0];
+  if (tab.url === undefined || tab.url === "") {
+    return null;
   }
-  return { url: tab.url, title: tab.title }
-}
+
+  console.log("Got active tab:", tab);
+  return { url: tab.url, title: tab.title };
+};
 
 // oxlint-disable-next-line max-lines-per-function
 export default defineBackground(() => {
-
-  // oxlint-disable-next-line no-unsafe-type-assertion
+  // oxlint-disable-next-line no-unsafe-type-assertion oxlint-disable-next-line no-unsafe-member-access
   (globalThis as any).lumintime = debugTools;
 
-  console.log('Hello background!', { id: browser.runtime.id });
-  console.log('💡 调试工具已加载.');
+  console.log("Hello background!", { id: browser.runtime.id });
+  console.log("💡 调试工具已加载.");
 
   // Initialize SessionManager with dependencies
   const sessionManager = new SessionManager({
     storage: sessionStorage,
-    recordActivity
+    recordActivity,
   });
 
-  const SESSION_TICK_ALARM = "session-update";
-  const SESSION_PER_MINUTE = 1;
-
   const checkAlarmState = async () => {
-    // Only create alarm if it doesn't exist
-    const alarm = await browser.alarms.get(SESSION_TICK_ALARM);
+    // create alarm if not exists
+    const alarm = await browser.alarms.get(SESSION_TICK_ALARM_NAME);
     if (alarm) {
-      console.log('Alarm already exists:', alarm);
+      console.log("Alarm already exists:", alarm);
     } else {
-      await browser.alarms.create(SESSION_TICK_ALARM, { periodInMinutes: SESSION_PER_MINUTE });
+      await browser.alarms.create(SESSION_TICK_ALARM_NAME, { periodInMinutes: SESSION_PER_MINUTE });
       console.log(`Alarm created: ${SESSION_PER_MINUTE} min intervals`);
     }
-  }
+  };
 
   // Session tick handler: periodically settle and restart tracking for data reliability
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === SESSION_TICK_ALARM) {
-       // Use special 'alarm' type which internally handles the "Restart Current" logic
-       sessionManager.handleEvent('alarm');
+    if (alarm.name === SESSION_TICK_ALARM_NAME) {
+      // Use special 'alarm' type which internally handles the "Restart Current" logic
+      sessionManager.handleEvent("alarm");
     }
   });
 
-  // focus changes
+  // tab activates
   browser.tabs.onActivated.addListener((activeInfo) => {
     void (async () => {
       try {
         const tab = await browser.tabs.get(activeInfo.tabId);
-        console.log('Tab activated:', tab.url);
+        console.log("Tab activated:", tab.url);
 
         // Pass the explicit URL/Title (Snapshot) to the manager
-        sessionManager.handleEvent('switch', { url: tab.url ?? null, title: tab.title });
+        sessionManager.handleEvent("switch", { url: tab.url ?? null, title: tab.title });
       } catch (error) {
-        console.error('Error in tab activation:', error)
+        console.error("Failed to handle tab activation:", error);
       }
-    })()
+    })();
   });
 
-  // url changes
+  // navigation
   browser.webNavigation.onCompleted.addListener((details) => {
-    // Step 4: Fix Iframe Bug - Ignore non-top-level navigation
+    // Ignore non-top-level navigation
     if (details.frameId !== 0) return;
 
     void (async () => {
       try {
-        const tab = await browser.tabs.get(details.tabId)
-        const window = await browser.windows.get(tab.windowId)
+        const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+        if (tabs.length === 0) return;
 
-        if (tab.active && window.focused) {
-          sessionManager.handleEvent('switch', { url: tab.url ?? null, title: tab.title });
-        }
+        const [activeTab] = tabs;
+        const window = await browser.windows.get(activeTab.windowId);
+        if (!window.focused || activeTab.id !== details.tabId) return;
+
+        sessionManager.handleEvent("switch", {
+          url: activeTab.url ?? null,
+          title: activeTab.title,
+        });
       } catch (error) {
-        console.error('Error getting tab:', error)
+        console.error(`Failed to process navigation to ${details.url}:`, error);
       }
-    })()
+    })();
   });
 
-
-  // Window focus changes
+  // window focus state changes
   browser.windows.onFocusChanged.addListener((windowId) => {
     void (async () => {
       try {
-        console.log('Window focus changed, current:', windowId)
-
+        console.log("Window focus changed, current:", windowId);
         if (windowId === browser.windows.WINDOW_ID_NONE) {
-          // Stop tracking immediately
-          sessionManager.handleEvent('idle', { url: null });
+          sessionManager.handleEvent("idle", { url: null });
         } else {
-          // Switch to the new window's active tab
-          const result = await getActiveTabUrl()
-          sessionManager.handleEvent('switch', { url: result?.url ?? null, title: result?.title });
+          const result = await getActiveTabUrl();
+          sessionManager.handleEvent("switch", { url: result?.url ?? null, title: result?.title });
         }
       } catch (error) {
-        console.error('Error getting tab:', error)
+        console.error("Failed to process window focus change:", error);
       }
-    })()
+    })();
   });
 
-  // Idle state changes
+  // system state changes
   browser.idle.onStateChanged.addListener((state) => {
     void (async () => {
       try {
-        console.log('Idle state changed, state:', state)
-        if (state === 'active') {
+        console.log("Idle state changed, state:", state);
+        if (state === "active") {
           // Fetch the current active tab
-          const result = await getActiveTabUrl()
+          const result = await getActiveTabUrl();
           if (!result) {
-            console.warn('No active tab or tab URL available on idle resume')
-            return
+            console.warn("No active tab or tab URL available on idle resume");
+            return;
           }
-          sessionManager.handleEvent('idle', { url: result.url, title: result.title });
+          sessionManager.handleEvent("idle", { url: result.url, title: result.title });
         } else {
           // Stop tracking
-          sessionManager.handleEvent('idle', { url: null });
+          sessionManager.handleEvent("idle", { url: null });
         }
       } catch (error) {
-        console.error('Error getting active tab on idle resume:', error)
+        console.error("Failed to handle idle state change:", error);
       }
-    })()
+    })();
   });
 
+  checkAlarmState()
+    .then(() => {})
+    .catch((error) => {
+      console.error("Failed to check alarm state:", error);
+    });
 
-  checkAlarmState().then(() => {
-    console.log('Alarm checked');
-  }).catch((error) => {
-    console.error('Error checking alarm:', error);
-  })
-
-  browser.idle.setDetectionInterval(IDLE_DETECTION_INTERVAL)
+  browser.idle.setDetectionInterval(IDLE_DETECTION_INTERVAL);
 });

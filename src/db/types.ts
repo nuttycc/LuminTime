@@ -1,15 +1,15 @@
-import { type } from 'arktype';
+import { type } from "arktype";
 
 // --- L1: 原始流水 (用于历史回溯/审计) ---
 export const HistoryLog = type({
   "id?": "number", // Dexie 自增主键
-  date: "string",  // YYYY-MM-DD
+  date: "string", // YYYY-MM-DD
   domain: "string", // 根域名 (google.com)
   subdomain: "string", // 子域名 (mail.google.com)
-  path: "string",   // 路径+参数 (/search?q=...)
+  path: "string", // 路径+参数 (/search?q=...)
   startTime: "number",
   duration: "number", // 毫秒
-  "title?": "string"
+  "title?": "string",
 });
 export type IHistoryLog = typeof HistoryLog.infer;
 
@@ -19,18 +19,18 @@ export const SiteStat = type({
   date: "string",
   duration: "number",
   lastVisit: "number",
-  "iconUrl?": "string"
+  "iconUrl?": "string",
 });
 export type ISiteStat = typeof SiteStat.infer;
 
 // --- L3: 页面详情 (用于下钻分析) ---
 export const PageStat = type({
-  path: "string",   // [date+domain+path] 主键一部分
+  path: "string", // [date+domain+path] 主键一部分
   domain: "string", // 根域名
   date: "string",
   fullPath: "string", // 完整URL用于展示
   duration: "number",
-  "title?": "string"
+  "title?": "string",
 });
 export type IPageStat = typeof PageStat.infer;
 

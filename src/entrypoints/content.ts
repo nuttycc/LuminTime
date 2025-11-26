@@ -1,7 +1,7 @@
 export default defineContentScript({
-  matches: ['*://*.google.com/*'],
+  matches: ["*://*.google.com/*"],
   main() {
-    console.log('Hello content.');
-    const bar = 123
+    console.log("Hello content.");
+    const bar = 123;
   },
 });
