@@ -10,9 +10,8 @@
     "zip": "wxt zip",
     "compile": "vue-tsc --noEmit",
     "lint": "oxlint --type-aware .",
+    "format": "oxfmt",
     "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
@@ -31,6 +30,7 @@
     "@tailwindcss/vite": "^4.1.17",
     "@wxt-dev/module-vue": "^1.0.2",
     "daisyui": "^5.5.5",
+    "oxfmt": "^0.15.0",
     "oxlint": "^1.30.0",
     "oxlint-tsgolint": "^0.8.2",
     "tailwindcss": "^4.1.17",

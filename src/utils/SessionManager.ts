@@ -1,4 +1,4 @@
-import { AsyncQueuer } from '@tanstack/pacer';
+import { AsyncQueuer } from "@tanstack/pacer";
 
 export interface ActiveSessionData {
   url: string;
@@ -27,11 +27,14 @@ export class SessionManager {
     this.deps = deps;
     // Concurrency 1 guarantees that _processTransition runs serially
     // AsyncQueuer expects a processor function as the first argument
-    this.queue = new AsyncQueuer(async (task: () => Promise<void>) => {
-      await task();
-    }, {
-      concurrency: 1,
-    });
+    this.queue = new AsyncQueuer(
+      async (task: () => Promise<void>) => {
+        await task();
+      },
+      {
+        concurrency: 1,
+      },
+    );
   }
 
   /**
@@ -40,16 +43,15 @@ export class SessionManager {
    * @param data - Snapshot of the target state (e.g. the new URL to track).
    *               For 'alarm', this can be omitted to imply "keep tracking current".
    */
-  handleEvent(type: 'switch' | 'alarm' | 'idle', data?: { url: string | null, title?: string }) {
-    if (type === 'switch') {
+  handleEvent(type: "switch" | "alarm" | "idle", data?: { url: string | null; title?: string }) {
+    if (type === "switch") {
       // Debounce logic for rapid tab switching
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
 
       this.debounceTimer = setTimeout(() => {
         this.queue.addItem(() => this._executeTransition(data));
       }, this.DEBOUNCE_MS);
-
-    } else if (type === 'alarm') {
+    } else if (type === "alarm") {
       // Alarm needs to resolve the *current* session inside the lock to decide what to do
       this.queue.addItem(() => this._executeAlarmTick());
     } else {
@@ -61,18 +63,18 @@ export class SessionManager {
   /**
    * Standard transition: End current session -> Start new session (if data.url exists)
    */
-  private async _executeTransition(data?: { url: string | null, title?: string }) {
+  private async _executeTransition(data?: { url: string | null; title?: string }) {
     try {
       // 1. End current session
       const session = await this.deps.storage.getValue();
       await this._endSession(session);
 
       // 2. Start new session if a valid URL is provided
-      if (typeof data?.url === 'string' && data.url.length > 0) {
+      if (typeof data?.url === "string" && data.url.length > 0) {
         await this._startSession(data.url, data.title);
       }
     } catch (error) {
-      console.error('SessionManager: Error in transition', error);
+      console.error("SessionManager: Error in transition", error);
     }
   }
 
@@ -91,7 +93,7 @@ export class SessionManager {
         await this._startSession(session.url, session.title);
       }
     } catch (error) {
-      console.error('SessionManager: Error in alarm tick', error);
+      console.error("SessionManager: Error in alarm tick", error);
     }
   }
 
@@ -111,7 +113,7 @@ export class SessionManager {
 
     // Clear from storage
     await this.deps.storage.removeValue();
-    console.log('SessionManager: Tracking ended:', session.url);
+    console.log("SessionManager: Tracking ended:", session.url);
   }
 
   private async _startSession(url: string, title?: string) {
@@ -123,6 +125,6 @@ export class SessionManager {
       duration: 0,
     };
     await this.deps.storage.setValue(newSession);
-    console.log('SessionManager: Tracking started:', url);
+    console.log("SessionManager: Tracking started:", url);
   }
 }

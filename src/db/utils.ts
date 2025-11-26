@@ -1,18 +1,26 @@
-import { getDomain } from 'tldts';
+import { getDomain } from "tldts";
 
 export interface NormalizedUrl {
-  domain: string;      // e.g. "google.com"
-  subdomain: string;   // e.g. "mail.google.com"
-  path: string;        // e.g. "/watch?v=dQw4w9WgXcQ" (已清洗追踪参数)
-  protocol: string;    // e.g. "https:"
-  fullPath: string;    // 完整的清洗后的 URL
-  isWebPage: boolean;  // 是否为常规网页 (http/https)
+  domain: string; // e.g. "google.com"
+  subdomain: string; // e.g. "mail.google.com"
+  path: string; // e.g. "/watch?v=dQw4w9WgXcQ" (已清洗追踪参数)
+  protocol: string; // e.g. "https:"
+  fullPath: string; // 完整的清洗后的 URL
+  isWebPage: boolean; // 是否为常规网页 (http/https)
 }
 
 // 需要移除的常见的追踪参数黑名单
 const TRACKING_PARAMS = new Set([
-  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-  'fbclid', 'gclid', '_ga', 'ref', 'source'
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "fbclid",
+  "gclid",
+  "_ga",
+  "ref",
+  "source",
 ]);
 
 /**
@@ -20,7 +28,7 @@ const TRACKING_PARAMS = new Set([
  * 保留功能性参数 (如 youtube video id)，移除营销追踪参数
  */
 function cleanSearchParams(search: string): string {
-  if (!search || search.length <= 1) return '';
+  if (!search || search.length <= 1) return "";
 
   const searchParams = new URLSearchParams(search);
   const keysToDelete: string[] = [];
@@ -32,24 +40,26 @@ function cleanSearchParams(search: string): string {
     }
   });
 
-  keysToDelete.forEach(key => { searchParams.delete(key) });
+  keysToDelete.forEach((key) => {
+    searchParams.delete(key);
+  });
 
   const cleanedString = searchParams.toString();
-  return cleanedString ? `?${cleanedString}` : '';
+  return cleanedString ? `?${cleanedString}` : "";
 }
 
 export function normalizeUrl(urlStr: string): NormalizedUrl {
   try {
     const url = new URL(urlStr);
     const protocol = url.protocol.toLowerCase();
-    const isWebPage = protocol === 'http:' || protocol === 'https:';
+    const isWebPage = protocol === "http:" || protocol === "https:";
 
     // 1. 特殊协议处理 (非 HTTP/HTTPS)
     if (!isWebPage) {
-      let systemDomain = 'System';
-      if (protocol === 'file:') systemDomain = 'Local File';
-      if (protocol === 'chrome-extension:') systemDomain = 'Extension';
-      if (protocol === 'about:') systemDomain = 'Browser';
+      let systemDomain = "System";
+      if (protocol === "file:") systemDomain = "Local File";
+      if (protocol === "chrome-extension:") systemDomain = "Extension";
+      if (protocol === "about:") systemDomain = "Browser";
 
       return {
         domain: systemDomain,
@@ -57,7 +67,7 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
         path: url.pathname, // 系统页通常不需要 query
         protocol: protocol,
         fullPath: urlStr,
-        isWebPage: false
+        isWebPage: false,
       };
     }
 
@@ -68,7 +78,7 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
 
     // 3. 路径清洗 (移除末尾斜杠)
     let pathname = url.pathname;
-    if (pathname.length > 1 && pathname.endsWith('/')) {
+    if (pathname.length > 1 && pathname.endsWith("/")) {
       pathname = pathname.slice(0, -1);
     }
 
@@ -89,18 +99,17 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
       path: finalPath,
       protocol: protocol,
       fullPath: finalFullPath,
-      isWebPage: true
+      isWebPage: true,
     };
-
   } catch (e) {
     // 极少数解析失败的情况
     return {
-      domain: 'Invalid',
-      subdomain: 'Invalid',
+      domain: "Invalid",
+      subdomain: "Invalid",
       path: urlStr,
-      protocol: 'unknown:',
+      protocol: "unknown:",
       fullPath: urlStr,
-      isWebPage: false
+      isWebPage: false,
     };
   }
 }
@@ -112,8 +121,8 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
 export function getTodayStr(): string {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }

@@ -1,5 +1,5 @@
-import { liveQuery, type Observable } from 'dexie';
-import { ref, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from 'vue';
+import { liveQuery, type Observable } from "dexie";
+import { ref, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from "vue";
 
 /**
  * Convert Dexie liveQuery to Vue reactive ref with dependency tracking
@@ -9,7 +9,7 @@ import { ref, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from '
  */
 export function useDexieLiveQuery<T>(
   querier: () => Promise<T>,
-  deps?: Ref | ComputedRef | unknown[]
+  deps?: Ref | ComputedRef | unknown[],
 ): Ref<T | undefined> {
   const value = ref<T>();
   let subscription: { unsubscribe: () => void } | null = null;
@@ -25,8 +25,8 @@ export function useDexieLiveQuery<T>(
         value.value = result;
       },
       error: (error: Error) => {
-        console.error('Dexie live query error:', error);
-      }
+        console.error("Dexie live query error:", error);
+      },
     });
   };
 
