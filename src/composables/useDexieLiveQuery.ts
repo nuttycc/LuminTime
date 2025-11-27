@@ -1,4 +1,4 @@
-import { liveQuery, type Observable } from "dexie";
+import { liveQuery } from "dexie";
 import { ref, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from "vue";
 
 /**

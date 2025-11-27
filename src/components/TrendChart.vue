@@ -34,14 +34,14 @@ const getHeight = (duration: number) => {
     >
       <!-- Tooltip -->
       <div class="absolute bottom-full mb-1 hidden group-hover:block z-10 w-max max-w-[150px]">
-         <div class="bg-neutral text-neutral-content text-xs rounded py-1 px-2 shadow text-center break-words">
+         <div class="bg-neutral text-neutral-content text-xs rounded py-1 px-2 shadow text-center wrap-break-word">
            {{ item.tooltip }}
          </div>
       </div>
 
       <!-- Bar -->
       <div
-        class="w-full rounded-t transition-all duration-300 min-w-[4px]"
+        class="w-full rounded-t transition-all duration-300 min-w-1"
         :class="[
           item.value > 0 ? 'bg-primary' : 'bg-base-300',
           item.active ? 'opacity-100 ring-2 ring-primary ring-offset-1' : 'opacity-80 hover:opacity-100'

@@ -15,6 +15,8 @@ const domain = computed(() => route.params.domain as string);
 const pages = ref<IPageStat[]>([]);
 const loading = ref(false);
 
+const currentUrl = ref('');
+
 const fetchData = async () => {
   if (!domain.value) return;
 
@@ -29,7 +31,22 @@ const fetchData = async () => {
 };
 
 watch([startDate, endDate, domain], fetchData);
-onMounted(fetchData);
+
+onMounted(async () => {
+  fetchData();
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs.length > 0 && tabs[0].url) {
+      currentUrl.value = tabs[0].url;
+    }
+  } catch (e) {
+    console.error('Failed to get current tab', e);
+  }
+});
+
+const isActivePage = (page: IPageStat) => {
+  return page.fullPath === currentUrl.value;
+};
 
 const totalDuration = computed(() => {
   return pages.value.reduce((sum, p) => sum + p.duration, 0);
@@ -125,6 +142,7 @@ const goToPageHistory = (p: string) => {
             v-for="page in pages"
             :key="page.path"
             class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200 cursor-pointer"
+            :class="{ 'bg-primary/10 border-primary/20': isActivePage(page) }"
             @click="goToPageHistory(page.path)"
           >
             <div class="flex justify-between gap-2">
