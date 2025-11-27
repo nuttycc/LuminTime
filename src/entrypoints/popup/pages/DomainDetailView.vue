@@ -9,7 +9,7 @@ import DateNavigator from '@/components/DateNavigator.vue';
 
 const route = useRoute();
 const router = useRouter();
-const { view, date, startDate, endDate, label, next, prev } = useDateRange();
+const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
 
 const domain = computed(() => route.params.domain as string);
 const pages = ref<IPageStat[]>([]);
@@ -51,6 +51,20 @@ const goBack = () => {
 const updateView = (v: ViewMode) => {
   view.value = v;
 };
+
+const goToDomainHistory = () => {
+  router.push({
+    path: '/history',
+    query: { view: view.value, date: date.value, domain: domain.value }
+  });
+};
+
+const goToPageHistory = (p: string) => {
+  router.push({
+    path: '/history',
+    query: { view: view.value, date: date.value, domain: domain.value, path: p }
+  });
+};
 </script>
 
 <template>
@@ -58,11 +72,13 @@ const updateView = (v: ViewMode) => {
     <!-- Custom Header -->
     <div class="navbar bg-base-100 sticky top-0 z-30 border-b border-base-200 min-h-12 px-2">
       <div class="navbar-start w-1/4">
-        <button class="btn btn-ghost btn-circle btn-sm" @click="goBack">
-          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+        <div class="tooltip tooltip-right" data-tip="Back to Dashboard">
+          <button class="btn btn-ghost btn-circle btn-sm" @click="goBack">
+            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="navbar-center w-2/4 justify-center flex-col gap-0.5">
         <h1 class="text-sm font-bold truncate max-w-[150px]">
@@ -72,13 +88,20 @@ const updateView = (v: ViewMode) => {
            {{ prettyMs(totalDuration, { compact: true }) }}
         </div>
       </div>
-      <div class="navbar-end w-1/4"></div>
+      <div class="navbar-end w-1/4">
+        <div class="tooltip tooltip-left" data-tip="Domain History">
+          <button class="btn btn-ghost btn-circle btn-sm" @click="goToDomainHistory">
+            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Date Navigator (Reused) -->
     <DateNavigator
       :view="view"
       :label="label"
+      :can-next="canNext"
       @update:view="updateView"
       @prev="prev"
       @next="next"
@@ -91,19 +114,18 @@ const updateView = (v: ViewMode) => {
          <div v-for="i in 5" :key="i" class="skeleton h-10 w-full rounded opacity-50"></div>
       </div>
 
-      <div v-else-if="pages.length === 0" class="hero py-10">
-        <div class="hero-content text-center">
-          <div class="max-w-md">
-            <p class="text-base-content/60">No pages visited for this domain in the selected period.</p>
-          </div>
-        </div>
+      <div v-else-if="pages.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
+        <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        <div class="text-sm font-medium">No pages visited</div>
+        <div class="text-xs">No specific pages recorded for this domain in the selected period.</div>
       </div>
 
       <ul v-else class="flex flex-col gap-2">
          <li
             v-for="page in pages"
             :key="page.path"
-            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200"
+            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200 cursor-pointer"
+            @click="goToPageHistory(page.path)"
           >
             <div class="flex justify-between gap-2">
               <div class="flex flex-col min-w-0 flex-1">
