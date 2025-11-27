@@ -58,11 +58,13 @@ const updateView = (v: ViewMode) => {
     <!-- Custom Header -->
     <div class="navbar bg-base-100 sticky top-0 z-30 border-b border-base-200 min-h-12 px-2">
       <div class="navbar-start w-1/4">
-        <button class="btn btn-ghost btn-circle btn-sm" @click="goBack">
-          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+        <div class="tooltip tooltip-bottom" data-tip="Back to Dashboard">
+          <button class="btn btn-ghost btn-circle btn-sm" @click="goBack">
+            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="navbar-center w-2/4 justify-center flex-col gap-0.5">
         <h1 class="text-sm font-bold truncate max-w-[150px]">
