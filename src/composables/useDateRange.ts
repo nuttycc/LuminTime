@@ -13,6 +13,21 @@ import {
 
 export type ViewMode = 'day' | 'week' | 'month';
 
+/**
+ * Manage and navigate a date range and its view mode while keeping values synchronized with the route query.
+ *
+ * Exposes reactive values for the current view ('day' | 'week' | 'month'), the reference date, computed start/end dates for the current view, a human-friendly label, and navigation helpers.
+ *
+ * @returns An object containing:
+ * - `view`: reactive view mode (`'day' | 'week' | 'month'`) that reads from and writes to `route.query.view`.
+ * - `date`: reactive ISO-like date string that reads from and writes to `route.query.date`.
+ * - `startDate`: computed start date string for the current view.
+ * - `endDate`: computed end date string for the current view.
+ * - `label`: computed display label for the current range (e.g., "Today", "Jan 1 - Jan 7", "January 2025").
+ * - `next`: function that advances the reference date by one day, one week, or one month depending on `view`.
+ * - `prev`: function that moves the reference date backward by one day, one week, or one month depending on `view`.
+ * - `canNext`: computed boolean that is `true` when the current range ends before today (forward navigation allowed), `false` otherwise.
+ */
 export function useDateRange() {
   const route = useRoute();
   const router = useRouter();
