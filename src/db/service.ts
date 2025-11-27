@@ -114,9 +114,13 @@ export async function getAggregatedSites(startDate: string, endDate: string, lim
 }
 
 /**
- * Gets daily total duration for the trend chart.
- * @param startDate YYYY-MM-DD
- * @param endDate YYYY-MM-DD
+ * Compute total tracked duration per day for a date range.
+ *
+ * Includes days with zero duration to preserve continuity for charts.
+ *
+ * @param startDate - Start date in `YYYY-MM-DD` (inclusive)
+ * @param endDate - End date in `YYYY-MM-DD` (inclusive)
+ * @returns An array of objects where `date` is `YYYY-MM-DD` and `duration` is the summed duration for that day
  */
 export async function getDailyTrend(startDate: string, endDate: string): Promise<{ date: string; duration: number }[]> {
   const records = await db.sites
@@ -147,8 +151,10 @@ export async function getDailyTrend(startDate: string, endDate: string): Promise
 }
 
 /**
- * Gets hourly trend for a specific date.
- * @param date YYYY-MM-DD
+ * Compute total activity duration for each hour (0–23) of the specified date.
+ *
+ * @param date - Date string in `YYYY-MM-DD` format to aggregate
+ * @returns An array of 24 objects, each with `hour` (string `"0"`–`"23"`) and `duration` equal to the summed duration for that hour
  */
 export async function getHourlyTrend(date: string): Promise<{ hour: string; duration: number }[]> {
   const records = await db.history
@@ -174,11 +180,14 @@ export async function getHourlyTrend(date: string): Promise<{ hour: string; dura
 }
 
 /**
- * Aggregates page stats for a specific domain within a date range.
- * @param domain
- * @param startDate
- * @param endDate
- */
+ * Aggregate page-level statistics for a given domain across a date range.
+ *
+ * Aggregates records by page `path`, summing `duration` across all days from `startDate` through `endDate` (inclusive). For each unique `path` the returned `IPageStat` contains the summed `duration`; other fields (such as `title`, `fullPath`, `date`) are taken from a representative record for that path when multiple days exist.
+ *
+ * @param domain - The domain to aggregate (exact match)
+ * @param startDate - Inclusive start date in YYYY-MM-DD format
+ * @param endDate - Inclusive end date in YYYY-MM-DD format
+ * @returns An array of `IPageStat` objects aggregated by `path`, sorted by `duration` descending.
 export async function getAggregatedPages(domain: string, startDate: string, endDate: string): Promise<IPageStat[]> {
     // We can't easily use [date+domain+path] for range query on date while filtering domain.
     // Index is [date+domain+path].
@@ -232,11 +241,14 @@ export async function getAggregatedPages(domain: string, startDate: string, endD
 }
 
 /**
- * Gets history logs with optional filtering.
- * @param startDate YYYY-MM-DD
- * @param endDate YYYY-MM-DD
- * @param domain Optional domain filter
- * @param path Optional path filter (requires domain)
+ * Retrieve history logs for a date range, optionally filtered by domain and path.
+ *
+ * @param startDate - Start date in `YYYY-MM-DD` format (inclusive)
+ * @param endDate - End date in `YYYY-MM-DD` format (inclusive)
+ * @param domain - Optional domain to restrict results; when provided the query iterates per-day using the `[date+domain]` index
+ * @param path - Optional path to restrict results; most efficient when used with `domain`
+ * @param limit - Maximum number of records to return
+ * @returns An array of history log entries ordered from newest to oldest, up to `limit` records
  */
 export async function getHistoryLogs(
   startDate: string,
