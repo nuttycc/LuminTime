@@ -1,0 +1,134 @@
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import prettyMs from 'pretty-ms';
+import { useDateRange, type ViewMode } from '@/composables/useDateRange';
+import { getAggregatedPages } from '@/db/service';
+import type { IPageStat } from '@/db/types';
+import DateNavigator from '@/components/DateNavigator.vue';
+
+const route = useRoute();
+const router = useRouter();
+const { view, date, startDate, endDate, label, next, prev } = useDateRange();
+
+const domain = computed(() => route.params.domain as string);
+const pages = ref<IPageStat[]>([]);
+const loading = ref(false);
+
+const fetchData = async () => {
+  if (!domain.value) return;
+
+  loading.value = true;
+  try {
+    pages.value = await getAggregatedPages(domain.value, startDate.value, endDate.value);
+  } catch (e) {
+    console.error('Failed to fetch page details', e);
+  } finally {
+    loading.value = false;
+  }
+};
+
+watch([startDate, endDate, domain], fetchData);
+onMounted(fetchData);
+
+const totalDuration = computed(() => {
+  return pages.value.reduce((sum, p) => sum + p.duration, 0);
+});
+
+const pagePercentage = (duration: number): number => {
+  if (totalDuration.value === 0) return 0;
+  return Math.round((duration / totalDuration.value) * 100);
+};
+
+const goBack = () => {
+  // Preserve query parameters
+  router.push({
+    path: '/',
+    query: route.query
+  });
+};
+
+const updateView = (v: ViewMode) => {
+  view.value = v;
+};
+</script>
+
+<template>
+  <div class="flex flex-col h-full bg-base-100">
+    <!-- Custom Header -->
+    <div class="navbar bg-base-100 sticky top-0 z-30 border-b border-base-200 min-h-12 px-2">
+      <div class="navbar-start w-1/4">
+        <button class="btn btn-ghost btn-circle btn-sm" @click="goBack">
+          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
+      <div class="navbar-center w-2/4 justify-center flex-col gap-0.5">
+        <h1 class="text-sm font-bold truncate max-w-[150px]">
+          {{ domain }}
+        </h1>
+        <div class="text-[10px] text-base-content/60 font-mono">
+           {{ prettyMs(totalDuration, { compact: true }) }}
+        </div>
+      </div>
+      <div class="navbar-end w-1/4"></div>
+    </div>
+
+    <!-- Date Navigator (Reused) -->
+    <DateNavigator
+      :view="view"
+      :label="label"
+      @update:view="updateView"
+      @prev="prev"
+      @next="next"
+    />
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto p-4">
+
+      <div v-if="loading" class="flex flex-col gap-2">
+         <div v-for="i in 5" :key="i" class="skeleton h-10 w-full rounded opacity-50"></div>
+      </div>
+
+      <div v-else-if="pages.length === 0" class="hero py-10">
+        <div class="hero-content text-center">
+          <div class="max-w-md">
+            <p class="text-base-content/60">No pages visited for this domain in the selected period.</p>
+          </div>
+        </div>
+      </div>
+
+      <ul v-else class="flex flex-col gap-2">
+         <li
+            v-for="page in pages"
+            :key="page.path"
+            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200"
+          >
+            <div class="flex justify-between gap-2">
+              <div class="flex flex-col min-w-0 flex-1">
+                 <div class="font-medium text-sm truncate" :title="page.title || 'Untitled'">
+                   {{ page.title || 'Untitled' }}
+                 </div>
+                 <div class="text-xs text-base-content/50 truncate font-mono" :title="page.fullPath">
+                   {{ page.path }}
+                 </div>
+              </div>
+              <div class="font-mono text-xs font-bold self-start mt-0.5">
+                 {{ prettyMs(page.duration, { compact: true }) }}
+              </div>
+            </div>
+
+            <!-- Mini Progress -->
+             <div class="w-full bg-base-200 rounded-full h-1 mt-1 overflow-hidden">
+                <div
+                  class="bg-secondary h-full rounded-full"
+                  :style="{ width: `${pagePercentage(page.duration)}%` }"
+                ></div>
+              </div>
+          </li>
+      </ul>
+
+    </div>
+  </div>
+</template>

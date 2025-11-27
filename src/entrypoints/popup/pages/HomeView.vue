@@ -1,238 +1,137 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
-import type { ISiteStat, IPageStat } from '@/db/types';
-import { getTodayTopSites, getSitePagesDetail } from '@/db/service';
-import { useDexieLiveQuery } from '@/composables/useDexieLiveQuery';
+import { useDateRange, type ViewMode } from '@/composables/useDateRange';
+import { getAggregatedSites, getDailyTrend } from '@/db/service';
+import type { ISiteStat } from '@/db/types';
+import DateNavigator from '@/components/DateNavigator.vue';
+import TrendChart from '@/components/TrendChart.vue';
 
-// Selected site for detail view
-const selectedDomain = ref<string | null>(null);
+const router = useRouter();
+const { view, date, startDate, endDate, label, next, prev } = useDateRange();
 
-// Load top sites with live query
-const topSites = useDexieLiveQuery(
-  () => getTodayTopSites(10),
-  []
-);
+const sites = ref<ISiteStat[]>([]);
+const trendData = ref<{ date: string; duration: number }[]>([]);
+const loading = ref(false);
 
-// Load pages for selected site with live query
-const pageDetails = useDexieLiveQuery(
-  () =>
-    selectedDomain.value
-      ? getSitePagesDetail(selectedDomain.value)
-      : Promise.resolve([]),
-  [selectedDomain]
-);
-
-// Get currently selected site data
-const selectedSite = computed(() => {
-  if (!selectedDomain.value || !topSites.value) return null;
-  return topSites.value.find((site) => site.domain === selectedDomain.value) || null;
-});
-
-// Go back to top sites view
-const goBack = () => {
-  selectedDomain.value = null;
-};
-
-// Calculate total time for today
-const totalTime = computed(() => {
-  if (!topSites.value) return 0;
-  return topSites.value.reduce((sum, site) => sum + site.duration, 0);
-});
-
-// Calculate percentage for each site
-const sitePercentage = (duration: number): number => {
-  if (totalTime.value === 0) return 0;
-  return Math.round((duration / totalTime.value) * 100);
-};
-
-// Calculate page percentage relative to selected site duration
-const pagePercentage = (pageDuration: number): number => {
-  const denom = selectedSite.value?.duration;
-  if (typeof denom === 'number' && denom > 0) {
-    return Math.min(100, (pageDuration / denom) * 100);
+const fetchData = async () => {
+  loading.value = true;
+  try {
+    const [sitesData, trend] = await Promise.all([
+      getAggregatedSites(startDate.value, endDate.value, 20), // Top 20
+      getDailyTrend(startDate.value, endDate.value)
+    ]);
+    sites.value = sitesData;
+    trendData.value = trend;
+  } catch (e) {
+    console.error('Failed to fetch data', e);
+  } finally {
+    loading.value = false;
   }
-  return 0;
 };
 
-// Skeleton loading rows
-const skeletonRows = Array.from({ length: 5 }, (_, i) => i);
+// Re-fetch when date range changes
+watch([startDate, endDate], fetchData);
+
+onMounted(fetchData);
+
+const totalDuration = computed(() => {
+  return sites.value.reduce((sum, site) => sum + site.duration, 0);
+});
+
+const sitePercentage = (duration: number): number => {
+  if (totalDuration.value === 0) return 0;
+  return Math.round((duration / totalDuration.value) * 100);
+};
+
+const goToDetail = (domain: string) => {
+  router.push({
+    path: `/domain/${domain}`,
+    query: { view: view.value, date: date.value }
+  });
+};
+
+const updateView = (v: ViewMode) => {
+  view.value = v;
+};
 </script>
 
 <template>
   <div class="flex flex-col h-full bg-base-100">
-    <!-- Header -->
-    <div class="navbar bg-base-100 sticky top-0 z-10 border-b border-base-200 min-h-12 px-2">
-      <div class="navbar-start w-1/4">
-        <Transition name="fade" mode="out-in">
-          <button
-            v-if="selectedDomain"
-            key="back"
-            class="btn btn-ghost btn-circle btn-sm"
-            @click="goBack"
-            aria-label="Go back"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        </Transition>
-      </div>
-      <div class="navbar-center w-2/4 justify-center">
-        <h1 class="text-base font-bold truncate">
-          {{ selectedDomain || "LuminTime" }}
-        </h1>
-      </div>
-      <div class="navbar-end w-1/4"></div>
-    </div>
+    <!-- Header with Date Navigator -->
+    <DateNavigator
+      :view="view"
+      :label="label"
+      @update:view="updateView"
+      @prev="prev"
+      @next="next"
+    />
 
     <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto p-4">
+    <div class="flex-1 overflow-y-auto p-4 space-y-4">
 
-      <!-- Top Sites View -->
-      <template v-if="!selectedDomain">
-        <!-- Total Time Hero -->
-        <div class="stats w-full shadow-sm bg-base-200/50 mb-6">
-          <div class="stat place-items-center py-4">
-            <div class="stat-title text-base-content/60">Today's Activity</div>
-            <div class="stat-value text-primary text-3xl">
-              {{ topSites ? prettyMs(totalTime, { compact: true }) : '...' }}
-            </div>
-            <div class="stat-desc mt-1">Total browsing time</div>
+      <!-- Summary Card -->
+      <div class="card bg-base-200 shadow-sm border border-base-300">
+        <div class="card-body p-4 items-center text-center">
+          <div class="text-base-content/60 text-xs font-bold uppercase tracking-widest">Total Active Time</div>
+          <div class="text-3xl font-black text-primary font-mono">
+            {{ totalDuration > 0 ? prettyMs(totalDuration, { compact: true }) : '0s' }}
           </div>
         </div>
+      </div>
 
-        <!-- Loading State -->
-        <div v-if="!topSites" class="flex flex-col gap-4">
-          <div v-for="i in skeletonRows" :key="`skeleton-${i}`" class="flex items-center gap-4">
-            <div class="skeleton h-10 w-10 rounded-full shrink-0"></div>
-            <div class="flex flex-col gap-2 w-full">
-              <div class="skeleton h-4 w-28"></div>
-              <div class="skeleton h-3 w-full"></div>
-            </div>
-          </div>
+      <!-- Trend Chart (Week/Month only) -->
+      <div v-if="view !== 'day'" class="card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body p-2">
+           <TrendChart :data="trendData" :highlight-date="date" />
+        </div>
+      </div>
+
+      <!-- Sites List -->
+      <div class="flex flex-col gap-2">
+        <div class="text-xs font-bold text-base-content/40 uppercase px-2">Top Sites</div>
+
+        <div v-if="loading" class="flex flex-col gap-2">
+          <div v-for="i in 5" :key="i" class="skeleton h-12 w-full rounded-box opacity-50"></div>
         </div>
 
-        <!-- Empty State -->
-        <div v-else-if="topSites.length === 0" class="hero py-10">
-          <div class="hero-content text-center">
-            <div class="max-w-md">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-base-content/20 mx-auto mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path>
-                <path d="M12 7v5l3 3"></path>
-              </svg>
-              <p class="py-2 text-base-content/60">No activity recorded today.</p>
-            </div>
-          </div>
+        <div v-else-if="sites.length === 0" class="text-center py-8 text-base-content/50">
+          No activity recorded for this period.
         </div>
 
-        <!-- Sites List -->
-        <ul v-else class="list bg-base-100 w-full">
-          <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200">
-            <div class="w-8 text-center">#</div>
-            <div class="flex-1">Domain</div>
-            <div class="w-16 text-right">Time</div>
-            <!-- Spacer to align with arrow icon in rows -->
-            <div class="w-4"></div>
-          </li>
-
-          <li
-            v-for="(site, index) in topSites"
-            :key="`${site.date}-${site.domain}`"
-            class="list-row hover:bg-base-200/50 cursor-pointer rounded-box transition-colors p-2"
-            @click="selectedDomain = site.domain"
+        <div v-else class="flex flex-col gap-1">
+          <button
+            v-for="site in sites"
+            :key="site.domain"
+            class="flex items-center gap-3 p-3 hover:bg-base-200/50 rounded-box transition-colors text-left"
+            @click="goToDetail(site.domain)"
           >
-            <div class="w-8 flex items-center justify-center font-mono text-base-content/40 text-sm">
-              {{ index + 1 }}
+            <!-- Icon placeholder or favicon if available -->
+            <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+               {{ site.domain.charAt(0).toUpperCase() }}
             </div>
 
-            <div class="flex flex-col gap-1 flex-1 min-w-0 justify-center">
-              <div class="font-medium truncate">{{ site.domain }}</div>
-              <progress 
-                class="progress progress-primary h-1.5 w-full bg-base-200"
-                :value="sitePercentage(site.duration)"
-                max="100"
-              />
+            <div class="flex flex-col flex-1 min-w-0 gap-1">
+              <div class="flex justify-between items-baseline">
+                <span class="font-medium truncate text-sm">{{ site.domain }}</span>
+                <span class="font-mono text-xs font-bold">{{ prettyMs(site.duration, { compact: true }) }}</span>
+              </div>
+
+              <!-- Progress bar -->
+              <div class="w-full bg-base-300 rounded-full h-1.5 overflow-hidden">
+                <div
+                  class="bg-primary h-full rounded-full"
+                  :style="{ width: `${sitePercentage(site.duration)}%` }"
+                ></div>
+              </div>
             </div>
 
-            <div class="w-16 text-right font-medium text-sm self-center">
-               {{ prettyMs(site.duration, { compact: true }) }}
-            </div>
-
-            <div class="text-xs text-base-content/40 self-center">
-               <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-            </div>
-          </li>
-        </ul>
-      </template>
-
-      <!-- Page Details View -->
-      <template v-else>
-        <!-- Loading State -->
-        <div v-if="!pageDetails" class="flex flex-col gap-4">
-           <div v-for="i in skeletonRows" :key="`skeleton-detail-${i}`" class="flex items-center gap-4">
-             <div class="flex flex-col gap-2 w-full">
-              <div class="skeleton h-4 w-3/4"></div>
-              <div class="skeleton h-3 w-1/2"></div>
-            </div>
-           </div>
+            <svg class="size-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
         </div>
-
-        <!-- Empty State -->
-        <div v-else-if="pageDetails.length === 0" class="hero py-10">
-          <div class="hero-content text-center">
-             <div class="max-w-md">
-               <p class="py-2 text-base-content/60">No pages visited for this domain.</p>
-             </div>
-          </div>
-        </div>
-
-        <!-- Pages List -->
-        <ul v-else class="list bg-base-100 w-full">
-           <li class="list-row text-xs uppercase tracking-wide font-semibold text-base-content/50 pb-2 px-2 border-b border-base-200 items-end">
-            <div class="flex-1">Pages visited</div>
-            <div class="text-right">Duration</div>
-          </li>
-
-          <li
-            v-for="(page, index) in pageDetails"
-            :key="`${page.date}-${page.domain}-${page.path}`"
-            class="list-row flex justify-between hover:bg-base-200/50 rounded-box transition-colors p-2"
-          >
-            <div class="flex flex-col gap-1 flex-1 min-w-0">
-               <div class="font-medium truncate text-sm" :title="page.title || 'Untitled'">
-                 {{ page.title || 'Untitled' }}
-               </div>
-               <div class="text-xs text-base-content/60 truncate font-mono" :title="page.fullPath">
-                 {{ page.path }}
-               </div>
-               <progress
-                class="progress progress-secondary h-1 w-full bg-base-200 mt-1"
-                :value="pagePercentage(page.duration)"
-                max="100"
-              />
-            </div>
-             <div class="w-16 text-right font-medium text-sm self-center mt-0.5">
-               {{ prettyMs(page.duration, { compact: true }) }}
-            </div>
-          </li>
-        </ul>
-      </template>
+      </div>
 
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Scoped styles mainly for transition, everything else is utility classes */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 200ms ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
