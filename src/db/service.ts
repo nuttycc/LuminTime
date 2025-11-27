@@ -147,6 +147,33 @@ export async function getDailyTrend(startDate: string, endDate: string): Promise
 }
 
 /**
+ * Gets hourly trend for a specific date.
+ * @param date YYYY-MM-DD
+ */
+export async function getHourlyTrend(date: string): Promise<{ hour: string; duration: number }[]> {
+  const records = await db.history
+    .where("date")
+    .equals(date)
+    .toArray();
+
+  // Initialize 24 hours
+  const hours = Array.from({ length: 24 }, (_, i) => ({
+    hour: i.toString(), // "0", "1", ... "23"
+    duration: 0
+  }));
+
+  for (const r of records) {
+    const d = new Date(r.startTime);
+    const h = d.getHours();
+    if (h >= 0 && h < 24) {
+      hours[h].duration += r.duration;
+    }
+  }
+
+  return hours;
+}
+
+/**
  * Aggregates page stats for a specific domain within a date range.
  * @param domain
  * @param startDate

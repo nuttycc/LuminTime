@@ -9,7 +9,7 @@ import DateNavigator from '@/components/DateNavigator.vue';
 
 const route = useRoute();
 const router = useRouter();
-const { view, date, startDate, endDate, label, next, prev } = useDateRange();
+const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
 
 const domain = computed(() => route.params.domain as string);
 const pages = ref<IPageStat[]>([]);
@@ -79,6 +79,7 @@ const updateView = (v: ViewMode) => {
     <DateNavigator
       :view="view"
       :label="label"
+      :can-next="canNext"
       @update:view="updateView"
       @prev="prev"
       @next="next"
@@ -91,12 +92,10 @@ const updateView = (v: ViewMode) => {
          <div v-for="i in 5" :key="i" class="skeleton h-10 w-full rounded opacity-50"></div>
       </div>
 
-      <div v-else-if="pages.length === 0" class="hero py-10">
-        <div class="hero-content text-center">
-          <div class="max-w-md">
-            <p class="text-base-content/60">No pages visited for this domain in the selected period.</p>
-          </div>
-        </div>
+      <div v-else-if="pages.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
+        <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        <div class="text-sm font-medium">No pages visited</div>
+        <div class="text-xs">No specific pages recorded for this domain in the selected period.</div>
       </div>
 
       <ul v-else class="flex flex-col gap-2">

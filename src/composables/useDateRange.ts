@@ -71,6 +71,12 @@ export function useDateRange() {
     }
   };
 
+  // Check if we can navigate forward (don't allow future dates)
+  const canNext = computed(() => {
+    const today = formatDate(new Date());
+    return endDate.value < today;
+  });
+
   // Label for display
   const label = computed(() => {
     const d = dateObj.value;
@@ -105,6 +111,7 @@ export function useDateRange() {
     endDate,
     label,
     next,
-    prev
+    prev,
+    canNext
   };
 }

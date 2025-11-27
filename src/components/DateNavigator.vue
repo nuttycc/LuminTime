@@ -4,6 +4,7 @@ import { type ViewMode } from '@/composables/useDateRange';
 defineProps<{
   view: ViewMode;
   label: string;
+  canNext?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -53,7 +54,11 @@ const emit = defineEmits<{
 
       <span class="font-bold text-sm select-none">{{ label }}</span>
 
-      <button class="btn btn-ghost btn-circle btn-sm" @click="emit('next')">
+      <button
+        class="btn btn-ghost btn-circle btn-sm"
+        :disabled="canNext === false"
+        @click="emit('next')"
+      >
         <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
       </button>
     </div>

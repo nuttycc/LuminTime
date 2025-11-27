@@ -3,25 +3,37 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
-import { getAggregatedSites, getDailyTrend } from '@/db/service';
+import { getAggregatedSites, getDailyTrend, getHourlyTrend } from '@/db/service';
 import type { ISiteStat } from '@/db/types';
 import DateNavigator from '@/components/DateNavigator.vue';
-import TrendChart from '@/components/TrendChart.vue';
+import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
 
 const router = useRouter();
-const { view, date, startDate, endDate, label, next, prev } = useDateRange();
+const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
 
 const sites = ref<ISiteStat[]>([]);
-const trendData = ref<{ date: string; duration: number }[]>([]);
+// oxlint-disable typescript-eslint/no-explicit-any
+const trendData = ref<any[]>([]);
 const loading = ref(false);
 
 const fetchData = async () => {
   loading.value = true;
   try {
-    const [sitesData, trend] = await Promise.all([
-      getAggregatedSites(startDate.value, endDate.value, 20), // Top 20
-      getDailyTrend(startDate.value, endDate.value)
-    ]);
+    let trend: any[] = [];
+    let sitesData: ISiteStat[] = [];
+
+    if (view.value === 'day') {
+      [sitesData, trend] = await Promise.all([
+        getAggregatedSites(startDate.value, endDate.value, 20),
+        getHourlyTrend(startDate.value)
+      ]);
+    } else {
+      [sitesData, trend] = await Promise.all([
+        getAggregatedSites(startDate.value, endDate.value, 20),
+        getDailyTrend(startDate.value, endDate.value)
+      ]);
+    }
+
     sites.value = sitesData;
     trendData.value = trend;
   } catch (e) {
@@ -35,6 +47,44 @@ const fetchData = async () => {
 watch([startDate, endDate], fetchData);
 
 onMounted(fetchData);
+
+const chartItems = computed<ChartItem[]>(() => {
+  return trendData.value.map(item => {
+    // Hourly Data
+    if ('hour' in item) {
+       const h = parseInt(item.hour);
+       // Show label every 3 hours (0, 3, 6...) or if just 24 items, show simpler logic
+       const showLabel = h % 4 === 0;
+
+       return {
+         key: `h-${item.hour}`,
+         value: item.duration,
+         label: showLabel ? `${h}:00` : '',
+         tooltip: `${h}:00 - ${prettyMs(item.duration, { compact: true })}`,
+         active: false
+       };
+    }
+
+    // Daily Data
+    const d = new Date(item.date + 'T00:00:00');
+    let label = '';
+
+    // Logic for daily view labels (Week/Month)
+    if (trendData.value.length > 10) {
+       label = d.getDate().toString();
+    } else {
+       label = d.toLocaleDateString(undefined, { weekday: 'narrow' });
+    }
+
+    return {
+      key: item.date,
+      value: item.duration,
+      label,
+      tooltip: `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${prettyMs(item.duration, { compact: true })}`,
+      active: item.date === date.value
+    };
+  });
+});
 
 const totalDuration = computed(() => {
   return sites.value.reduce((sum, site) => sum + site.duration, 0);
@@ -68,6 +118,7 @@ const updateView = (v: ViewMode) => {
     <DateNavigator
       :view="view"
       :label="label"
+      :can-next="canNext"
       @update:view="updateView"
       @prev="prev"
       @next="next"
@@ -86,10 +137,10 @@ const updateView = (v: ViewMode) => {
         </div>
       </div>
 
-      <!-- Trend Chart (Week/Month only) -->
-      <div v-if="view !== 'day'" class="card bg-base-100 shadow-sm border border-base-200">
+      <!-- Trend Chart -->
+      <div class="card bg-base-100 shadow-sm border border-base-200">
         <div class="card-body p-2">
-           <TrendChart :data="trendData" :highlight-date="date" />
+           <TrendChart :items="chartItems" />
         </div>
       </div>
 
@@ -101,8 +152,10 @@ const updateView = (v: ViewMode) => {
           <div v-for="i in 5" :key="i" class="skeleton h-12 w-full rounded-box opacity-50"></div>
         </div>
 
-        <div v-else-if="sites.length === 0" class="text-center py-8 text-base-content/50">
-          No activity recorded for this period.
+        <div v-else-if="sites.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
+          <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div class="text-sm font-medium">No activity recorded</div>
+          <div class="text-xs">Browse some sites to see data here.</div>
         </div>
 
         <div v-else class="flex flex-col gap-1">
@@ -113,8 +166,14 @@ const updateView = (v: ViewMode) => {
             @click="goToDetail(site.domain)"
           >
             <!-- Icon placeholder or favicon if available -->
-            <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">
-               {{ site.domain.charAt(0).toUpperCase() }}
+            <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0 relative overflow-hidden">
+               <span>{{ site.domain.charAt(0).toUpperCase() }}</span>
+               <img
+                 :src="`https://www.google.com/s2/favicons?domain=${site.domain}&sz=64`"
+                 alt=""
+                 class="absolute inset-0 w-full h-full object-cover"
+                 @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
+               />
             </div>
 
             <div class="flex flex-col flex-1 min-w-0 gap-1">
