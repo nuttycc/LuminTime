@@ -248,25 +248,37 @@ export async function getHistoryLogs(
   let records: IHistoryLog[] = [];
 
   if (domain) {
-    // Iterate days for [date+domain] index lookup (Backwards for optimization)
+    // Collect all dates to query upfront
     const start = parseDate(startDate);
     const end = parseDate(endDate);
-
+    
+    const dates: string[] = [];
     let current = end;
-    while (current >= start && records.length < limit) {
-      const dayStr = formatDate(current);
-      const dayRecords = await db.history.where('[date+domain]').equals([dayStr, domain]).toArray();
-
-      // Sort day records descending
-      dayRecords.sort((a, b) => b.startTime - a.startTime);
-
-      // Filter path if needed
-      const filtered = path ? dayRecords.filter(r => r.path === path) : dayRecords;
-
-      records.push(...filtered);
+    while (current >= start && dates.length < 200) { // Reasonable limit to prevent too many queries
+      dates.push(formatDate(current));
       current = addDays(current, -1);
     }
-
+    
+    // Query all dates in parallel
+    const dayResults = await Promise.all(
+      dates.map(dayStr => 
+        db.history.where('[date+domain]').equals([dayStr, domain]).toArray()
+      )
+    );
+    
+    // Process results in date order (most recent first)
+    for (const dayRecords of dayResults) {
+      // Sort day records descending
+      dayRecords.sort((a, b) => b.startTime - a.startTime);
+      
+      // Filter path if needed
+      const filtered = path ? dayRecords.filter(r => r.path === path) : dayRecords;
+      
+      records.push(...filtered);
+      
+      if (records.length >= limit) break;
+    }
+    
     return records.slice(0, limit);
   } else {
     // Global history: use startTime index for efficiency
