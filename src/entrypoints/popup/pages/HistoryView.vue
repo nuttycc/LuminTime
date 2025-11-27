@@ -6,6 +6,7 @@ import { useDateRange, type ViewMode } from '@/composables/useDateRange';
 import { getHistoryLogs } from '@/db/service';
 import type { IHistoryLog } from '@/db/types';
 import DateNavigator from '@/components/DateNavigator.vue';
+import { formatDate, parseDate } from '@/utils/dateUtils';
 
 const route = useRoute();
 const router = useRouter();
@@ -53,6 +54,28 @@ const updateView = (v: ViewMode) => {
 
 const formatTime = (ts: number) => {
   return new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+};
+
+const groupedLogs = computed(() => {
+  const groups: Record<string, IHistoryLog[]> = {};
+  logs.value.forEach(log => {
+    const d = log.date;
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(log);
+  });
+  // Sort keys desc
+  return Object.keys(groups).sort().reverse().map(date => ({
+    date,
+    logs: groups[date]
+  }));
+});
+
+const formatDateLabel = (d: string) => {
+    const dateObj = parseDate(d);
+    const today = new Date();
+    const todayStr = formatDate(today);
+    if (d === todayStr) return 'Today';
+    return dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 };
 </script>
 
@@ -102,28 +125,38 @@ const formatTime = (ts: number) => {
         <div class="text-xs">No activity found for this period.</div>
       </div>
 
-      <div v-else class="flex flex-col gap-1">
-        <div
-          v-for="log in logs"
-          :key="log.id || log.startTime"
-          class="flex items-center gap-3 p-2 hover:bg-base-200/50 rounded-box transition-colors text-left border-b border-base-100 last:border-0"
-        >
-           <div class="flex flex-col items-center w-10 shrink-0 opacity-60">
-             <div class="font-mono text-xs font-bold">{{ formatTime(log.startTime) }}</div>
+      <div v-else class="flex flex-col gap-4">
+        <div v-for="group in groupedLogs" :key="group.date" class="flex flex-col gap-1">
+           <div class="sticky top-0 bg-base-100/95 backdrop-blur-sm z-10 px-2 py-1 text-xs font-bold text-base-content/50 uppercase border-b border-base-200">
+             {{ formatDateLabel(group.date) }}
            </div>
 
-           <div class="flex flex-col flex-1 min-w-0">
-             <div class="font-medium text-xs truncate" :title="log.title || 'Untitled'">
-               {{ log.title || 'Untitled' }}
-             </div>
-             <div class="text-[10px] text-base-content/50 truncate font-mono" :title="log.path">
-               {{ domain ? log.path : (log.domain + log.path) }}
-             </div>
-           </div>
+           <div
+             v-for="log in group.logs"
+             :key="log.id || log.startTime"
+             class="flex items-center gap-3 p-2 hover:bg-base-200/50 rounded-box transition-colors text-left border-b border-base-100 last:border-0"
+           >
+              <div class="flex flex-col items-center w-10 shrink-0 opacity-60">
+                <div class="font-mono text-xs font-bold">{{ formatTime(log.startTime) }}</div>
+              </div>
 
-           <div class="font-mono text-xs font-bold opacity-80 shrink-0">
-              {{ prettyMs(log.duration, { compact: true }) }}
+              <div class="flex flex-col flex-1 min-w-0">
+                <div class="font-medium text-xs truncate" :title="log.title || 'Untitled'">
+                  {{ log.title || 'Untitled' }}
+                </div>
+                <div class="text-[10px] text-base-content/50 truncate font-mono" :title="log.path">
+                  {{ domain ? log.path : (log.domain + log.path) }}
+                </div>
+              </div>
+
+              <div class="font-mono text-xs font-bold opacity-80 shrink-0">
+                 {{ prettyMs(log.duration, { compact: true }) }}
+              </div>
            </div>
+        </div>
+
+        <div v-if="logs.length >= 2000" class="text-center py-4 text-xs text-base-content/50">
+           History limit reached (2000 items). Refine date range to see more.
         </div>
       </div>
     </div>

@@ -242,42 +242,50 @@ export async function getHistoryLogs(
   startDate: string,
   endDate: string,
   domain?: string,
-  path?: string
+  path?: string,
+  limit = 2000
 ): Promise<IHistoryLog[]> {
   let records: IHistoryLog[] = [];
 
   if (domain) {
-    // Iterate days for [date+domain] index lookup
+    // Iterate days for [date+domain] index lookup (Backwards for optimization)
     const start = parseDate(startDate);
     const end = parseDate(endDate);
-    const promises: Promise<IHistoryLog[]>[] = [];
 
-    let current = start;
-    while (current <= end) {
+    let current = end;
+    while (current >= start && records.length < limit) {
       const dayStr = formatDate(current);
-      promises.push(
-        db.history.where('[date+domain]').equals([dayStr, domain]).toArray()
-      );
-      current = addDays(current, 1);
+      const dayRecords = await db.history.where('[date+domain]').equals([dayStr, domain]).toArray();
+
+      // Sort day records descending
+      dayRecords.sort((a, b) => b.startTime - a.startTime);
+
+      // Filter path if needed
+      const filtered = path ? dayRecords.filter(r => r.path === path) : dayRecords;
+
+      records.push(...filtered);
+      current = addDays(current, -1);
     }
 
-    const results = await Promise.all(promises);
-    records = results.flat();
+    return records.slice(0, limit);
   } else {
-    // Global history: use date index
+    // Global history: use startTime index for efficiency
+    const startTs = parseDate(startDate).getTime();
+    const endTs = addDays(parseDate(endDate), 1).getTime() - 1;
+
     records = await db.history
-      .where("date")
-      .between(startDate, endDate, true, true)
+      .where("startTime")
+      .between(startTs, endTs, true, true)
+      .reverse()
+      .limit(limit)
       .toArray();
-  }
 
-  // Filter by path if needed
-  if (path) {
-    records = records.filter((r) => r.path === path);
+    // Filter by path (unlikely for global view but supported)
+    if (path) {
+      records = records.filter((r) => r.path === path);
+    }
+    return records;
   }
-
-  // Sort by startTime descending (newest first)
-  return records.sort((a, b) => b.startTime - a.startTime);
 }
 
 /**
