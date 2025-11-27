@@ -1,7 +1,7 @@
 // oxlint-disable no-array-reverse
 // oxlint-disable max-lines-per-function
 import { db } from "./index";
-import type { SiteKey, PageKey, ISiteStat, IPageStat } from "./types";
+import type { SiteKey, PageKey, ISiteStat, IPageStat, IHistoryLog } from "./types";
 import { normalizeUrl, getTodayStr } from "./utils";
 import { addDays, formatDate, parseDate } from "@/utils/dateUtils";
 
@@ -147,6 +147,33 @@ export async function getDailyTrend(startDate: string, endDate: string): Promise
 }
 
 /**
+ * Gets hourly trend for a specific date.
+ * @param date YYYY-MM-DD
+ */
+export async function getHourlyTrend(date: string): Promise<{ hour: string; duration: number }[]> {
+  const records = await db.history
+    .where("date")
+    .equals(date)
+    .toArray();
+
+  // Initialize 24 hours
+  const hours = Array.from({ length: 24 }, (_, i) => ({
+    hour: i.toString(), // "0", "1", ... "23"
+    duration: 0
+  }));
+
+  for (const r of records) {
+    const d = new Date(r.startTime);
+    const h = d.getHours();
+    if (h >= 0 && h < 24) {
+      hours[h].duration += r.duration;
+    }
+  }
+
+  return hours;
+}
+
+/**
  * Aggregates page stats for a specific domain within a date range.
  * @param domain
  * @param startDate
@@ -202,6 +229,63 @@ export async function getAggregatedPages(domain: string, startDate: string, endD
     }
 
     return Array.from(map.values()).slice().sort((a, b) => b.duration - a.duration);
+}
+
+/**
+ * Gets history logs with optional filtering.
+ * @param startDate YYYY-MM-DD
+ * @param endDate YYYY-MM-DD
+ * @param domain Optional domain filter
+ * @param path Optional path filter (requires domain)
+ */
+export async function getHistoryLogs(
+  startDate: string,
+  endDate: string,
+  domain?: string,
+  path?: string,
+  limit = 2000
+): Promise<IHistoryLog[]> {
+  let records: IHistoryLog[] = [];
+
+  if (domain) {
+    // Iterate days for [date+domain] index lookup (Backwards for optimization)
+    const start = parseDate(startDate);
+    const end = parseDate(endDate);
+
+    let current = end;
+    while (current >= start && records.length < limit) {
+      const dayStr = formatDate(current);
+      const dayRecords = await db.history.where('[date+domain]').equals([dayStr, domain]).toArray();
+
+      // Sort day records descending
+      dayRecords.sort((a, b) => b.startTime - a.startTime);
+
+      // Filter path if needed
+      const filtered = path ? dayRecords.filter(r => r.path === path) : dayRecords;
+
+      records.push(...filtered);
+      current = addDays(current, -1);
+    }
+
+    return records.slice(0, limit);
+  } else {
+    // Global history: use startTime index for efficiency
+    const startTs = parseDate(startDate).getTime();
+    const endTs = addDays(parseDate(endDate), 1).getTime() - 1;
+
+    records = await db.history
+      .where("startTime")
+      .between(startTs, endTs, true, true)
+      .reverse()
+      .limit(limit)
+      .toArray();
+
+    // Filter by path (unlikely for global view but supported)
+    if (path) {
+      records = records.filter((r) => r.path === path);
+    }
+    return records;
+  }
 }
 
 /**

@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { type ViewMode } from '@/composables/useDateRange';
 
-defineProps<{
+const props = defineProps<{
   view: ViewMode;
   label: string;
+  canNext?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -11,6 +13,18 @@ const emit = defineEmits<{
   (e: 'prev'): void;
   (e: 'next'): void;
 }>();
+
+const prevTip = computed(() => {
+  if (props.view === 'day') return 'Previous Day';
+  if (props.view === 'week') return 'Previous Week';
+  return 'Previous Month';
+});
+
+const nextTip = computed(() => {
+  if (props.view === 'day') return 'Next Day';
+  if (props.view === 'week') return 'Next Week';
+  return 'Next Month';
+});
 </script>
 
 <template>
@@ -47,15 +61,23 @@ const emit = defineEmits<{
 
     <!-- Date Navigation -->
     <div class="flex items-center justify-between px-2 mt-1">
-      <button class="btn btn-ghost btn-circle btn-sm" @click="emit('prev')">
-        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-      </button>
+      <div class="tooltip tooltip-right" :data-tip="prevTip">
+        <button class="btn btn-ghost btn-circle btn-sm" @click="emit('prev')">
+          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+      </div>
 
       <span class="font-bold text-sm select-none">{{ label }}</span>
 
-      <button class="btn btn-ghost btn-circle btn-sm" @click="emit('next')">
-        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-      </button>
+      <div class="tooltip tooltip-left" :data-tip="nextTip">
+        <button
+          class="btn btn-ghost btn-circle btn-sm"
+          :disabled="canNext === false"
+          @click="emit('next')"
+        >
+          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+        </button>
+      </div>
     </div>
   </div>
 </template>
