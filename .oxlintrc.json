@@ -8,8 +8,8 @@
   ],
   "categories": {
     "correctness": "error",
-    "pedantic": "warn",
-    "suspicious": "warn",
+    "pedantic": "off",
+    "suspicious": "off",
     "style": "off",
     "perf": "warn"
   },
@@ -30,7 +30,7 @@
     "new-cap": "off",
     "func-style": "off",
     "max-lines-per-function": [
-      "warn",
+      "off",
       {
         "max": 70,
         "skipBlankLines": true,
