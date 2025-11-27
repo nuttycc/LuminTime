@@ -1,0 +1,131 @@
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import prettyMs from 'pretty-ms';
+import { useDateRange, type ViewMode } from '@/composables/useDateRange';
+import { getHistoryLogs } from '@/db/service';
+import type { IHistoryLog } from '@/db/types';
+import DateNavigator from '@/components/DateNavigator.vue';
+
+const route = useRoute();
+const router = useRouter();
+const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
+
+const domain = computed(() => route.query.domain as string | undefined);
+const path = computed(() => route.query.path as string | undefined);
+
+const logs = ref<IHistoryLog[]>([]);
+const loading = ref(false);
+
+const fetchData = async () => {
+  loading.value = true;
+  try {
+    logs.value = await getHistoryLogs(startDate.value, endDate.value, domain.value, path.value);
+  } catch (e) {
+    console.error('Failed to fetch history', e);
+  } finally {
+    loading.value = false;
+  }
+};
+
+watch([startDate, endDate, domain, path], fetchData);
+onMounted(fetchData);
+
+const title = computed(() => {
+  if (path.value) return 'Page History';
+  if (domain.value) return 'Domain History';
+  return 'History';
+});
+
+const subtitle = computed(() => {
+  if (path.value) return path.value;
+  if (domain.value) return domain.value;
+  return 'All Activity';
+});
+
+const goBack = () => {
+  router.back();
+};
+
+const updateView = (v: ViewMode) => {
+  view.value = v;
+};
+
+const formatTime = (ts: number) => {
+  return new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+};
+</script>
+
+<template>
+  <div class="flex flex-col h-full bg-base-100">
+    <!-- Header -->
+    <div class="navbar bg-base-100 sticky top-0 z-30 border-b border-base-200 min-h-12 px-2">
+      <div class="navbar-start w-1/4">
+        <div class="tooltip tooltip-right" data-tip="Back">
+          <button class="btn btn-ghost btn-circle btn-sm" @click="goBack">
+            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="navbar-center w-2/4 justify-center flex-col gap-0.5">
+        <h1 class="text-sm font-bold truncate max-w-[150px]">
+          {{ title }}
+        </h1>
+        <div class="text-[10px] text-base-content/60 font-mono truncate max-w-[200px]">
+           {{ subtitle }}
+        </div>
+      </div>
+      <div class="navbar-end w-1/4"></div>
+    </div>
+
+    <!-- Date Navigator -->
+    <DateNavigator
+      :view="view"
+      :label="label"
+      :can-next="canNext"
+      @update:view="updateView"
+      @prev="prev"
+      @next="next"
+    />
+
+    <!-- List -->
+    <div class="flex-1 overflow-y-auto p-4">
+      <div v-if="loading" class="flex flex-col gap-2">
+         <div v-for="i in 5" :key="i" class="skeleton h-12 w-full rounded-box opacity-50"></div>
+      </div>
+
+      <div v-else-if="logs.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
+        <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <div class="text-sm font-medium">No history recorded</div>
+        <div class="text-xs">No activity found for this period.</div>
+      </div>
+
+      <div v-else class="flex flex-col gap-1">
+        <div
+          v-for="log in logs"
+          :key="log.id || log.startTime"
+          class="flex items-center gap-3 p-2 hover:bg-base-200/50 rounded-box transition-colors text-left border-b border-base-100 last:border-0"
+        >
+           <div class="flex flex-col items-center w-10 shrink-0 opacity-60">
+             <div class="font-mono text-xs font-bold">{{ formatTime(log.startTime) }}</div>
+           </div>
+
+           <div class="flex flex-col flex-1 min-w-0">
+             <div class="font-medium text-xs truncate" :title="log.title || 'Untitled'">
+               {{ log.title || 'Untitled' }}
+             </div>
+             <div class="text-[10px] text-base-content/50 truncate font-mono" :title="log.path">
+               {{ domain ? log.path : (log.domain + log.path) }}
+             </div>
+           </div>
+
+           <div class="font-mono text-xs font-bold opacity-80 shrink-0">
+              {{ prettyMs(log.duration, { compact: true }) }}
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

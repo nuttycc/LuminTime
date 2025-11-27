@@ -102,6 +102,13 @@ const goToDetail = (domain: string) => {
   });
 };
 
+const goToHistory = () => {
+  router.push({
+    path: '/history',
+    query: { view: view.value, date: date.value }
+  });
+};
+
 const updateView = (v: ViewMode) => {
   view.value = v;
 };
@@ -193,6 +200,13 @@ const updateView = (v: ViewMode) => {
 
             <svg class="size-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
+
+          <!-- View All History -->
+          <div class="flex justify-center pt-2 pb-4">
+             <button class="btn btn-xs btn-ghost text-xs uppercase opacity-50 hover:opacity-100" @click="goToHistory">
+                View All History
+             </button>
+          </div>
         </div>
       </div>
 

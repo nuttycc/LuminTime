@@ -1,7 +1,7 @@
 // oxlint-disable no-array-reverse
 // oxlint-disable max-lines-per-function
 import { db } from "./index";
-import type { SiteKey, PageKey, ISiteStat, IPageStat } from "./types";
+import type { SiteKey, PageKey, ISiteStat, IPageStat, IHistoryLog } from "./types";
 import { normalizeUrl, getTodayStr } from "./utils";
 import { addDays, formatDate, parseDate } from "@/utils/dateUtils";
 
@@ -229,6 +229,55 @@ export async function getAggregatedPages(domain: string, startDate: string, endD
     }
 
     return Array.from(map.values()).slice().sort((a, b) => b.duration - a.duration);
+}
+
+/**
+ * Gets history logs with optional filtering.
+ * @param startDate YYYY-MM-DD
+ * @param endDate YYYY-MM-DD
+ * @param domain Optional domain filter
+ * @param path Optional path filter (requires domain)
+ */
+export async function getHistoryLogs(
+  startDate: string,
+  endDate: string,
+  domain?: string,
+  path?: string
+): Promise<IHistoryLog[]> {
+  let records: IHistoryLog[] = [];
+
+  if (domain) {
+    // Iterate days for [date+domain] index lookup
+    const start = parseDate(startDate);
+    const end = parseDate(endDate);
+    const promises: Promise<IHistoryLog[]>[] = [];
+
+    let current = start;
+    while (current <= end) {
+      const dayStr = formatDate(current);
+      promises.push(
+        db.history.where('[date+domain]').equals([dayStr, domain]).toArray()
+      );
+      current = addDays(current, 1);
+    }
+
+    const results = await Promise.all(promises);
+    records = results.flat();
+  } else {
+    // Global history: use date index
+    records = await db.history
+      .where("date")
+      .between(startDate, endDate, true, true)
+      .toArray();
+  }
+
+  // Filter by path if needed
+  if (path) {
+    records = records.filter((r) => r.path === path);
+  }
+
+  // Sort by startTime descending (newest first)
+  return records.sort((a, b) => b.startTime - a.startTime);
 }
 
 /**

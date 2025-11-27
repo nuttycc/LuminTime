@@ -51,6 +51,20 @@ const goBack = () => {
 const updateView = (v: ViewMode) => {
   view.value = v;
 };
+
+const goToDomainHistory = () => {
+  router.push({
+    path: '/history',
+    query: { view: view.value, date: date.value, domain: domain.value }
+  });
+};
+
+const goToPageHistory = (p: string) => {
+  router.push({
+    path: '/history',
+    query: { view: view.value, date: date.value, domain: domain.value, path: p }
+  });
+};
 </script>
 
 <template>
@@ -74,7 +88,13 @@ const updateView = (v: ViewMode) => {
            {{ prettyMs(totalDuration, { compact: true }) }}
         </div>
       </div>
-      <div class="navbar-end w-1/4"></div>
+      <div class="navbar-end w-1/4">
+        <div class="tooltip tooltip-left" data-tip="Domain History">
+          <button class="btn btn-ghost btn-circle btn-sm" @click="goToDomainHistory">
+            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Date Navigator (Reused) -->
@@ -104,7 +124,8 @@ const updateView = (v: ViewMode) => {
          <li
             v-for="page in pages"
             :key="page.path"
-            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200"
+            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200 cursor-pointer"
+            @click="goToPageHistory(page.path)"
           >
             <div class="flex justify-between gap-2">
               <div class="flex flex-col min-w-0 flex-1">
