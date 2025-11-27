@@ -82,13 +82,14 @@ export async function recordActivity(rawUrl: string, durationToAdd: number, titl
  * @param endDate YYYY-MM-DD
  * @param limit limit number of sites returned
  */
-export async function getAggregatedSites(startDate: string, endDate: string, limit = 50): Promise<ISiteStat[]> {
+export async function getAggregatedSites(
+  startDate: string,
+  endDate: string,
+  limit = 50,
+): Promise<ISiteStat[]> {
   // If same day, use the optimized daily query if possible, or just use range
   // Range query: date between startDate and endDate
-  const records = await db.sites
-    .where("date")
-    .between(startDate, endDate, true, true)
-    .toArray();
+  const records = await db.sites.where("date").between(startDate, endDate, true, true).toArray();
 
   // Aggregate in memory
   const map = new Map<string, ISiteStat>();
@@ -109,7 +110,9 @@ export async function getAggregatedSites(startDate: string, endDate: string, lim
   }
 
   // Convert to array and sort
-  const result = Array.from(map.values()).slice().sort((a, b) => b.duration - a.duration);
+  const result = Array.from(map.values())
+    .slice()
+    .sort((a, b) => b.duration - a.duration);
   return result.slice(0, limit);
 }
 
@@ -118,11 +121,11 @@ export async function getAggregatedSites(startDate: string, endDate: string, lim
  * @param startDate YYYY-MM-DD
  * @param endDate YYYY-MM-DD
  */
-export async function getDailyTrend(startDate: string, endDate: string): Promise<{ date: string; duration: number }[]> {
-  const records = await db.sites
-    .where("date")
-    .between(startDate, endDate, true, true)
-    .toArray();
+export async function getDailyTrend(
+  startDate: string,
+  endDate: string,
+): Promise<{ date: string; duration: number }[]> {
+  const records = await db.sites.where("date").between(startDate, endDate, true, true).toArray();
 
   const dailyMap = new Map<string, number>();
 
@@ -151,15 +154,12 @@ export async function getDailyTrend(startDate: string, endDate: string): Promise
  * @param date YYYY-MM-DD
  */
 export async function getHourlyTrend(date: string): Promise<{ hour: string; duration: number }[]> {
-  const records = await db.history
-    .where("date")
-    .equals(date)
-    .toArray();
+  const records = await db.history.where("date").equals(date).toArray();
 
   // Initialize 24 hours
   const hours = Array.from({ length: 24 }, (_, i) => ({
     hour: i.toString(), // "0", "1", ... "23"
-    duration: 0
+    duration: 0,
   }));
 
   for (const r of records) {
@@ -179,56 +179,60 @@ export async function getHourlyTrend(date: string): Promise<{ hour: string; dura
  * @param startDate
  * @param endDate
  */
-export async function getAggregatedPages(domain: string, startDate: string, endDate: string): Promise<IPageStat[]> {
-    // We can't easily use [date+domain+path] for range query on date while filtering domain.
-    // Index is [date+domain+path].
-    // We can use [date+domain] index to filter first.
+export async function getAggregatedPages(
+  domain: string,
+  startDate: string,
+  endDate: string,
+): Promise<IPageStat[]> {
+  // We can't easily use [date+domain+path] for range query on date while filtering domain.
+  // Index is [date+domain+path].
+  // We can use [date+domain] index to filter first.
 
-    // Dexie compound index usage:
-    // We want all records where date is in range AND domain is X.
-    // The index is `[date+domain+path]` or `[date+domain]`.
-    // We can use `.where('[date+domain]').between([startDate, domain], [endDate, domain])`
-    // BUT this only works if domain is the significant part, which it is NOT here (date is first).
-    // Actually, `between` on compound index compares lexicographically.
-    // [startDate, domain] ... [endDate, domain] includes [startDate, domain+1] which is wrong.
+  // Dexie compound index usage:
+  // We want all records where date is in range AND domain is X.
+  // The index is `[date+domain+path]` or `[date+domain]`.
+  // We can use `.where('[date+domain]').between([startDate, domain], [endDate, domain])`
+  // BUT this only works if domain is the significant part, which it is NOT here (date is first).
+  // Actually, `between` on compound index compares lexicographically.
+  // [startDate, domain] ... [endDate, domain] includes [startDate, domain+1] which is wrong.
 
-    // Better strategy: Filter by date range first, then filter by domain in memory?
-    // OR use the `[date+domain]` index but we have to be careful.
-    // Actually, if we iterate all days in range, we can query specific keys: [day, domain].
-    // If the range is small (e.g. 30 days), 30 queries is fast.
+  // Better strategy: Filter by date range first, then filter by domain in memory?
+  // OR use the `[date+domain]` index but we have to be careful.
+  // Actually, if we iterate all days in range, we can query specific keys: [day, domain].
+  // If the range is small (e.g. 30 days), 30 queries is fast.
 
-    // Let's try the iterate approach for exactness and performance on indexed lookups.
-    const start = parseDate(startDate);
-    const end = parseDate(endDate);
-    const promises: Promise<IPageStat[]>[] = [];
+  // Let's try the iterate approach for exactness and performance on indexed lookups.
+  const start = parseDate(startDate);
+  const end = parseDate(endDate);
+  const promises: Promise<IPageStat[]>[] = [];
 
-    let current = start;
-    while (current <= end) {
-      const dayStr = formatDate(current);
-      // Query pages for this specific day and domain
-      promises.push(
-        db.pages.where('[date+domain]').equals([dayStr, domain]).toArray()
-      );
-      current = addDays(current, 1);
+  let current = start;
+  while (current <= end) {
+    const dayStr = formatDate(current);
+    // Query pages for this specific day and domain
+    promises.push(db.pages.where("[date+domain]").equals([dayStr, domain]).toArray());
+    current = addDays(current, 1);
+  }
+
+  const dayArrays = await Promise.all(promises);
+  const allPages = dayArrays.flat();
+
+  // Aggregate
+  const map = new Map<string, IPageStat>();
+
+  for (const p of allPages) {
+    const existing = map.get(p.path);
+    if (existing) {
+      existing.duration += p.duration;
+      // update title if newer one is better? just keep one.
+    } else {
+      map.set(p.path, { ...p });
     }
+  }
 
-    const dayArrays = await Promise.all(promises);
-    const allPages = dayArrays.flat();
-
-    // Aggregate
-    const map = new Map<string, IPageStat>();
-
-    for (const p of allPages) {
-       const existing = map.get(p.path);
-       if (existing) {
-         existing.duration += p.duration;
-         // update title if newer one is better? just keep one.
-       } else {
-         map.set(p.path, { ...p });
-       }
-    }
-
-    return Array.from(map.values()).slice().sort((a, b) => b.duration - a.duration);
+  return Array.from(map.values())
+    .slice()
+    .sort((a, b) => b.duration - a.duration);
 }
 
 /**
@@ -243,7 +247,7 @@ export async function getHistoryLogs(
   endDate: string,
   domain?: string,
   path?: string,
-  limit = 2000
+  limit = 2000,
 ): Promise<IHistoryLog[]> {
   let records: IHistoryLog[] = [];
 
@@ -251,34 +255,33 @@ export async function getHistoryLogs(
     // Collect all dates to query upfront
     const start = parseDate(startDate);
     const end = parseDate(endDate);
-    
+
     const dates: string[] = [];
     let current = end;
-    while (current >= start && dates.length < 200) { // Reasonable limit to prevent too many queries
+    while (current >= start && dates.length < 200) {
+      // Reasonable limit to prevent too many queries
       dates.push(formatDate(current));
       current = addDays(current, -1);
     }
-    
+
     // Query all dates in parallel
     const dayResults = await Promise.all(
-      dates.map(dayStr => 
-        db.history.where('[date+domain]').equals([dayStr, domain]).toArray()
-      )
+      dates.map((dayStr) => db.history.where("[date+domain]").equals([dayStr, domain]).toArray()),
     );
-    
+
     // Process results in date order (most recent first)
     for (const dayRecords of dayResults) {
       // Sort day records descending
       dayRecords.sort((a, b) => b.startTime - a.startTime);
-      
+
       // Filter path if needed
-      const filtered = path ? dayRecords.filter(r => r.path === path) : dayRecords;
-      
+      const filtered = path ? dayRecords.filter((r) => r.path === path) : dayRecords;
+
       records.push(...filtered);
-      
+
       if (records.length >= limit) break;
     }
-    
+
     return records.slice(0, limit);
   } else {
     // Global history: use startTime index for efficiency

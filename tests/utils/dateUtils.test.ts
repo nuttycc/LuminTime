@@ -7,7 +7,7 @@ import {
   getStartOfMonth,
   getEndOfMonth,
   addDays,
-  addMonths
+  addMonths,
 } from "@/utils/dateUtils";
 
 describe("Date Utils", () => {

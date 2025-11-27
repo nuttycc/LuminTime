@@ -7,16 +7,16 @@ import HistoryView from "./pages/HistoryView.vue";
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
-    component: HomeView
+    component: HomeView,
   },
   {
     path: "/domain/:domain",
-    component: DomainDetailView
+    component: DomainDetailView,
   },
   {
     path: "/history",
-    component: HistoryView
-  }
+    component: HistoryView,
+  },
 ];
 
 export const router = createRouter({

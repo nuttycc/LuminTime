@@ -25,7 +25,7 @@ describe("SessionManager", () => {
       title: "",
       startTime: 0,
       lastUpdateTime: 0,
-      duration: 0
+      duration: 0,
     };
 
     mockStorage = {
