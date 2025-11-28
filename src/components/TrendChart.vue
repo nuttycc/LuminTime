@@ -23,12 +23,27 @@ const getHeight = (duration: number) => {
   if (duration > 0 && duration / maxDuration.value < 0.05) return '5%';
   return `${(duration / maxDuration.value) * 100}%`;
 };
+
+// 计算标签显示间隔，避免重叠
+const labelStep = computed(() => {
+  const len = props.items.length;
+  if (len <= 7) return 1;
+  if (len <= 14) return 2;
+  return Math.ceil(len / 7);
+});
+
+const shouldShowLabel = (index: number) => {
+  const len = props.items.length;
+  // 始终显示第一个和最后一个
+  if (index === 0 || index === len - 1) return true;
+  return index % labelStep.value === 0;
+};
 </script>
 
 <template>
   <div class="w-full h-26 flex items-end justify-between gap-1 px-2 pt-3 pb-3">
     <div
-      v-for="item in items"
+      v-for="(item, index) in items"
       :key="item.key"
       class="flex flex-col items-center flex-1 h-full justify-end group relative"
     >
@@ -51,7 +66,7 @@ const getHeight = (duration: number) => {
 
       <!-- Label -->
       <div
-        v-if="item.label"
+        v-if="item.label && shouldShowLabel(index)"
         class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-base-content/50 select-none whitespace-nowrap"
       >
         {{ item.label }}
