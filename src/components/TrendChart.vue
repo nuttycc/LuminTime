@@ -4,7 +4,7 @@ import { computed } from 'vue';
 export interface ChartItem {
   key: string;
   value: number;
-  label: string;
+  label?: string;
   tooltip: string;
   active?: boolean;
 }
@@ -26,7 +26,7 @@ const getHeight = (duration: number) => {
 </script>
 
 <template>
-  <div class="w-full h-32 flex items-end justify-between gap-1 px-2 pt-4 pb-1">
+  <div class="w-full h-26 flex items-end justify-between gap-1 px-2 pt-3 pb-3">
     <div
       v-for="item in items"
       :key="item.key"
@@ -50,7 +50,10 @@ const getHeight = (duration: number) => {
       ></div>
 
       <!-- Label -->
-      <div class="text-[10px] text-base-content/50 mt-1 h-4 select-none truncate max-w-full text-center">
+      <div
+        v-if="item.label"
+        class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-base-content/50 select-none whitespace-nowrap"
+      >
         {{ item.label }}
       </div>
     </div>

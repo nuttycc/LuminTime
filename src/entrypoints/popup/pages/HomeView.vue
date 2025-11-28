@@ -58,7 +58,7 @@ const mapHourlyToChartItem = (item: { hour: string; duration: number }): ChartIt
     key: `h-${item.hour}`,
     value: item.duration,
     label: showLabel ? `${h}:00` : '',
-    tooltip: `${h}:00 - ${prettyMs(item.duration, { compact: true })}`,
+    tooltip: `${h}:00, ${prettyMs(item.duration, { compact: true })}`,
     active: false
   };
 };
@@ -140,7 +140,7 @@ const updateView = (v: ViewMode) => {
         <div class="card-body p-4 items-center text-center">
           <div class="text-base-content/60 text-xs font-bold uppercase tracking-widest">Total Active Time</div>
           <div class="text-3xl font-black text-primary font-mono">
-            {{ totalDuration > 0 ? prettyMs(totalDuration, { compact: true }) : '0s' }}
+            {{ totalDuration > 0 ? prettyMs(totalDuration, {secondsDecimalDigits: 0}) : '0s' }}
           </div>
         </div>
       </div>
@@ -176,18 +176,12 @@ const updateView = (v: ViewMode) => {
             <!-- Icon placeholder or favicon if available -->
             <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0 relative overflow-hidden">
                <span>{{ site.domain.charAt(0).toUpperCase() }}</span>
-               <img
-                 :src="`https://www.google.com/s2/favicons?domain=${site.domain}&sz=64`"
-                 alt=""
-                 class="absolute inset-0 w-full h-full object-cover"
-                 @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
-               />
             </div>
 
             <div class="flex flex-col flex-1 min-w-0 gap-1">
               <div class="flex justify-between items-baseline">
                 <span class="font-medium truncate text-sm">{{ site.domain }}</span>
-                <span class="font-mono text-xs font-bold">{{ prettyMs(site.duration, { compact: true }) }}</span>
+                <span class="font-mono text-xs font-bold">{{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}</span>
               </div>
 
               <!-- Progress bar -->
