@@ -14,7 +14,12 @@ export interface SessionDependencies {
     setValue: (val: ActiveSessionData) => Promise<void>;
     removeValue: () => Promise<void>;
   };
-  recordActivity: (url: string, duration: number, title?: string) => Promise<void>;
+  recordActivity: (
+    url: string,
+    duration: number,
+    title?: string,
+    startTime?: number,
+  ) => Promise<void>;
 }
 
 export class SessionManager {
@@ -108,7 +113,7 @@ export class SessionManager {
     // Persist to DB
     // Only record if duration is positive (or whatever threshold, currently strict > 0)
     if (finalDuration > 0) {
-      await this.deps.recordActivity(session.url, finalDuration, session.title);
+      await this.deps.recordActivity(session.url, finalDuration, session.title, session.startTime);
     }
 
     // Clear from storage

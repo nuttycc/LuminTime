@@ -5,73 +5,117 @@ import type { SiteKey, PageKey, ISiteStat, IPageStat, IHistoryLog } from "./type
 import { normalizeUrl, getTodayStr } from "./utils";
 import { addDays, formatDate, parseDate } from "@/utils/dateUtils";
 
+interface DaySplit {
+  date: string;
+  startTime: number;
+  duration: number;
+}
+
 /**
- * 核心写入方法：原子性更新三层数据
+ * 按午夜边界拆分时间段（最多拆成两段）
+ */
+export function splitByMidnight(startTime: number, duration: number): DaySplit[] {
+  if (duration <= 0) return [];
+
+  const startDate = new Date(startTime);
+  const endTime = startTime + duration;
+  const nextMidnight = new Date(
+    startDate.getFullYear(),
+    startDate.getMonth(),
+    startDate.getDate() + 1,
+  ).getTime();
+
+  // 未跨日
+  if (endTime <= nextMidnight) {
+    return [{ date: formatDate(startDate), startTime, duration }];
+  }
+
+  // 跨日：拆成两段
+  return [
+    { date: formatDate(startDate), startTime, duration: nextMidnight - startTime },
+    {
+      date: formatDate(new Date(nextMidnight)),
+      startTime: nextMidnight,
+      duration: endTime - nextMidnight,
+    },
+  ];
+}
+
+/**
+ * 核心写入方法：原子性更新三层数据，支持跨日拆分
  * @param rawUrl 原始 URL
  * @param durationToAdd 增加的时长 (毫秒)
  * @param title 网页标题 (可选)
+ * @param startTime 会话开始时间戳 (可选，默认为 now - duration)
  */
-export async function recordActivity(rawUrl: string, durationToAdd: number, title?: string) {
+export async function recordActivity(
+  rawUrl: string,
+  durationToAdd: number,
+  title?: string,
+  startTime?: number,
+) {
   if (!rawUrl || durationToAdd <= 0) return;
-
-  // 忽略非 http/https 协议 (如 chrome://, about:)
   if (!rawUrl.startsWith("http")) return;
 
   const { domain, subdomain, path, fullPath } = normalizeUrl(rawUrl);
-  const today = getTodayStr();
   const now = Date.now();
+  const actualStartTime = startTime ?? now - durationToAdd;
 
-  // Transaction: 只要有一个失败，全部回滚。确保数据一致性。
+  // 按午夜边界拆分
+  const splits = splitByMidnight(actualStartTime, durationToAdd);
+  if (splits.length === 0) return;
+
   await db.transaction("rw", db.history, db.sites, db.pages, async () => {
-    // 1. L1: 插入流水 (总是新增)
-    await db.history.add({
-      date: today,
-      domain,
-      subdomain,
-      path,
-      startTime: now - durationToAdd,
-      duration: durationToAdd,
-      title,
-    });
-
-    // 2. L2: 更新站点概览 (Upsert)
-    // 复合主键必须以数组形式传递
-    const siteKey: SiteKey = [today, domain];
-    const siteStat = await db.sites.get(siteKey);
-
-    if (siteStat) {
-      await db.sites.update(siteKey, {
-        duration: siteStat.duration + durationToAdd,
-        lastVisit: now,
-      });
-    } else {
-      await db.sites.add({
-        date: today,
+    // oxlint-disable no-await-in-loop -- Sequential awaits intentional: upsert pattern in Dexie transaction
+    for (const split of splits) {
+      // 1. L1: 插入流水
+      await db.history.add({
+        date: split.date,
         domain,
-        duration: durationToAdd,
-        lastVisit: now,
-        // iconUrl: 这里后续可以加获取 favicon 的逻辑
-      });
-    }
-
-    // 3. L3: 更新页面详情 (Upsert)
-    const pageKey: PageKey = [today, domain, path];
-    const pageStat = await db.pages.get(pageKey);
-
-    if (pageStat) {
-      await db.pages.update(pageKey, {
-        duration: pageStat.duration + durationToAdd,
-        title: title ?? pageStat.title, // 优先更新为最新的标题
-      });
-    } else {
-      await db.pages.add({
-        date: today,
-        domain,
+        subdomain,
         path,
-        fullPath, // 存储完整路径供展示
-        duration: durationToAdd,
+        startTime: split.startTime,
+        duration: split.duration,
         title,
       });
+
+      // 2. L2: 更新站点概览 (Upsert)
+      const siteKey: SiteKey = [split.date, domain];
+      const siteStat = await db.sites.get(siteKey);
+
+      if (siteStat) {
+        await db.sites.update(siteKey, {
+          duration: siteStat.duration + split.duration,
+          lastVisit: split.startTime + split.duration,
+        });
+      } else {
+        await db.sites.add({
+          date: split.date,
+          domain,
+          duration: split.duration,
+          lastVisit: split.startTime + split.duration,
+        });
+      }
+
+      // 3. L3: 更新页面详情 (Upsert)
+      const pageKey: PageKey = [split.date, domain, path];
+      const pageStat = await db.pages.get(pageKey);
+
+      if (pageStat) {
+        await db.pages.update(pageKey, {
+          duration: pageStat.duration + split.duration,
+          title: title ?? pageStat.title,
+        });
+      } else {
+        await db.pages.add({
+          date: split.date,
+          domain,
+          path,
+          fullPath,
+          duration: split.duration,
+          title,
+        });
+      }
     }
   });
 }
