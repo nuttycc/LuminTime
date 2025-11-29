@@ -44,18 +44,9 @@ export default defineBackground(() => {
   const sessionManager = new SessionManager({
     storage: sessionStorage,
     recordActivity,
+    alarmName: SESSION_TICK_ALARM_NAME,
+    alarmPeriodInMinutes: SESSION_PER_MINUTE,
   });
-
-  const checkAlarmState = async () => {
-    // create alarm if not exists
-    const alarm = await browser.alarms.get(SESSION_TICK_ALARM_NAME);
-    if (alarm) {
-      console.log("Alarm already exists:", alarm);
-    } else {
-      await browser.alarms.create(SESSION_TICK_ALARM_NAME, { periodInMinutes: SESSION_PER_MINUTE });
-      console.log(`Alarm created: ${SESSION_PER_MINUTE} min intervals`);
-    }
-  };
 
   // Session tick handler: periodically settle and restart tracking for data reliability
   browser.alarms.onAlarm.addListener((alarm) => {
@@ -144,11 +135,9 @@ export default defineBackground(() => {
     })();
   });
 
-  checkAlarmState()
-    .then(() => {})
-    .catch((error) => {
-      console.error("Failed to check alarm state:", error);
-    });
+  sessionManager.init().catch((error) => {
+    console.error("Failed to initialize session manager:", error);
+  });
 
   browser.idle.setDetectionInterval(IDLE_DETECTION_INTERVAL);
 });

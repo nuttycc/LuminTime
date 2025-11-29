@@ -20,6 +20,8 @@ export interface SessionDependencies {
     title?: string,
     startTime?: number,
   ) => Promise<void>;
+  alarmName: string;
+  alarmPeriodInMinutes: number;
 }
 
 export class SessionManager {
@@ -27,6 +29,7 @@ export class SessionManager {
   private deps: SessionDependencies;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly DEBOUNCE_MS = 500;
+  private _hasActiveSession = false;
 
   constructor(deps: SessionDependencies) {
     this.deps = deps;
@@ -40,6 +43,18 @@ export class SessionManager {
         concurrency: 1,
       },
     );
+  }
+
+  /**
+   * Initialize session manager: restore alarm if there's a persisted active session.
+   * Must be called once after construction.
+   */
+  async init() {
+    const session = await this.deps.storage.getValue();
+    if (session.url) {
+      this._hasActiveSession = true;
+      await this._ensureAlarm();
+    }
   }
 
   /**
@@ -75,8 +90,13 @@ export class SessionManager {
       await this._endSession(session);
 
       // 2. Start new session if a valid URL is provided
-      if (typeof data?.url === "string" && data.url.length > 0) {
-        await this._startSession(data.url, data.title);
+      const hasNewTarget = typeof data?.url === "string" && data.url.length > 0;
+      if (hasNewTarget) {
+        await this._startSession(data.url as string, data.title);
+      } else if (this._hasActiveSession) {
+        // Transition to idle: clear alarm
+        this._hasActiveSession = false;
+        await this._clearAlarm();
       }
     } catch (error) {
       console.error("SessionManager: Error in transition", error);
@@ -96,6 +116,10 @@ export class SessionManager {
         await this._endSession(session);
         // Restart same
         await this._startSession(session.url, session.title);
+      } else if (this._hasActiveSession) {
+        // Stale alarm: no active session but alarm still running
+        this._hasActiveSession = false;
+        await this._clearAlarm();
       }
     } catch (error) {
       console.error("SessionManager: Error in alarm tick", error);
@@ -130,6 +154,26 @@ export class SessionManager {
       duration: 0,
     };
     await this.deps.storage.setValue(newSession);
+
+    if (!this._hasActiveSession) {
+      this._hasActiveSession = true;
+      await this._ensureAlarm();
+    }
     console.log("SessionManager: Tracking started:", url);
+  }
+
+  private async _ensureAlarm() {
+    const existing = await browser.alarms.get(this.deps.alarmName);
+    if (!existing) {
+      await browser.alarms.create(this.deps.alarmName, {
+        periodInMinutes: this.deps.alarmPeriodInMinutes,
+      });
+      console.log("SessionManager: Alarm created");
+    }
+  }
+
+  private async _clearAlarm() {
+    await browser.alarms.clear(this.deps.alarmName);
+    console.log("SessionManager: Alarm cleared");
   }
 }
