@@ -54,6 +54,8 @@ describe("SessionManager", () => {
     manager = new SessionManager({
       storage: mockStorage,
       recordActivity: mockRecordActivity,
+      alarmName: "test-alarm",
+      alarmPeriodInMinutes: 1,
     });
   });
 
@@ -87,7 +89,12 @@ describe("SessionManager", () => {
     vi.setSystemTime(startTime + 2000);
     await flushQueue();
 
-    expect(mockRecordActivity).toHaveBeenCalledWith("https://old.com", expect.any(Number), "Old");
+    expect(mockRecordActivity).toHaveBeenCalledWith(
+      "https://old.com",
+      expect.any(Number),
+      "Old",
+      expect.any(Number),
+    );
     expect(mockStorage.setValue).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "https://new.com",
@@ -129,6 +136,7 @@ describe("SessionManager", () => {
       "https://active.com",
       expect.any(Number),
       "Active",
+      expect.any(Number),
     );
     expect(mockStorage.removeValue).toHaveBeenCalled();
     expect(mockStorage.setValue).toHaveBeenCalledWith(
@@ -191,8 +199,15 @@ describe("SessionManager", () => {
       "https://initial.com",
       expect.any(Number),
       "Initial",
+      expect.any(Number),
     );
-    expect(mockRecordActivity).toHaveBeenNthCalledWith(2, "https://a.com", expect.any(Number), "A");
+    expect(mockRecordActivity).toHaveBeenNthCalledWith(
+      2,
+      "https://a.com",
+      expect.any(Number),
+      "A",
+      expect.any(Number),
+    );
 
     expect(mockStorage.setValue).toHaveBeenLastCalledWith(
       expect.objectContaining({

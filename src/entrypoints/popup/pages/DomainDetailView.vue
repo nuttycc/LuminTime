@@ -102,7 +102,7 @@ const goToPageHistory = (p: string) => {
           {{ domain }}
         </h1>
         <div class="text-[10px] text-base-content/60 font-mono">
-           {{ prettyMs(totalDuration, { compact: true }) }}
+           {{ prettyMs(totalDuration, { secondsDecimalDigits: 0 }) }}
         </div>
       </div>
       <div class="navbar-end w-1/4">
@@ -155,7 +155,7 @@ const goToPageHistory = (p: string) => {
                  </div>
               </div>
               <div class="font-mono text-xs font-bold self-start mt-0.5">
-                 {{ prettyMs(page.duration, { compact: true }) }}
+                 {{ prettyMs(page.duration, { secondsDecimalDigits: 0 }) }}
               </div>
             </div>
 
