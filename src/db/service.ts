@@ -1,7 +1,7 @@
 // oxlint-disable no-array-reverse
 // oxlint-disable max-lines-per-function
 import { db } from "./index";
-import type { SiteKey, PageKey, ISiteStat, IPageStat, IHistoryLog } from "./types";
+import type { SiteKey, PageKey, ISiteStat, IPageStat, IHistoryLog, EventSource } from "./types";
 import { normalizeUrl, getTodayStr } from "./utils";
 import { addDays, formatDate, parseDate } from "@/utils/dateUtils";
 
@@ -9,6 +9,7 @@ interface DaySplit {
   date: string;
   startTime: number;
   duration: number;
+  eventSource?: EventSource;
 }
 
 /**
@@ -47,12 +48,14 @@ export function splitByMidnight(startTime: number, duration: number): DaySplit[]
  * @param durationToAdd 增加的时长 (毫秒)
  * @param title 网页标题 (可选)
  * @param startTime 会话开始时间戳 (可选，默认为 now - duration)
+ * @param eventSource 事件来源 (可选)
  */
 export async function recordActivity(
   rawUrl: string,
   durationToAdd: number,
   title?: string,
   startTime?: number,
+  eventSource?: EventSource,
 ) {
   if (!rawUrl || durationToAdd <= 0) return;
   if (!rawUrl.startsWith("http")) return;
@@ -77,6 +80,7 @@ export async function recordActivity(
         startTime: split.startTime,
         duration: split.duration,
         title,
+        eventSource,
       });
 
       // 2. L2: 更新站点概览 (Upsert)

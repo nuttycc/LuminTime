@@ -13,8 +13,7 @@ export default defineConfig({
   },
   vite: () => ({
     plugins: [
-      // oxlint-disable-next-line new-cap
-      tailwindcss(),
+      tailwindcss()
     ],
   }),
 });

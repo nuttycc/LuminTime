@@ -64,7 +64,11 @@ export default defineBackground(() => {
         console.log("Tab activated:", tab.url);
 
         // Pass the explicit URL/Title (Snapshot) to the manager
-        sessionManager.handleEvent("switch", { url: tab.url ?? null, title: tab.title });
+        sessionManager.handleEvent("switch", {
+          url: tab.url ?? null,
+          title: tab.title,
+          eventSource: "tab_activated",
+        });
       } catch (error) {
         console.error("Failed to handle tab activation:", error);
       }
@@ -88,6 +92,7 @@ export default defineBackground(() => {
         sessionManager.handleEvent("switch", {
           url: activeTab.url ?? null,
           title: activeTab.title,
+          eventSource: "navigation",
         });
       } catch (error) {
         console.error(`Failed to process navigation to ${details.url}:`, error);
@@ -104,7 +109,11 @@ export default defineBackground(() => {
           sessionManager.handleEvent("idle", { url: null });
         } else {
           const result = await getActiveTabUrl();
-          sessionManager.handleEvent("switch", { url: result?.url ?? null, title: result?.title });
+          sessionManager.handleEvent("switch", {
+            url: result?.url ?? null,
+            title: result?.title,
+            eventSource: "window_focus",
+          });
         }
       } catch (error) {
         console.error("Failed to process window focus change:", error);
@@ -118,13 +127,22 @@ export default defineBackground(() => {
       try {
         console.log("Idle state changed, state:", state);
         if (state === "active") {
-          // Fetch the current active tab
+          // Check if browser window is focused first
+          const focusedWindow = await browser.windows.getLastFocused();
+          if (!focusedWindow.focused) {
+            return; // Browser not focused, don't start tracking
+          }
+
           const result = await getActiveTabUrl();
           if (!result) {
             console.warn("No active tab or tab URL available on idle resume");
             return;
           }
-          sessionManager.handleEvent("idle", { url: result.url, title: result.title });
+          sessionManager.handleEvent("idle", {
+            url: result.url,
+            title: result.title,
+            eventSource: "idle_resume",
+          });
         } else {
           // Stop tracking
           sessionManager.handleEvent("idle", { url: null });

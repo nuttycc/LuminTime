@@ -94,6 +94,7 @@ describe("SessionManager", () => {
       expect.any(Number),
       "Old",
       expect.any(Number),
+      undefined,
     );
     expect(mockStorage.setValue).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -137,12 +138,14 @@ describe("SessionManager", () => {
       expect.any(Number),
       "Active",
       expect.any(Number),
+      undefined,
     );
     expect(mockStorage.removeValue).toHaveBeenCalled();
     expect(mockStorage.setValue).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "https://active.com",
         title: "Active",
+        eventSource: "alarm",
       }),
     );
   });
@@ -200,6 +203,7 @@ describe("SessionManager", () => {
       expect.any(Number),
       "Initial",
       expect.any(Number),
+      undefined,
     );
     expect(mockRecordActivity).toHaveBeenNthCalledWith(
       2,
@@ -207,6 +211,7 @@ describe("SessionManager", () => {
       expect.any(Number),
       "A",
       expect.any(Number),
+      undefined,
     );
 
     expect(mockStorage.setValue).toHaveBeenLastCalledWith(

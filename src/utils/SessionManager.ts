@@ -1,4 +1,5 @@
 import { AsyncQueuer } from "@tanstack/pacer";
+import type { EventSource } from "@/db/types";
 
 export interface ActiveSessionData {
   url: string;
@@ -6,6 +7,7 @@ export interface ActiveSessionData {
   startTime: number;
   lastUpdateTime: number;
   duration: number;
+  eventSource?: EventSource;
 }
 
 export interface SessionDependencies {
@@ -19,6 +21,7 @@ export interface SessionDependencies {
     duration: number,
     title?: string,
     startTime?: number,
+    eventSource?: EventSource,
   ) => Promise<void>;
   alarmName: string;
   alarmPeriodInMinutes: number;
@@ -63,27 +66,33 @@ export class SessionManager {
    * @param data - Snapshot of the target state (e.g. the new URL to track).
    *               For 'alarm', this can be omitted to imply "keep tracking current".
    */
-  handleEvent(type: "switch" | "alarm" | "idle", data?: { url: string | null; title?: string }) {
+  handleEvent(
+    type: "switch" | "alarm" | "idle",
+    data?: { url: string | null; title?: string; eventSource?: EventSource },
+  ) {
     if (type === "switch") {
       // Debounce logic for rapid tab switching
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
 
       this.debounceTimer = setTimeout(() => {
-        this.queue.addItem(() => this._executeTransition(data));
+        this.queue.addItem(() => this._executeTransition(data, data?.eventSource));
       }, this.DEBOUNCE_MS);
     } else if (type === "alarm") {
       // Alarm needs to resolve the *current* session inside the lock to decide what to do
       this.queue.addItem(() => this._executeAlarmTick());
     } else {
       // Idle events (immediate)
-      this.queue.addItem(() => this._executeTransition(data));
+      this.queue.addItem(() => this._executeTransition(data, data?.eventSource));
     }
   }
 
   /**
    * Standard transition: End current session -> Start new session (if data.url exists)
    */
-  private async _executeTransition(data?: { url: string | null; title?: string }) {
+  private async _executeTransition(
+    data?: { url: string | null; title?: string },
+    eventSource?: EventSource,
+  ) {
     try {
       // 1. End current session
       const session = await this.deps.storage.getValue();
@@ -92,7 +101,7 @@ export class SessionManager {
       // 2. Start new session if a valid URL is provided
       const hasNewTarget = typeof data?.url === "string" && data.url.length > 0;
       if (hasNewTarget) {
-        await this._startSession(data.url as string, data.title);
+        await this._startSession(data.url as string, data.title, eventSource);
       } else if (this._hasActiveSession) {
         // Transition to idle: clear alarm
         this._hasActiveSession = false;
@@ -114,8 +123,8 @@ export class SessionManager {
       if (session.url) {
         // End current
         await this._endSession(session);
-        // Restart same
-        await this._startSession(session.url, session.title);
+        // Restart same (keep original eventSource or mark as alarm)
+        await this._startSession(session.url, session.title, "alarm");
       } else if (this._hasActiveSession) {
         // Stale alarm: no active session but alarm still running
         this._hasActiveSession = false;
@@ -137,7 +146,13 @@ export class SessionManager {
     // Persist to DB
     // Only record if duration is positive (or whatever threshold, currently strict > 0)
     if (finalDuration > 0) {
-      await this.deps.recordActivity(session.url, finalDuration, session.title, session.startTime);
+      await this.deps.recordActivity(
+        session.url,
+        finalDuration,
+        session.title,
+        session.startTime,
+        session.eventSource,
+      );
     }
 
     // Clear from storage
@@ -145,13 +160,14 @@ export class SessionManager {
     console.log("SessionManager: Tracking ended:", session.url);
   }
 
-  private async _startSession(url: string, title?: string) {
+  private async _startSession(url: string, title?: string, eventSource?: EventSource) {
     const newSession: ActiveSessionData = {
       url,
       title: title ?? "",
       startTime: Date.now(),
       lastUpdateTime: Date.now(),
       duration: 0,
+      eventSource,
     };
     await this.deps.storage.setValue(newSession);
 
