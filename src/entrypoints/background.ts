@@ -118,7 +118,12 @@ export default defineBackground(() => {
       try {
         console.log("Idle state changed, state:", state);
         if (state === "active") {
-          // Fetch the current active tab
+          // Check if browser window is focused first
+          const focusedWindow = await browser.windows.getLastFocused();
+          if (!focusedWindow.focused) {
+            return; // Browser not focused, don't start tracking
+          }
+
           const result = await getActiveTabUrl();
           if (!result) {
             console.warn("No active tab or tab URL available on idle resume");
