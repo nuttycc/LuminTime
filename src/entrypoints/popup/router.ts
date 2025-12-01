@@ -1,6 +1,6 @@
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from "vue-router";
 import HomeView from "./pages/HomeView.vue";
-import DomainDetailView from "./pages/DomainDetailView.vue";
+import SiteDetailView from "./pages/SiteDetailView.vue";
 import HistoryView from "./pages/HistoryView.vue";
 
 // oxlint-disable typescript-eslint/no-unsafe-assignment
@@ -10,8 +10,8 @@ const routes: RouteRecordRaw[] = [
     component: HomeView,
   },
   {
-    path: "/domain/:domain",
-    component: DomainDetailView,
+    path: "/site/:hostname",
+    component: SiteDetailView,
   },
   {
     path: "/history",

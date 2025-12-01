@@ -96,9 +96,9 @@ const sitePercentage = (duration: number): number => {
   return Math.round((duration / totalDuration.value) * 100);
 };
 
-const goToDetail = (domain: string) => {
+const goToDetail = (hostname: string) => {
   router.push({
-    path: `/domain/${domain}`,
+    path: `/site/${hostname}`,
     query: { view: view.value, date: date.value }
   });
 };
@@ -169,18 +169,18 @@ const updateView = (v: ViewMode) => {
         <div v-else class="flex flex-col gap-1">
           <button
             v-for="site in sites"
-            :key="site.domain"
+            :key="site.hostname"
             class="flex items-center gap-3 p-3 hover:bg-base-200/50 rounded-box transition-colors text-left"
-            @click="goToDetail(site.domain)"
+            @click="goToDetail(site.hostname)"
           >
             <!-- Icon placeholder or favicon if available -->
             <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0 relative overflow-hidden">
-               <span>{{ site.domain.charAt(0).toUpperCase() }}</span>
+               <span>{{ site.hostname.charAt(0).toUpperCase() }}</span>
             </div>
 
             <div class="flex flex-col flex-1 min-w-0 gap-1">
               <div class="flex justify-between items-baseline">
-                <span class="font-medium truncate text-sm">{{ site.domain }}</span>
+                <span class="font-medium truncate text-sm">{{ site.hostname }}</span>
                 <span class="font-mono text-xs font-bold">{{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}</span>
               </div>
 

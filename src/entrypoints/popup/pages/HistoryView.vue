@@ -12,7 +12,7 @@ const route = useRoute();
 const router = useRouter();
 const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
 
-const domain = computed(() => route.query.domain as string | undefined);
+const hostname = computed(() => route.query.hostname as string | undefined);
 const path = computed(() => route.query.path as string | undefined);
 
 const logs = ref<IHistoryLog[]>([]);
@@ -21,7 +21,7 @@ const loading = ref(false);
 const fetchData = async () => {
   loading.value = true;
   try {
-    logs.value = await getHistoryLogs(startDate.value, endDate.value, domain.value, path.value);
+    logs.value = await getHistoryLogs(startDate.value, endDate.value, hostname.value, path.value);
   } catch (e) {
     console.error('Failed to fetch history', e);
   } finally {
@@ -29,18 +29,18 @@ const fetchData = async () => {
   }
 };
 
-watch([startDate, endDate, domain, path], fetchData);
+watch([startDate, endDate, hostname, path], fetchData);
 onMounted(fetchData);
 
 const title = computed(() => {
   if (path.value) return 'Page History';
-  if (domain.value) return 'Domain History';
+  if (hostname.value) return 'Site History';
   return 'History';
 });
 
 const subtitle = computed(() => {
   if (path.value) return path.value;
-  if (domain.value) return domain.value;
+  if (hostname.value) return hostname.value;
   return 'All Activity';
 });
 
@@ -79,7 +79,7 @@ const formatDateLabel = (d: string) => {
 };
 
 const formatLogPath = (log: IHistoryLog) => {
-  return domain.value ? log.path : `${log.domain}${log.path}`;
+  return hostname.value ? log.path : `${log.hostname}${log.path}`;
 };
 
 const eventSourceConfig: Record<string, { icon: string; tip: string }> = {

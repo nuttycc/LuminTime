@@ -60,7 +60,7 @@ export async function recordActivity(
   if (!rawUrl || durationToAdd <= 0) return;
   if (!rawUrl.startsWith("http")) return;
 
-  const { domain, subdomain, path, fullPath } = normalizeUrl(rawUrl);
+  const { hostname, path, fullPath } = normalizeUrl(rawUrl);
   const now = Date.now();
   const actualStartTime = startTime ?? now - durationToAdd;
 
@@ -74,8 +74,7 @@ export async function recordActivity(
       // 1. L1: 插入流水
       await db.history.add({
         date: split.date,
-        domain,
-        subdomain,
+        hostname,
         path,
         startTime: split.startTime,
         duration: split.duration,
@@ -84,7 +83,7 @@ export async function recordActivity(
       });
 
       // 2. L2: 更新站点概览 (Upsert)
-      const siteKey: SiteKey = [split.date, domain];
+      const siteKey: SiteKey = [split.date, hostname];
       const siteStat = await db.sites.get(siteKey);
 
       if (siteStat) {
@@ -95,14 +94,14 @@ export async function recordActivity(
       } else {
         await db.sites.add({
           date: split.date,
-          domain,
+          hostname,
           duration: split.duration,
           lastVisit: split.startTime + split.duration,
         });
       }
 
       // 3. L3: 更新页面详情 (Upsert)
-      const pageKey: PageKey = [split.date, domain, path];
+      const pageKey: PageKey = [split.date, hostname, path];
       const pageStat = await db.pages.get(pageKey);
 
       if (pageStat) {
@@ -113,7 +112,7 @@ export async function recordActivity(
       } else {
         await db.pages.add({
           date: split.date,
-          domain,
+          hostname,
           path,
           fullPath,
           duration: split.duration,
@@ -143,7 +142,7 @@ export async function getAggregatedSites(
   const map = new Map<string, ISiteStat>();
 
   for (const r of records) {
-    const existing = map.get(r.domain);
+    const existing = map.get(r.hostname);
     if (existing) {
       existing.duration += r.duration;
       // keep the latest visit
@@ -153,7 +152,7 @@ export async function getAggregatedSites(
       // keep iconUrl if missing? (assuming it might be populated later)
     } else {
       // Clone to avoid mutating DB object if Dexie caches it
-      map.set(r.domain, { ...r });
+      map.set(r.hostname, { ...r });
     }
   }
 
@@ -222,34 +221,20 @@ export async function getHourlyTrend(date: string): Promise<{ hour: string; dura
 }
 
 /**
- * Aggregates page stats for a specific domain within a date range.
- * @param domain
+ * Aggregates page stats for a specific hostname within a date range.
+ * @param hostname
  * @param startDate
  * @param endDate
  */
 export async function getAggregatedPages(
-  domain: string,
+  hostname: string,
   startDate: string,
   endDate: string,
 ): Promise<IPageStat[]> {
-  // We can't easily use [date+domain+path] for range query on date while filtering domain.
-  // Index is [date+domain+path].
-  // We can use [date+domain] index to filter first.
+  // We can't easily use [date+hostname+path] for range query on date while filtering hostname.
+  // Index is [date+hostname+path].
+  // We can use [date+hostname] index to filter first.
 
-  // Dexie compound index usage:
-  // We want all records where date is in range AND domain is X.
-  // The index is `[date+domain+path]` or `[date+domain]`.
-  // We can use `.where('[date+domain]').between([startDate, domain], [endDate, domain])`
-  // BUT this only works if domain is the significant part, which it is NOT here (date is first).
-  // Actually, `between` on compound index compares lexicographically.
-  // [startDate, domain] ... [endDate, domain] includes [startDate, domain+1] which is wrong.
-
-  // Better strategy: Filter by date range first, then filter by domain in memory?
-  // OR use the `[date+domain]` index but we have to be careful.
-  // Actually, if we iterate all days in range, we can query specific keys: [day, domain].
-  // If the range is small (e.g. 30 days), 30 queries is fast.
-
-  // Let's try the iterate approach for exactness and performance on indexed lookups.
   const start = parseDate(startDate);
   const end = parseDate(endDate);
   const promises: Promise<IPageStat[]>[] = [];
@@ -257,8 +242,8 @@ export async function getAggregatedPages(
   let current = start;
   while (current <= end) {
     const dayStr = formatDate(current);
-    // Query pages for this specific day and domain
-    promises.push(db.pages.where("[date+domain]").equals([dayStr, domain]).toArray());
+    // Query pages for this specific day and hostname
+    promises.push(db.pages.where("[date+hostname]").equals([dayStr, hostname]).toArray());
     current = addDays(current, 1);
   }
 
@@ -287,19 +272,19 @@ export async function getAggregatedPages(
  * Gets history logs with optional filtering.
  * @param startDate YYYY-MM-DD
  * @param endDate YYYY-MM-DD
- * @param domain Optional domain filter
- * @param path Optional path filter (requires domain)
+ * @param hostname Optional hostname filter
+ * @param path Optional path filter (requires hostname)
  */
 export async function getHistoryLogs(
   startDate: string,
   endDate: string,
-  domain?: string,
+  hostname?: string,
   path?: string,
   limit = 2000,
 ): Promise<IHistoryLog[]> {
   let records: IHistoryLog[] = [];
 
-  if (domain) {
+  if (hostname) {
     // Collect all dates to query upfront
     const start = parseDate(startDate);
     const end = parseDate(endDate);
@@ -314,7 +299,9 @@ export async function getHistoryLogs(
 
     // Query all dates in parallel
     const dayResults = await Promise.all(
-      dates.map((dayStr) => db.history.where("[date+domain]").equals([dayStr, domain]).toArray()),
+      dates.map((dayStr) =>
+        db.history.where("[date+hostname]").equals([dayStr, hostname]).toArray(),
+      ),
     );
 
     // Process results in date order (most recent first)
@@ -362,9 +349,9 @@ export function getTodayTopSites(limit = 10) {
 
 /**
  * 获取某站点今日的页面访问详情 (用于下钻页面) - Legacy wrapper
- * @param domain 根域名 (如 google.com)
+ * @param hostname 主机名 (如 developer.chrome.com)
  */
-export function getSitePagesDetail(domain: string) {
+export function getSitePagesDetail(hostname: string) {
   const today = getTodayStr();
-  return getAggregatedPages(domain, today, today);
+  return getAggregatedPages(hostname, today, today);
 }

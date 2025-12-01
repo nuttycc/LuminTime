@@ -15,7 +15,7 @@ export const debugTools = {
     const sites = await getTodayTopSites(limit);
     console.table(
       sites.map((s) => ({
-        domain: s.domain,
+        hostname: s.hostname,
         duration: `${(s.duration / 1000 / 60).toFixed(2)}分`,
         lastVisit: new Date(s.lastVisit).toLocaleTimeString(),
       })),
