@@ -81,6 +81,14 @@ const formatDateLabel = (d: string) => {
 const formatLogPath = (log: IHistoryLog) => {
   return domain.value ? log.path : `${log.domain}${log.path}`;
 };
+
+const eventSourceConfig: Record<string, { icon: string; tip: string }> = {
+  tab_activated: { icon: '⇥', tip: 'Tab Switch' },
+  navigation: { icon: '↻', tip: 'Web Navigation' },
+  window_focus: { icon: '◎', tip: 'Window Focus' },
+  idle_resume: { icon: '▶', tip: 'Idle Resume' },
+  alarm: { icon: '⏱', tip: 'Periodic Save' },
+};
 </script>
 
 <template>
@@ -140,8 +148,15 @@ const formatLogPath = (log: IHistoryLog) => {
              :key="log.id || log.startTime"
              class="flex items-center gap-3 p-2 hover:bg-base-200/50 rounded-box transition-colors text-left border-b border-base-100 last:border-0"
            >
-              <div class="flex flex-col items-center w-10 shrink-0 opacity-60">
-                <div class="font-mono text-xs font-bold">{{ formatTime(log.startTime) }}</div>
+              <div class="flex items-center gap-1.5 shrink-0 opacity-60">
+                <div
+                  v-if="log.eventSource && eventSourceConfig[log.eventSource]"
+                  class="tooltip tooltip-right"
+                  :data-tip="eventSourceConfig[log.eventSource].tip"
+                >
+                  <span class="text-[10px]">{{ eventSourceConfig[log.eventSource].icon }}</span>
+                </div>
+                <div class="font-mono text-xs font-bold w-10">{{ formatTime(log.startTime) }}</div>
               </div>
 
               <div class="flex flex-col flex-1 min-w-0">
