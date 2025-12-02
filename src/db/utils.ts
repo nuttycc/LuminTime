@@ -1,8 +1,5 @@
-import { getDomain } from "tldts";
-
 export interface NormalizedUrl {
-  domain: string; // e.g. "google.com"
-  subdomain: string; // e.g. "mail.google.com"
+  hostname: string; // e.g. "google.com" (without www)
   path: string; // e.g. "/watch?v=dQw4w9WgXcQ" (已清洗追踪参数)
   protocol: string; // e.g. "https:"
   fullPath: string; // 完整的清洗后的 URL
@@ -56,14 +53,13 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
 
     // 1. 特殊协议处理 (非 HTTP/HTTPS)
     if (!isWebPage) {
-      let systemDomain = "System";
-      if (protocol === "file:") systemDomain = "Local File";
-      if (protocol === "chrome-extension:") systemDomain = "Extension";
-      if (protocol === "about:") systemDomain = "Browser";
+      let systemHostname = "System";
+      if (protocol === "file:") systemHostname = "Local File";
+      if (protocol === "chrome-extension:") systemHostname = "Extension";
+      if (protocol === "about:") systemHostname = "Browser";
 
       return {
-        domain: systemDomain,
-        subdomain: systemDomain,
+        hostname: systemHostname,
         path: url.pathname, // 系统页通常不需要 query
         protocol: protocol,
         fullPath: urlStr,
@@ -71,10 +67,12 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
       };
     }
 
-    // 2. 域名提取 (使用 tldts)
+    // 2. 主机名提取
     // 强制转小写，虽然 URL 对象通常会自动处理，但显式处理更安全
-    const hostname = url.hostname.toLowerCase();
-    let domain = getDomain(hostname) ?? hostname;
+    let hostname = url.hostname.toLowerCase();
+    if (hostname.startsWith("www.")) {
+      hostname = hostname.slice(4);
+    }
 
     // 3. 路径清洗 (移除末尾斜杠)
     let pathname = url.pathname;
@@ -91,11 +89,10 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
     // 重新组合 FullPath (使用清洗后的部分)
     // 注意：这里不包含 hash (#)，因为通常 hash 用于锚点定位，不改变页面内容
     // 除非是在做 SPA (单页应用) 的特定路由分析
-    const finalFullPath = `${protocol}//${hostname}${finalPath}`;
+    const finalFullPath = `${protocol}//${url.hostname.toLowerCase()}${finalPath}`;
 
     return {
-      domain: domain,
-      subdomain: hostname,
+      hostname: hostname,
       path: finalPath,
       protocol: protocol,
       fullPath: finalFullPath,
@@ -104,8 +101,7 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
   } catch (e) {
     // 极少数解析失败的情况
     return {
-      domain: "Invalid",
-      subdomain: "Invalid",
+      hostname: "Invalid",
       path: urlStr,
       protocol: "unknown:",
       fullPath: urlStr,

@@ -11,18 +11,18 @@ const route = useRoute();
 const router = useRouter();
 const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
 
-const domain = computed(() => route.params.domain as string);
+const hostname = computed(() => route.params.hostname as string);
 const pages = ref<IPageStat[]>([]);
 const loading = ref(false);
 
 const currentUrl = ref('');
 
 const fetchData = async () => {
-  if (!domain.value) return;
+  if (!hostname.value) return;
 
   loading.value = true;
   try {
-    pages.value = await getAggregatedPages(domain.value, startDate.value, endDate.value);
+    pages.value = await getAggregatedPages(hostname.value, startDate.value, endDate.value);
   } catch (e) {
     console.error('Failed to fetch page details', e);
   } finally {
@@ -30,7 +30,7 @@ const fetchData = async () => {
   }
 };
 
-watch([startDate, endDate, domain], fetchData);
+watch([startDate, endDate, hostname], fetchData);
 
 onMounted(async () => {
   fetchData();
@@ -69,17 +69,17 @@ const updateView = (v: ViewMode) => {
   view.value = v;
 };
 
-const goToDomainHistory = () => {
+const goToSiteHistory = () => {
   router.push({
     path: '/history',
-    query: { view: view.value, date: date.value, domain: domain.value }
+    query: { view: view.value, date: date.value, hostname: hostname.value }
   });
 };
 
 const goToPageHistory = (p: string) => {
   router.push({
     path: '/history',
-    query: { view: view.value, date: date.value, domain: domain.value, path: p }
+    query: { view: view.value, date: date.value, hostname: hostname.value, path: p }
   });
 };
 </script>
@@ -99,15 +99,15 @@ const goToPageHistory = (p: string) => {
       </div>
       <div class="navbar-center w-2/4 justify-center flex-col gap-0.5">
         <h1 class="text-sm font-bold truncate max-w-[150px]">
-          {{ domain }}
+          {{ hostname }}
         </h1>
         <div class="text-[10px] text-base-content/60 font-mono">
            {{ prettyMs(totalDuration, { secondsDecimalDigits: 0 }) }}
         </div>
       </div>
       <div class="navbar-end w-1/4">
-        <div class="tooltip tooltip-left" data-tip="Domain History">
-          <button class="btn btn-ghost btn-circle btn-sm" @click="goToDomainHistory">
+        <div class="tooltip tooltip-left" data-tip="Site History">
+          <button class="btn btn-ghost btn-circle btn-sm" @click="goToSiteHistory">
             <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </button>
         </div>
