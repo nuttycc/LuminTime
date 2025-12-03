@@ -355,3 +355,48 @@ export function getSitePagesDetail(hostname: string) {
   const today = getTodayStr();
   return getAggregatedPages(hostname, today, today);
 }
+
+/**
+ * Gets aggregated stats for a single site within a date range.
+ * Useful for checking the active site's historical data.
+ * @param hostname
+ * @param startDate YYYY-MM-DD
+ * @param endDate YYYY-MM-DD
+ */
+export async function getSiteStat(
+  hostname: string,
+  startDate: string,
+  endDate: string,
+): Promise<ISiteStat | null> {
+  const start = parseDate(startDate);
+  const end = parseDate(endDate);
+  const promises: Promise<ISiteStat | undefined>[] = [];
+
+  let current = start;
+  while (current <= end) {
+    const dayStr = formatDate(current);
+    // Use primary key lookup [date, hostname]
+    promises.push(db.sites.get([dayStr, hostname]));
+    current = addDays(current, 1);
+  }
+
+  const results = await Promise.all(promises);
+  const validResults = results.filter((r): r is ISiteStat => !!r);
+
+  if (validResults.length === 0) return null;
+
+  // Aggregate
+  const totalDuration = validResults.reduce((sum, r) => sum + r.duration, 0);
+  // Find latest visit
+  const lastVisit = Math.max(...validResults.map((r) => r.lastVisit));
+  // Use icon from the latest available record
+  const latestRecord = validResults.sort((a, b) => b.lastVisit - a.lastVisit)[0];
+
+  return {
+    date: startDate, // Representative
+    hostname,
+    duration: totalDuration,
+    lastVisit,
+    iconUrl: latestRecord.iconUrl,
+  };
+}

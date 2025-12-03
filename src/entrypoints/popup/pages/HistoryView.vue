@@ -7,6 +7,9 @@ import { getHistoryLogs } from '@/db/service';
 import type { IHistoryLog } from '@/db/types';
 import DateNavigator from '@/components/DateNavigator.vue';
 import { formatDate, parseDate } from '@/utils/dateUtils';
+import ActiveSessionCard from '@/components/ActiveSessionCard.vue';
+import { useActiveSession } from '@/composables/useActiveSession';
+import { getTodayStr, normalizeUrl } from '@/db/utils';
 
 const route = useRoute();
 const router = useRouter();
@@ -89,6 +92,25 @@ const eventSourceConfig: Record<string, { icon: string; tip: string }> = {
   idle_resume: { icon: '▶', tip: 'Idle Resume' },
   alarm: { icon: '⏱', tip: 'Periodic Save' },
 };
+
+const { session: activeSession, activeDuration, isActive } = useActiveSession();
+
+const showActiveCard = computed(() => {
+  if (!isActive.value || !activeSession.value) return false;
+
+  // Date check
+  const today = getTodayStr();
+  if (today < startDate.value || today > endDate.value) return false;
+
+  // Filter check
+  const activeUrl = activeSession.value.url;
+  const { hostname: activeHost, path: activePath } = normalizeUrl(activeUrl);
+
+  if (hostname.value && hostname.value !== activeHost) return false;
+  if (path.value && path.value !== activePath) return false;
+
+  return true;
+});
 </script>
 
 <template>
@@ -127,11 +149,18 @@ const eventSourceConfig: Record<string, { icon: string; tip: string }> = {
 
     <!-- List -->
     <div class="flex-1 overflow-y-auto p-4">
+      <ActiveSessionCard
+        v-if="showActiveCard && activeSession"
+        :session="activeSession"
+        :duration="activeDuration"
+        mode="log"
+      />
+
       <div v-if="loading" class="flex flex-col gap-2">
          <div v-for="i in 5" :key="i" class="skeleton h-12 w-full rounded-box opacity-50"></div>
       </div>
 
-      <div v-else-if="logs.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
+      <div v-else-if="logs.length === 0 && !showActiveCard" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
         <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
         <div class="text-sm font-medium">No history recorded</div>
         <div class="text-xs">No activity found for this period.</div>

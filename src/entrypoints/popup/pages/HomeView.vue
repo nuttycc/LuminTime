@@ -5,8 +5,11 @@ import prettyMs from 'pretty-ms';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
 import { getAggregatedSites, getDailyTrend, getHourlyTrend } from '@/db/service';
 import type { ISiteStat } from '@/db/types';
+import { getTodayStr } from '@/db/utils';
 import DateNavigator from '@/components/DateNavigator.vue';
 import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
+import ActiveSessionCard from '@/components/ActiveSessionCard.vue';
+import { useActiveSession } from '@/composables/useActiveSession';
 
 const router = useRouter();
 const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
@@ -113,6 +116,14 @@ const goToHistory = () => {
 const updateView = (v: ViewMode) => {
   view.value = v;
 };
+
+const { session: activeSession, activeDuration, isActive } = useActiveSession();
+
+const showActiveCard = computed(() => {
+  if (!isActive.value || !activeSession.value) return false;
+  const today = getTodayStr();
+  return today >= startDate.value && today <= endDate.value;
+});
 </script>
 
 <template>
@@ -151,6 +162,15 @@ const updateView = (v: ViewMode) => {
            <TrendChart :items="chartItems" />
         </div>
       </div>
+
+      <!-- Active Session -->
+      <ActiveSessionCard
+        v-if="showActiveCard && activeSession"
+        :session="activeSession"
+        :duration="activeDuration"
+        mode="aggregate"
+        :date-range="{ startDate, endDate }"
+      />
 
       <!-- Sites List -->
       <div class="flex flex-col gap-2">
