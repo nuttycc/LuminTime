@@ -178,14 +178,14 @@ const updateView = (v: ViewMode) => {
 
         <div v-else class="flex flex-col gap-1">
           <button
-            v-for="site in sites"
+            v-for="(site, index) in sites"
             :key="site.hostname"
             class="flex items-center gap-3 p-3 hover:bg-base-200/50 rounded-box transition-colors text-left"
             @click="goToDetail(site.hostname)"
           >
-            <!-- Icon placeholder or favicon if available -->
-            <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0 relative overflow-hidden">
-               <span>{{ site.hostname.charAt(0).toUpperCase() }}</span>
+            <!-- Rank number -->
+            <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0">
+              {{ index + 1 }}
             </div>
 
             <div class="flex flex-col flex-1 min-w-0 gap-1">
