@@ -118,8 +118,18 @@ const updateView = (v: ViewMode) => {
 <template>
   <div class="flex flex-col h-full bg-base-100">
     <!-- App Title -->
-    <div class="navbar bg-base-100 min-h-12 border-b border-base-200 justify-center">
-       <div class="font-bold text-lg">LuminTime</div>
+    <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
+      <div class="navbar-start w-1/4"></div>
+      <div class="navbar-center w-2/4 justify-center">
+        <div class="font-bold text-lg">LuminTime</div>
+      </div>
+      <div class="navbar-end w-1/4">
+        <div class="tooltip tooltip-left" data-tip="View All History">
+          <button class="btn btn-ghost btn-circle btn-sm" @click="goToHistory">
+            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Header with Date Navigator -->
@@ -195,13 +205,6 @@ const updateView = (v: ViewMode) => {
 
             <svg class="size-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
-
-          <!-- View All History -->
-          <div class="flex justify-center pt-2 pb-4">
-             <button class="btn btn-xs btn-ghost text-xs uppercase opacity-50 hover:opacity-100" @click="goToHistory">
-                View All History
-             </button>
-          </div>
         </div>
       </div>
 
