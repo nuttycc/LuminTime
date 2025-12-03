@@ -189,9 +189,9 @@ const updateView = (v: ViewMode) => {
             </div>
 
             <div class="flex flex-col flex-1 min-w-0 gap-1">
-              <div class="flex justify-between items-baseline">
+              <div class="flex justify-between items-baseline gap-2">
                 <span class="font-medium truncate text-sm">{{ site.hostname }}</span>
-                <span class="font-mono text-xs font-bold">{{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}</span>
+                <span class="font-mono text-xs font-bold shrink-0">{{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}</span>
               </div>
 
               <!-- Progress bar -->
