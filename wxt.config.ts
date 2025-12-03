@@ -12,8 +12,6 @@ export default defineConfig({
     permissions: ["tabs", "storage", "webNavigation", "idle", "alarms"],
   },
   vite: () => ({
-    plugins: [
-      tailwindcss()
-    ],
+    plugins: [tailwindcss()],
   }),
 });

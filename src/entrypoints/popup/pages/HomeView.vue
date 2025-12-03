@@ -118,8 +118,18 @@ const updateView = (v: ViewMode) => {
 <template>
   <div class="flex flex-col h-full bg-base-100">
     <!-- App Title -->
-    <div class="navbar bg-base-100 min-h-12 border-b border-base-200 justify-center">
-       <div class="font-bold text-lg">LuminTime</div>
+    <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
+      <div class="navbar-start w-1/4"></div>
+      <div class="navbar-center w-2/4 justify-center">
+        <div class="font-bold text-lg">LuminTime</div>
+      </div>
+      <div class="navbar-end w-1/4">
+        <div class="tooltip tooltip-left" data-tip="View All History">
+          <button class="btn btn-ghost btn-circle btn-sm" @click="goToHistory">
+            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Header with Date Navigator -->
@@ -168,20 +178,20 @@ const updateView = (v: ViewMode) => {
 
         <div v-else class="flex flex-col gap-1">
           <button
-            v-for="site in sites"
+            v-for="(site, index) in sites"
             :key="site.hostname"
             class="flex items-center gap-3 p-3 hover:bg-base-200/50 rounded-box transition-colors text-left"
             @click="goToDetail(site.hostname)"
           >
-            <!-- Icon placeholder or favicon if available -->
-            <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0 relative overflow-hidden">
-               <span>{{ site.hostname.charAt(0).toUpperCase() }}</span>
+            <!-- Rank number -->
+            <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0">
+              {{ index + 1 }}
             </div>
 
             <div class="flex flex-col flex-1 min-w-0 gap-1">
-              <div class="flex justify-between items-baseline">
+              <div class="flex justify-between items-baseline gap-2">
                 <span class="font-medium truncate text-sm">{{ site.hostname }}</span>
-                <span class="font-mono text-xs font-bold">{{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}</span>
+                <span class="font-mono text-xs font-bold shrink-0">{{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}</span>
               </div>
 
               <!-- Progress bar -->
@@ -195,13 +205,6 @@ const updateView = (v: ViewMode) => {
 
             <svg class="size-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
-
-          <!-- View All History -->
-          <div class="flex justify-center pt-2 pb-4">
-             <button class="btn btn-xs btn-ghost text-xs uppercase opacity-50 hover:opacity-100" @click="goToHistory">
-                View All History
-             </button>
-          </div>
         </div>
       </div>
 

@@ -1,12 +1,7 @@
 import { type } from "arktype";
 
 // 事件来源类型
-export type EventSource =
-  | "tab_activated"
-  | "navigation"
-  | "window_focus"
-  | "idle_resume"
-  | "alarm";
+export type EventSource = "tab_activated" | "navigation" | "window_focus" | "idle_resume" | "alarm";
 
 // --- L1: 原始流水 (用于历史回溯/审计) ---
 export const HistoryLog = type({
