@@ -1,0 +1,48 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build extension
+        run: bun run zip
+
+      - name: Generate version
+        id: version
+        run: echo "version=dev-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Delete existing pre-release
+        run: gh release delete dev-latest --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete existing tag
+        run: git push origin :refs/tags/dev-latest || true
+
+      - name: Create pre-release
+        run: |
+          gh release create dev-latest \
+            --prerelease \
+            --title "Development Build ${{ steps.version.outputs.version }}" \
+            --notes "Auto-generated pre-release build from main branch.
+
+          **Build Info:**
+          - Commit: ${{ github.sha }}
+          - Date: $(date +'%Y-%m-%d %H:%M:%S UTC')" \
+            .output/*.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
