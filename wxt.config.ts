@@ -9,6 +9,7 @@ export default defineConfig({
     disabled: true,
   },
   manifest: {
+    name: "Lumin Time",
     permissions: ["tabs", "storage", "webNavigation", "idle", "alarms"],
   },
   vite: () => ({
