@@ -1,6 +1,16 @@
 name: Build and Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'prerelease'
+        type: choice
+        options:
+          - prerelease
+          - release
   push:
     branches: [main]
 
@@ -12,37 +22,94 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          restore-keys: ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install
 
-      - name: Build extension
+      - name: Run checks
+        run: bun run compile && bun run lint
+
+      - name: Get version from package.json
+        id: pkg
+        run: echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+
+      - name: Check version not already released
+        if: github.event_name == 'workflow_dispatch' && inputs.release_type == 'release'
+        run: |
+          if gh release view "v${{ steps.pkg.outputs.version }}" &>/dev/null; then
+            echo "::error::Version v${{ steps.pkg.outputs.version }} already exists. Please update version in package.json"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Chrome extension
         run: bun run zip
 
-      - name: Generate version
-        id: version
-        run: echo "version=dev-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+      - name: Build Firefox extension
+        run: bun run zip:firefox
 
-      - name: Delete existing pre-release
-        run: gh release delete dev-latest --yes || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Delete existing tag
-        run: git push origin :refs/tags/dev-latest || true
-
-      - name: Create pre-release
+      - name: Set release info
+        id: release
         run: |
-          gh release create dev-latest \
-            --prerelease \
-            --title "Development Build ${{ steps.version.outputs.version }}" \
-            --notes "Auto-generated pre-release build from main branch.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.release_type }}" = "release" ]; then
+            echo "tag=v${{ steps.pkg.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "name=v${{ steps.pkg.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          else
+            NIGHTLY_TAG="nightly-$(date +'%Y-%m-%d')"
+            echo "tag=$NIGHTLY_TAG" >> $GITHUB_OUTPUT
+            echo "name=Nightly Build ($(date +'%Y-%m-%d'))" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          fi
 
-          **Build Info:**
-          - Commit: ${{ github.sha }}
-          - Date: $(date +'%Y-%m-%d %H:%M:%S UTC')" \
-            .output/*.zip
+      - name: Delete existing nightly release for today
+        if: steps.release.outputs.prerelease == 'true'
+        run: |
+          gh release delete ${{ steps.release.outputs.tag }} --yes || true
+          git push origin :refs/tags/${{ steps.release.outputs.tag }} || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release
+        run: |
+          if [ "${{ steps.release.outputs.prerelease }}" = "true" ]; then
+            gh release create ${{ steps.release.outputs.tag }} \
+              --prerelease \
+              --title "${{ steps.release.outputs.name }}" \
+              --notes "Auto-generated development build from main branch.
+
+          **Commit:** ${{ github.sha }}" \
+              .output/*.zip
+          else
+            gh release create ${{ steps.release.outputs.tag }} \
+              --title "${{ steps.release.outputs.name }}" \
+              --generate-notes \
+              .output/*.zip
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Job summary
+        run: |
+          echo "## 🚀 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.pkg.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | \`${{ steps.release.outputs.tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Type | ${{ steps.release.outputs.prerelease == 'true' && '🧪 Prerelease' || '✅ Release' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+          ls -lh .output/*.zip | awk '{print "- `" $NF "` (" $5 ")"}' >> $GITHUB_STEP_SUMMARY
