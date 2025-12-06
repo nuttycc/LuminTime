@@ -5,6 +5,7 @@ import { SessionManager, type ActiveSessionData } from "@/utils/SessionManager";
 import { debugTools } from "@/utils/debugTools";
 
 const IDLE_DETECTION_INTERVAL = 30;
+
 const SESSION_TICK_ALARM_NAME = "session-update";
 const SESSION_PER_MINUTE = 1;
 
@@ -17,6 +18,17 @@ const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSess
     duration: 0,
   },
 });
+
+const isExpectedBrowserError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message;
+  return (
+    msg.includes("No tab with id") ||
+    msg.includes("No window with id") ||
+    msg.includes("No last-focused window") ||
+    msg.includes("Tabs cannot be edited")
+  );
+};
 
 const getActiveTabUrl = async () => {
   const tabs = await browser.tabs.query({ active: true, currentWindow: true });
@@ -70,6 +82,10 @@ export default defineBackground(() => {
           eventSource: "tab_activated",
         });
       } catch (error) {
+        if (isExpectedBrowserError(error)) {
+          console.debug("[TabActivated] Tab unavailable:", error);
+          return;
+        }
         console.error("Failed to handle tab activation:", error);
       }
     })();
@@ -95,6 +111,10 @@ export default defineBackground(() => {
           eventSource: "navigation",
         });
       } catch (error) {
+        if (isExpectedBrowserError(error)) {
+          console.debug("[Navigation] Tab/window unavailable:", error);
+          return;
+        }
         console.error(`Failed to process navigation to ${details.url}:`, error);
       }
     })();
@@ -116,6 +136,10 @@ export default defineBackground(() => {
           });
         }
       } catch (error) {
+        if (isExpectedBrowserError(error)) {
+          console.debug("[WindowFocus] Window unavailable:", error);
+          return;
+        }
         console.error("Failed to process window focus change:", error);
       }
     })();
@@ -148,6 +172,10 @@ export default defineBackground(() => {
           sessionManager.handleEvent("idle", { url: null });
         }
       } catch (error) {
+        if (isExpectedBrowserError(error)) {
+          console.debug("[IdleState] Browser state unavailable:", error);
+          return;
+        }
         console.error("Failed to handle idle state change:", error);
       }
     })();
