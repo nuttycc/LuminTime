@@ -2,7 +2,7 @@
   "name": "lumin-time",
   "description": "LuminTime is a privacy-first browser extension that automatically tracks your online activity and labels it intelligently.",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.12",
   "type": "module",
   "scripts": {
     "dev": "wxt",
