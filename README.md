@@ -1,6 +1,6 @@
 # LuminTime
 
-A privacy-first browser extension that automatically tracks your online activity. All data stays local (IndexedDB)—no cloud, no account required.
+A privacy-first browser extension that automatically tracks your online activity. All data stays local, no cloud, no account required.
 
 ## Screenshots
 

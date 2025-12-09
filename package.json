@@ -1,6 +1,6 @@
 {
   "name": "lumin-time",
-  "description": "A privacy-first browser extension that automatically tracks your online activity. All data stays local (IndexedDB)—no cloud, no account required.",
+  "description": "A privacy-first browser extension that automatically tracks your online activity.",
   "homepage": "https://github.com/nuttycc/LuminTime",
   "private": true,
   "version": "0.1.13",
