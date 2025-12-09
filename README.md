@@ -2,9 +2,13 @@
 
 A privacy-first browser extension that automatically tracks your online activity. All data stays local, no cloud, no account required.
 
+**[Install from Chrome Web Store](https://chromewebstore.google.com/detail/lumin-time/elfkjlledpjmjehekdklejboanfbffak)**
+
 <div style="display: flex; justify-content: center;">
    <img src="docs\screenshots\store0pic.png" />
 </div>
+
+---
 
 ## Screenshots
 
