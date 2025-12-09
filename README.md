@@ -2,11 +2,15 @@
 
 A privacy-first browser extension that automatically tracks your online activity. All data stays local, no cloud, no account required.
 
+<div style="display: flex; justify-content: center;">
+   <img src="docs\screenshots\store0pic.png" />
+</div>
+
 ## Screenshots
 
 <div style="display: flex; justify-content: center;">
-  <img src="docs/screenshots/home.png" width="45%" />
-  <img src="docs/screenshots/history.png" width="45%" />
+  <img src="docs/screenshots/home.png" width="46%" />
+  <img src="docs/screenshots/history.png" width="46%" />
 </div>
 
 ## Key Features
