@@ -2,30 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { exportAllData, importData } from '../../src/db/exportImport';
 import { db } from '../../src/db/index';
 
-// Mock Dexie
-vi.mock('../../src/db/index', () => {
-  const mockHistory = {
-    toArray: vi.fn(),
-    bulkPut: vi.fn(),
-  };
-  const mockSites = {
-    toArray: vi.fn(),
-    bulkPut: vi.fn(),
-  };
-  const mockPages = {
-    toArray: vi.fn(),
-    bulkPut: vi.fn(),
-  };
+// Mock functions
+const mockHistoryBulkPut = vi.fn();
+const mockSitesBulkPut = vi.fn();
+const mockPagesBulkPut = vi.fn();
 
-  return {
-    db: {
-      transaction: vi.fn((mode, tables, callback) => callback()),
-      history: mockHistory,
-      sites: mockSites,
-      pages: mockPages,
-    }
-  };
-});
+// Mock Dexie
+vi.mock('../../src/db/index', () => ({
+  db: {
+    transaction: vi.fn((_mode: string, _tables: unknown, callback: () => void) => callback()),
+    history: { toArray: vi.fn(), bulkPut: mockHistoryBulkPut },
+    sites: { toArray: vi.fn(), bulkPut: mockSitesBulkPut },
+    pages: { toArray: vi.fn(), bulkPut: mockPagesBulkPut },
+  }
+}));
 
 describe('exportImport', () => {
   beforeEach(() => {
@@ -65,9 +55,9 @@ describe('exportImport', () => {
 
       await importData(importPayload);
 
-      expect(db.history.bulkPut).toHaveBeenCalledWith(importPayload.history);
-      expect(db.sites.bulkPut).toHaveBeenCalledWith(importPayload.sites);
-      expect(db.pages.bulkPut).toHaveBeenCalledWith(importPayload.pages);
+      expect(mockHistoryBulkPut).toHaveBeenCalledWith(importPayload.history);
+      expect(mockSitesBulkPut).toHaveBeenCalledWith(importPayload.sites);
+      expect(mockPagesBulkPut).toHaveBeenCalledWith(importPayload.pages);
     });
 
     it('should throw error for invalid data structure', async () => {
