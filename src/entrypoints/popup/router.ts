@@ -2,6 +2,7 @@ import { createMemoryHistory, createRouter, type RouteRecordRaw } from "vue-rout
 import HomeView from "./pages/HomeView.vue";
 import SiteDetailView from "./pages/SiteDetailView.vue";
 import HistoryView from "./pages/HistoryView.vue";
+import SettingsView from "./pages/SettingsView.vue";
 
 // oxlint-disable typescript-eslint/no-unsafe-assignment
 const routes: RouteRecordRaw[] = [
@@ -16,6 +17,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/history",
     component: HistoryView,
+  },
+  {
+    path: "/settings",
+    component: SettingsView,
   },
 ];
 
