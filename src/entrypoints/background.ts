@@ -2,7 +2,6 @@
 // oxlint-disable no-magic-numbers
 import { recordActivity } from "@/db/service";
 import { SessionManager, type ActiveSessionData } from "@/utils/SessionManager";
-import { debugTools } from "@/utils/debugTools";
 
 const IDLE_DETECTION_INTERVAL = 30;
 
@@ -46,11 +45,7 @@ const getActiveTabUrl = async () => {
 
 // oxlint-disable-next-line max-lines-per-function
 export default defineBackground(() => {
-  // oxlint-disable-next-line no-unsafe-type-assertion oxlint-disable-next-line no-unsafe-member-access
-  (globalThis as any).lumintime = debugTools;
-
   console.log("Hello background!", { id: browser.runtime.id });
-  console.log("💡 调试工具已加载.");
 
   // Initialize SessionManager with dependencies
   const sessionManager = new SessionManager({
