@@ -10,6 +10,8 @@ const importing = ref(false);
 const message = ref<{ text: string; type: 'success' | 'error' } | null>(null);
 
 const dbStats = ref<IDbStats | null>(null);
+const statsLoading = ref(false);
+const statsError = ref<string | null>(null);
 
 const goBack = () => {
   router.back();
@@ -56,7 +58,7 @@ const handleFileChange = async (event: Event) => {
     message.value = { text: 'Import successful!', type: 'success' };
 
     // Refresh stats after import
-    loadStats();
+    await loadStats();
 
     // Clear input to allow re-selecting same file if needed
     target.value = '';
@@ -69,7 +71,18 @@ const handleFileChange = async (event: Event) => {
 };
 
 const loadStats = async () => {
-  dbStats.value = await getDatabaseStats();
+  statsLoading.value = true;
+  statsError.value = null;
+
+  try {
+    dbStats.value = await getDatabaseStats();
+  } catch (e) {
+    console.error('Failed to load stats', e);
+    dbStats.value = null;
+    statsError.value = (e as Error).message || 'Unknown error';
+  } finally {
+    statsLoading.value = false;
+  }
 };
 
 const formatBytes = (bytes?: number) => {
@@ -82,7 +95,7 @@ const formatBytes = (bytes?: number) => {
 };
 
 onMounted(() => {
-  loadStats();
+  void loadStats();
 });
 </script>
 
@@ -157,7 +170,13 @@ onMounted(() => {
           <div class="card-body p-4 gap-4">
 
             <!-- Stats -->
-            <div v-if="dbStats" class="grid grid-cols-2 gap-4">
+            <div v-if="statsLoading" class="flex justify-center py-4">
+              <span class="loading loading-spinner loading-md opacity-50"></span>
+            </div>
+            <div v-else-if="statsError" class="alert alert-error text-sm py-2">
+              <span>Failed to load stats: {{ statsError }}</span>
+            </div>
+            <div v-else-if="dbStats" class="grid grid-cols-2 gap-4">
                <div class="flex flex-col">
                  <span class="text-xs opacity-60">History Rows</span>
                  <span class="font-mono text-lg font-bold">{{ dbStats.historyCount.toLocaleString() }}</span>
@@ -176,9 +195,7 @@ onMounted(() => {
                  <span class="text-[10px] opacity-40">Origin Total</span>
                </div>
             </div>
-            <div v-else class="flex justify-center py-4">
-              <span class="loading loading-spinner loading-md opacity-50"></span>
-            </div>
+            <div v-else class="text-sm opacity-60">No stats available.</div>
 
           </div>
         </div>
