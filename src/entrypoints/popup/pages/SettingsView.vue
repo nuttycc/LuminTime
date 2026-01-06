@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { exportAllData, importData, type IExportData } from '@/db/exportImport';
+import { getDatabaseStats, type IDbStats } from '@/db/diagnostics';
 
 const router = useRouter();
 const fileInput = ref<HTMLInputElement | null>(null);
 const importing = ref(false);
 const message = ref<{ text: string; type: 'success' | 'error' } | null>(null);
+
+const dbStats = ref<IDbStats | null>(null);
 
 const goBack = () => {
   router.back();
@@ -52,6 +55,9 @@ const handleFileChange = async (event: Event) => {
     await importData(data);
     message.value = { text: 'Import successful!', type: 'success' };
 
+    // Refresh stats after import
+    loadStats();
+
     // Clear input to allow re-selecting same file if needed
     target.value = '';
   } catch (e) {
@@ -61,6 +67,23 @@ const handleFileChange = async (event: Event) => {
     importing.value = false;
   }
 };
+
+const loadStats = async () => {
+  dbStats.value = await getDatabaseStats();
+};
+
+const formatBytes = (bytes?: number) => {
+  if (bytes === undefined) return 'Unknown';
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+onMounted(() => {
+  loadStats();
+});
 </script>
 
 <template>
@@ -122,6 +145,41 @@ const handleFileChange = async (event: Event) => {
             <div v-if="message" :class="['alert text-sm py-2', message.type === 'success' ? 'alert-success' : 'alert-error']">
               <span>{{ message.text }}</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Section -->
+      <div class="flex flex-col gap-2">
+        <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Advanced</h2>
+
+        <div class="card bg-base-200 shadow-sm border border-base-300">
+          <div class="card-body p-4 gap-4">
+
+            <!-- Stats -->
+            <div v-if="dbStats" class="grid grid-cols-2 gap-4">
+               <div class="flex flex-col">
+                 <span class="text-xs opacity-60">History Rows</span>
+                 <span class="font-mono text-lg font-bold">{{ dbStats.historyCount.toLocaleString() }}</span>
+               </div>
+               <div class="flex flex-col">
+                 <span class="text-xs opacity-60">Sites Rows</span>
+                 <span class="font-mono text-lg font-bold">{{ dbStats.sitesCount.toLocaleString() }}</span>
+               </div>
+               <div class="flex flex-col">
+                 <span class="text-xs opacity-60">Pages Rows</span>
+                 <span class="font-mono text-lg font-bold">{{ dbStats.pagesCount.toLocaleString() }}</span>
+               </div>
+               <div class="flex flex-col">
+                 <span class="text-xs opacity-60">Storage Usage</span>
+                 <span class="font-mono text-lg font-bold">{{ formatBytes(dbStats.storageUsage) }}</span>
+                 <span class="text-[10px] opacity-40">Origin Total</span>
+               </div>
+            </div>
+            <div v-else class="flex justify-center py-4">
+              <span class="loading loading-spinner loading-md opacity-50"></span>
+            </div>
+
           </div>
         </div>
       </div>
