@@ -104,7 +104,7 @@ onMounted(() => {
     <!-- Navbar -->
     <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
       <div class="navbar-start w-1/4">
-        <button class="btn btn-ghost btn-circle btn-sm" @click="goBack">
+        <button class="btn btn-ghost btn-circle btn-sm" aria-label="Go back" @click="goBack">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
