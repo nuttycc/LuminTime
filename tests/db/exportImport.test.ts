@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { exportAllData, importData } from '../../src/db/exportImport';
 import { db } from '../../src/db/index';
 
-// Mock functions
-const mockHistoryBulkPut = vi.fn();
-const mockSitesBulkPut = vi.fn();
-const mockPagesBulkPut = vi.fn();
+// Mock functions using vi.hoisted to avoid ReferenceError
+const { mockHistoryBulkPut, mockSitesBulkPut, mockPagesBulkPut } = vi.hoisted(() => ({
+  mockHistoryBulkPut: vi.fn(),
+  mockSitesBulkPut: vi.fn(),
+  mockPagesBulkPut: vi.fn(),
+}));
 
 // Mock Dexie
 vi.mock('../../src/db/index', () => ({
