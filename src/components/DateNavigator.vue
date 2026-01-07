@@ -62,7 +62,7 @@ const nextTip = computed(() => {
     <!-- Date Navigation -->
     <div class="flex items-center justify-between px-2 mt-1">
       <div class="tooltip tooltip-right" :data-tip="prevTip">
-        <button class="btn btn-ghost btn-circle btn-sm" @click="emit('prev')">
+        <button class="btn btn-ghost btn-circle btn-sm" :aria-label="prevTip" @click="emit('prev')">
           <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
         </button>
       </div>
@@ -72,6 +72,7 @@ const nextTip = computed(() => {
       <div class="tooltip tooltip-left" :data-tip="nextTip">
         <button
           class="btn btn-ghost btn-circle btn-sm"
+          :aria-label="nextTip"
           :disabled="canNext === false"
           @click="emit('next')"
         >

@@ -97,7 +97,7 @@ const eventSourceConfig: Record<string, { icon: string; tip: string }> = {
     <div class="navbar bg-base-100 sticky top-0 z-30 border-b border-base-200 min-h-12 px-2">
       <div class="navbar-start w-1/4">
         <div class="tooltip tooltip-right" data-tip="Back">
-          <button class="btn btn-ghost btn-circle btn-sm" @click="goBack">
+          <button class="btn btn-ghost btn-circle btn-sm" aria-label="Go back" @click="goBack">
             <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
