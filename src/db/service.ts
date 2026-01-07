@@ -201,21 +201,21 @@ export async function getDailyTrend(
  * @param date YYYY-MM-DD
  */
 export async function getHourlyTrend(date: string): Promise<{ hour: string; duration: number }[]> {
-  const records = await db.history.where("date").equals(date).toArray();
-
   // Initialize 24 hours
   const hours = Array.from({ length: 24 }, (_, i) => ({
     hour: i.toString(), // "0", "1", ... "23"
     duration: 0,
   }));
 
-  for (const r of records) {
+  // Use .each() to avoid loading all history records into memory at once.
+  // This is a significant memory optimization for heavy users.
+  await db.history.where("date").equals(date).each((r) => {
     const d = new Date(r.startTime);
     const h = d.getHours();
     if (h >= 0 && h < 24) {
       hours[h].duration += r.duration;
     }
-  }
+  });
 
   return hours;
 }
