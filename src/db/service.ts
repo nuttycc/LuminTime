@@ -134,27 +134,19 @@ export async function getAggregatedSites(
   endDate: string,
   limit = 50,
 ): Promise<ISiteStat[]> {
-  // If same day, use the optimized daily query if possible, or just use range
-  // Range query: date between startDate and endDate
-  const records = await db.sites.where("date").between(startDate, endDate, true, true).toArray();
-
-  // Aggregate in memory
   const map = new Map<string, ISiteStat>();
 
-  for (const r of records) {
+  await db.sites.where("date").between(startDate, endDate, true, true).each((r) => {
     const existing = map.get(r.hostname);
     if (existing) {
       existing.duration += r.duration;
-      // keep the latest visit
       if (r.lastVisit > existing.lastVisit) {
         existing.lastVisit = r.lastVisit;
       }
-      // keep iconUrl if missing? (assuming it might be populated later)
     } else {
-      // Clone to avoid mutating DB object if Dexie caches it
       map.set(r.hostname, { ...r });
     }
-  }
+  });
 
   // Convert to array and sort
   const result = Array.from(map.values())
@@ -172,8 +164,6 @@ export async function getDailyTrend(
   startDate: string,
   endDate: string,
 ): Promise<{ date: string; duration: number }[]> {
-  const records = await db.sites.where("date").between(startDate, endDate, true, true).toArray();
-
   const dailyMap = new Map<string, number>();
 
   // Initialize all days in range with 0 (important for chart continuity)
@@ -185,10 +175,10 @@ export async function getDailyTrend(
     current = addDays(current, 1);
   }
 
-  for (const r of records) {
+  await db.sites.where("date").between(startDate, endDate, true, true).each((r) => {
     const currentVal = dailyMap.get(r.date) ?? 0;
     dailyMap.set(r.date, currentVal + r.duration);
-  }
+  });
 
   return Array.from(dailyMap.entries())
     .map(([date, duration]) => ({ date, duration }))
