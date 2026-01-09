@@ -17,10 +17,8 @@ type TrendData =
   | { date: string; duration: number };
 
 const trendData = ref<TrendData[]>([]);
-const loading = ref(false);
 
 const fetchData = async () => {
-  loading.value = true;
   try {
     let trend: TrendData[] = [];
     let sitesData: ISiteStat[] = [];
@@ -41,8 +39,6 @@ const fetchData = async () => {
     trendData.value = trend;
   } catch (e) {
     console.error('Failed to fetch data', e);
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -116,7 +112,7 @@ const updateView = (v: ViewMode) => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-base-100">
+  <div class="flex flex-col min-h-0 bg-base-100">
     <!-- App Title -->
     <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
       <div class="navbar-start w-1/4"></div>
@@ -148,7 +144,7 @@ const updateView = (v: ViewMode) => {
     />
 
     <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+    <div class="flex-1 p-4 space-y-4">
 
       <!-- Summary Card -->
       <div class="card bg-base-200 shadow-sm border border-base-300">
@@ -171,11 +167,7 @@ const updateView = (v: ViewMode) => {
       <div class="flex flex-col gap-2">
         <div class="text-xs font-bold text-base-content/40 uppercase px-2">Top Sites</div>
 
-        <div v-if="loading" class="flex flex-col gap-2">
-          <div v-for="i in 5" :key="i" class="skeleton h-12 w-full rounded-box opacity-50"></div>
-        </div>
-
-        <div v-else-if="sites.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
+        <div v-if="sites.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
           <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <div class="text-sm font-medium">No activity recorded</div>
           <div class="text-xs">Browse some sites to see data here.</div>

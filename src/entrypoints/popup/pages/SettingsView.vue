@@ -100,7 +100,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-base-100">
+  <div class="flex flex-col min-h-0 bg-base-100">
     <!-- Navbar -->
     <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
       <div class="navbar-start w-1/4">
@@ -117,7 +117,7 @@ onMounted(() => {
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-6">
+    <div class="flex-1 p-4 space-y-6">
 
       <!-- Data Management Section -->
       <div class="flex flex-col gap-2">
