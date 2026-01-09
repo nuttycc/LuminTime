@@ -17,10 +17,9 @@ type TrendData =
   | { date: string; duration: number };
 
 const trendData = ref<TrendData[]>([]);
-const loading = ref(false);
+const initialLoading = ref(true);
 
 const fetchData = async () => {
-  loading.value = true;
   try {
     let trend: TrendData[] = [];
     let sitesData: ISiteStat[] = [];
@@ -42,7 +41,7 @@ const fetchData = async () => {
   } catch (e) {
     console.error('Failed to fetch data', e);
   } finally {
-    loading.value = false;
+    initialLoading.value = false;
   }
 };
 
@@ -116,7 +115,7 @@ const updateView = (v: ViewMode) => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-base-100">
+  <div class="flex flex-col min-h-0 bg-base-100">
     <!-- App Title -->
     <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
       <div class="navbar-start w-1/4"></div>
@@ -148,7 +147,7 @@ const updateView = (v: ViewMode) => {
     />
 
     <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+    <div class="flex-1 p-4 space-y-4">
 
       <!-- Summary Card -->
       <div class="card bg-base-200 shadow-sm border border-base-300">
@@ -171,7 +170,7 @@ const updateView = (v: ViewMode) => {
       <div class="flex flex-col gap-2">
         <div class="text-xs font-bold text-base-content/40 uppercase px-2">Top Sites</div>
 
-        <div v-if="loading" class="flex flex-col gap-2">
+        <div v-if="initialLoading" class="flex flex-col gap-2">
           <div v-for="i in 5" :key="i" class="skeleton h-12 w-full rounded-box opacity-50"></div>
         </div>
 

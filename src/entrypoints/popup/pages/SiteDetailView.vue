@@ -85,7 +85,7 @@ const goToPageHistory = (p: string) => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-base-100">
+  <div class="flex flex-col min-h-0 bg-base-100">
     <!-- Custom Header -->
     <div class="navbar bg-base-100 sticky top-0 z-30 border-b border-base-200 min-h-12 px-2">
       <div class="navbar-start w-1/4">
@@ -125,7 +125,7 @@ const goToPageHistory = (p: string) => {
     />
 
     <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto p-4">
+    <div class="flex-1 p-4">
 
       <div v-if="loading" class="flex flex-col gap-2">
          <div v-for="i in 5" :key="i" class="skeleton h-10 w-full rounded opacity-50"></div>

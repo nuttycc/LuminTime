@@ -2,9 +2,10 @@
 </script>
 
 <template>
-  <div>
-    <router-view />
+  <div class="popup-root">
+    <div class="popup-scroll">
+      <router-view />
+    </div>
   </div>
 </template>
-
 

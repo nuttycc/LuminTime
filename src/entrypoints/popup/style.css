@@ -2,18 +2,33 @@
 @plugin "daisyui";
 
 /* Popup-specific styles */
+:root {
+  --popup-width: 350px;
+  --popup-height: 550px;
+}
+
 html,
-body {
+body,
+#app {
+  width: var(--popup-width);
+  height: var(--popup-height);
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100%;
+  overflow: hidden;
   font-family: Inter, system-ui, -apple-system, sans-serif;
 }
 
-#app {
-  width: 350px;
-  height: 450px;
+.popup-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.popup-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 /* DaisyUI theme customization for popup */
