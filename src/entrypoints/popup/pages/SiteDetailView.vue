@@ -98,7 +98,7 @@ const goToPageHistory = (p: string) => {
         </div>
       </div>
       <div class="navbar-center w-2/4 justify-center flex-col gap-0.5">
-        <h1 class="text-sm font-bold truncate max-w-[150px]">
+        <h1 class="text-sm font-bold truncate max-w-37.5">
           {{ hostname }}
         </h1>
         <div class="text-[10px] text-base-content/60 font-mono">
