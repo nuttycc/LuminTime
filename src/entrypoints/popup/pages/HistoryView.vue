@@ -16,16 +16,12 @@ const hostname = computed(() => route.query.hostname as string | undefined);
 const path = computed(() => route.query.path as string | undefined);
 
 const logs = ref<IHistoryLog[]>([]);
-const loading = ref(false);
 
 const fetchData = async () => {
-  loading.value = true;
   try {
     logs.value = await getHistoryLogs(startDate.value, endDate.value, hostname.value, path.value);
   } catch (e) {
     console.error('Failed to fetch history', e);
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -127,11 +123,7 @@ const eventSourceConfig: Record<string, { icon: string; tip: string }> = {
 
     <!-- List -->
     <div class="flex-1 p-4">
-      <div v-if="loading" class="flex flex-col gap-2">
-         <div v-for="i in 5" :key="i" class="skeleton h-12 w-full rounded-box opacity-50"></div>
-      </div>
-
-      <div v-else-if="logs.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
+      <div v-if="logs.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
         <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
         <div class="text-sm font-medium">No history recorded</div>
         <div class="text-xs">No activity found for this period.</div>
