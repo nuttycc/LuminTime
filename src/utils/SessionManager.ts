@@ -77,12 +77,20 @@ export class SessionManager {
       this.debounceTimer = setTimeout(() => {
         this.queue.addItem(() => this._executeTransition(data, data?.eventSource));
       }, this.DEBOUNCE_MS);
-    } else if (type === "alarm") {
-      // Alarm needs to resolve the *current* session inside the lock to decide what to do
-      this.queue.addItem(() => this._executeAlarmTick());
     } else {
-      // Idle events (immediate)
-      this.queue.addItem(() => this._executeTransition(data, data?.eventSource));
+      // Clear any pending debounce timer to prevent ghost sessions
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = null;
+      }
+
+      if (type === "alarm") {
+        // Alarm needs to resolve the *current* session inside the lock to decide what to do
+        this.queue.addItem(() => this._executeAlarmTick());
+      } else {
+        // Idle events (immediate)
+        this.queue.addItem(() => this._executeTransition(data, data?.eventSource));
+      }
     }
   }
 
@@ -121,9 +129,7 @@ export class SessionManager {
 
       // Only tick if we have a valid active session
       if (session.url) {
-        // End current
         await this._endSession(session);
-        // Restart same (keep original eventSource or mark as alarm)
         await this._startSession(session.url, session.title, "alarm");
       } else if (this._hasActiveSession) {
         // Stale alarm: no active session but alarm still running
