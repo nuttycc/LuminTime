@@ -63,33 +63,22 @@ export function useDateRange() {
     }
   });
 
-  // Navigate to next period
-  const next = () => {
+  // Navigate by direction: 1 for next, -1 for previous
+  const navigate = (direction: 1 | -1) => {
     switch (view.value) {
       case "week":
-        date.value = formatDate(addDays(dateObj.value, 7));
+        date.value = formatDate(addDays(dateObj.value, 7 * direction));
         break;
       case "month":
-        date.value = formatDate(addMonths(dateObj.value, 1));
+        date.value = formatDate(addMonths(dateObj.value, direction));
         break;
       default:
-        date.value = formatDate(addDays(dateObj.value, 1));
+        date.value = formatDate(addDays(dateObj.value, direction));
     }
   };
 
-  // Navigate to previous period
-  const prev = () => {
-    switch (view.value) {
-      case "week":
-        date.value = formatDate(addDays(dateObj.value, -7));
-        break;
-      case "month":
-        date.value = formatDate(addMonths(dateObj.value, -1));
-        break;
-      default:
-        date.value = formatDate(addDays(dateObj.value, -1));
-    }
-  };
+  const next = () => navigate(1);
+  const prev = () => navigate(-1);
 
   // Check if we can navigate forward (don't allow future dates)
   const canNext = computed(() => {
