@@ -149,10 +149,9 @@ export async function getAggregatedSites(
   });
 
   // Convert to array and sort
-  const result = Array.from(map.values())
-    .slice()
-    .sort((a, b) => b.duration - a.duration);
-  return result.slice(0, limit);
+  return Array.from(map.values())
+    .sort((a, b) => b.duration - a.duration)
+    .slice(0, limit);
 }
 
 /**
@@ -182,7 +181,6 @@ export async function getDailyTrend(
 
   return Array.from(dailyMap.entries())
     .map(([date, duration]) => ({ date, duration }))
-    .slice()
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -253,9 +251,7 @@ export async function getAggregatedPages(
     }
   }
 
-  return Array.from(map.values())
-    .slice()
-    .sort((a, b) => b.duration - a.duration);
+  return Array.from(map.values()).sort((a, b) => b.duration - a.duration);
 }
 
 /**

@@ -14,13 +14,8 @@ export function useDexieLiveQuery<T>(
   const value = ref<T>();
   let subscription: { unsubscribe: () => void } | null = null;
 
-  const createLiveQuery = () => {
-    return liveQuery(querier);
-  };
-
   const subscribe = () => {
-    const observable$ = createLiveQuery();
-    subscription = observable$.subscribe({
+    subscription = liveQuery(querier).subscribe({
       next: (result) => {
         value.value = result;
       },
@@ -33,7 +28,6 @@ export function useDexieLiveQuery<T>(
   onMounted(() => {
     subscribe();
 
-    // Watch dependency changes
     if (deps !== undefined) {
       const depArray = Array.isArray(deps) ? deps : [deps];
       watch(depArray, () => {

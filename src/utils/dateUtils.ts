@@ -49,33 +49,11 @@ export function addDays(date: Date, days: number): Date {
 export function addMonths(date: Date, months: number): Date {
   const result = new Date(date);
   const originalDay = result.getDate();
-
-  // setMonth automatically wraps years, but might overflow days (Jan 31 -> Mar 3)
   result.setMonth(result.getMonth() + months);
 
-  // If the day changed (and isn't what we expected due to overflow), clamp it
+  // If day changed due to overflow (e.g., Jan 31 -> Mar 3), set to last day of target month
   if (result.getDate() !== originalDay) {
-    // Check if we actually overshot the month?
-    // Actually, simple check: if we wanted month X but got X+1, we overshot.
-    // But result.getMonth() is already the new month.
-    // Better logic:
-    // 1. Set to 1st of target month
-    // 2. Add (originalDay - 1) days? No.
-
-    // Standard approach:
-    // 1. Get desired month index.
-    // 2. Check if result month != desired month.
-    // 3. If so, setDate(0).
-
-    // We can't easily know "desired month" index after setMonth because of year wrapping.
-    // Let's do it manually.
-    const d = new Date(date);
-    d.setMonth(d.getMonth() + months);
-    if (d.getDate() !== originalDay) {
-      // We overshot because the target month has fewer days
-      d.setDate(0);
-    }
-    return d;
+    result.setDate(0);
   }
   return result;
 }
