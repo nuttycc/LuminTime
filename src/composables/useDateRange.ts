@@ -41,39 +41,44 @@ export function useDateRange() {
 
   // Calculated start date based on view
   const startDate = computed(() => {
-    if (view.value === "week") return formatDate(getStartOfWeek(dateObj.value));
-    if (view.value === "month") return formatDate(getStartOfMonth(dateObj.value));
-    return date.value;
+    switch (view.value) {
+      case "week":
+        return formatDate(getStartOfWeek(dateObj.value));
+      case "month":
+        return formatDate(getStartOfMonth(dateObj.value));
+      default:
+        return date.value;
+    }
   });
 
   // Calculated end date based on view
   const endDate = computed(() => {
-    if (view.value === "week") return formatDate(getEndOfWeek(dateObj.value));
-    if (view.value === "month") return formatDate(getEndOfMonth(dateObj.value));
-    return date.value;
+    switch (view.value) {
+      case "week":
+        return formatDate(getEndOfWeek(dateObj.value));
+      case "month":
+        return formatDate(getEndOfMonth(dateObj.value));
+      default:
+        return date.value;
+    }
   });
 
-  // Navigate to next period
-  const next = () => {
-    if (view.value === "day") {
-      date.value = formatDate(addDays(dateObj.value, 1));
-    } else if (view.value === "week") {
-      date.value = formatDate(addDays(dateObj.value, 7));
-    } else if (view.value === "month") {
-      date.value = formatDate(addMonths(dateObj.value, 1));
+  // Navigate by direction: 1 for next, -1 for previous
+  const navigate = (direction: 1 | -1) => {
+    switch (view.value) {
+      case "week":
+        date.value = formatDate(addDays(dateObj.value, 7 * direction));
+        break;
+      case "month":
+        date.value = formatDate(addMonths(dateObj.value, direction));
+        break;
+      default:
+        date.value = formatDate(addDays(dateObj.value, direction));
     }
   };
 
-  // Navigate to previous period
-  const prev = () => {
-    if (view.value === "day") {
-      date.value = formatDate(addDays(dateObj.value, -1));
-    } else if (view.value === "week") {
-      date.value = formatDate(addDays(dateObj.value, -7));
-    } else if (view.value === "month") {
-      date.value = formatDate(addMonths(dateObj.value, -1));
-    }
-  };
+  const next = () => navigate(1);
+  const prev = () => navigate(-1);
 
   // Check if we can navigate forward (don't allow future dates)
   const canNext = computed(() => {
