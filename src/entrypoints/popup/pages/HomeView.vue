@@ -92,6 +92,11 @@ const sitePercentage = (duration: number): number => {
   return Math.round((duration / totalDuration.value) * 100);
 };
 
+const getSiteLabel = (site: ISiteStat, index: number): string => {
+  const duration = prettyMs(site.duration, { secondsDecimalDigits: 0, verbose: true });
+  return `Rank ${index + 1}, ${site.hostname}, time spent ${duration}`;
+};
+
 const goToDetail = (hostname: string) => {
   router.push({
     path: `/site/${hostname}`,
@@ -178,6 +183,7 @@ const updateView = (v: ViewMode) => {
             v-for="(site, index) in sites"
             :key="site.hostname"
             class="flex items-center gap-3 p-3 hover:bg-base-200/50 rounded-box transition-colors text-left"
+            :aria-label="getSiteLabel(site, index)"
             @click="goToDetail(site.hostname)"
           >
             <!-- Rank number -->
