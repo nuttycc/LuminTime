@@ -57,6 +57,12 @@ const pagePercentage = (duration: number): number => {
   return Math.round((duration / totalDuration.value) * 100);
 };
 
+const getPageLabel = (page: IPageStat): string => {
+  const duration = prettyMs(page.duration, { secondsDecimalDigits: 0, verbose: true });
+  const title = page.title || 'Untitled';
+  return `${title}, path ${page.path}, time spent ${duration}`;
+};
+
 const goBack = () => {
   // Preserve query parameters
   router.push({
@@ -141,9 +147,13 @@ const goToPageHistory = (p: string) => {
          <li
             v-for="page in pages"
             :key="page.path"
-            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200 cursor-pointer"
+            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200 cursor-pointer focus-visible:ring-2 focus-visible:outline-none"
             :class="{ 'bg-primary/10 border-primary/20': isActivePage(page) }"
+            role="button"
+            tabindex="0"
+            :aria-label="getPageLabel(page)"
             @click="goToPageHistory(page.path)"
+            @keydown.enter="goToPageHistory(page.path)"
           >
             <div class="flex justify-between gap-2">
               <div class="flex flex-col min-w-0 flex-1">
