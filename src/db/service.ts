@@ -97,7 +97,7 @@ export async function recordActivity(
       const pSiteUpdate = siteStat
         ? db.sites.update(siteKey, {
             duration: siteStat.duration + split.duration,
-            lastVisit: split.startTime + split.duration,
+            lastVisit: Math.max(siteStat.lastVisit, split.startTime + split.duration),
           })
         : db.sites.add({
             date: split.date,
