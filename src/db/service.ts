@@ -72,7 +72,7 @@ export async function recordActivity(
     // oxlint-disable no-await-in-loop -- Sequential awaits intentional: upsert pattern in Dexie transaction
     for (const split of splits) {
       // 1. L1: 插入流水
-      await db.history.add({
+      const pHistory = db.history.add({
         date: split.date,
         hostname,
         path,
@@ -82,43 +82,45 @@ export async function recordActivity(
         eventSource,
       });
 
-      // 2. L2: 更新站点概览 (Upsert)
+      // 2. L2 & L3: 准备读取 (Upsert Check)
       const siteKey: SiteKey = [split.date, hostname];
-      const siteStat = await db.sites.get(siteKey);
+      const pSiteGet = db.sites.get(siteKey);
 
-      if (siteStat) {
-        await db.sites.update(siteKey, {
-          duration: siteStat.duration + split.duration,
-          lastVisit: split.startTime + split.duration,
-        });
-      } else {
-        await db.sites.add({
-          date: split.date,
-          hostname,
-          duration: split.duration,
-          lastVisit: split.startTime + split.duration,
-        });
-      }
-
-      // 3. L3: 更新页面详情 (Upsert)
       const pageKey: PageKey = [split.date, hostname, path];
-      const pageStat = await db.pages.get(pageKey);
+      const pPageGet = db.pages.get(pageKey);
 
-      if (pageStat) {
-        await db.pages.update(pageKey, {
-          duration: pageStat.duration + split.duration,
-          title: title ?? pageStat.title,
-        });
-      } else {
-        await db.pages.add({
-          date: split.date,
-          hostname,
-          path,
-          fullPath,
-          duration: split.duration,
-          title,
-        });
-      }
+      // 并行执行写入和读取
+      // Optimization: Execute independent operations in parallel
+      const [, siteStat, pageStat] = await Promise.all([pHistory, pSiteGet, pPageGet]);
+
+      // 3. L2 & L3: 并行执行更新
+      const pSiteUpdate = siteStat
+        ? db.sites.update(siteKey, {
+            duration: siteStat.duration + split.duration,
+            lastVisit: Math.max(siteStat.lastVisit, split.startTime + split.duration),
+          })
+        : db.sites.add({
+            date: split.date,
+            hostname,
+            duration: split.duration,
+            lastVisit: split.startTime + split.duration,
+          });
+
+      const pPageUpdate = pageStat
+        ? db.pages.update(pageKey, {
+            duration: pageStat.duration + split.duration,
+            title: title ?? pageStat.title,
+          })
+        : db.pages.add({
+            date: split.date,
+            hostname,
+            path,
+            fullPath,
+            duration: split.duration,
+            title,
+          });
+
+      await Promise.all([pSiteUpdate, pPageUpdate]);
     }
   });
 }
