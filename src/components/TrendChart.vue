@@ -6,6 +6,7 @@ export interface ChartItem {
   value: number;
   label?: string;
   tooltip: string;
+  ariaLabel?: string;
   active?: boolean;
 }
 
@@ -41,11 +42,18 @@ const shouldShowLabel = (index: number) => {
 </script>
 
 <template>
-  <div class="w-full h-26 flex items-end justify-between gap-1 px-2 pt-3 pb-3">
+  <div
+    class="w-full h-26 flex items-end justify-between gap-1 px-2 pt-3 pb-3"
+    role="list"
+    aria-label="Activity trend chart"
+  >
     <div
       v-for="(item, index) in items"
       :key="item.key"
-      class="flex flex-col items-center flex-1 h-full justify-end group relative"
+      class="flex flex-col items-center flex-1 h-full justify-end group relative rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      role="listitem"
+      tabindex="0"
+      :aria-label="item.ariaLabel || item.tooltip"
     >
       <!-- Tooltip -->
       <div class="absolute bottom-full mb-1 hidden group-hover:block z-10 w-max max-w-[150px]">
@@ -68,6 +76,7 @@ const shouldShowLabel = (index: number) => {
       <div
         v-if="item.label && shouldShowLabel(index)"
         class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-base-content/50 select-none whitespace-nowrap"
+        aria-hidden="true"
       >
         {{ item.label }}
       </div>
