@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
-import { getAggregatedSites, getDailyTrend, getHourlyTrend } from '@/db/service';
+import { getAggregatedSites, getHourlyTrend, getRangeStats } from '@/db/service';
 import type { ISiteStat } from '@/db/types';
 import DateNavigator from '@/components/DateNavigator.vue';
 import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
@@ -29,10 +29,10 @@ const fetchData = async () => {
         getHourlyTrend(startDate.value)
       ]);
     } else {
-      [sitesData, trend] = await Promise.all([
-        getAggregatedSites(startDate.value, endDate.value, 20),
-        getDailyTrend(startDate.value, endDate.value)
-      ]);
+      // Optimization: Fetch sites and trend in one DB pass for range views
+      const result = await getRangeStats(startDate.value, endDate.value, 20);
+      sitesData = result.sites;
+      trend = result.trend;
     }
 
     sites.value = sitesData;

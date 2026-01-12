@@ -187,6 +187,61 @@ export async function getDailyTrend(
 }
 
 /**
+ * Aggregates both site stats and daily trend in a single DB pass.
+ * Optimization: Reduces IndexedDB iterations by 50% for non-day views.
+ */
+export async function getRangeStats(
+  startDate: string,
+  endDate: string,
+  limit = 50,
+): Promise<{
+  sites: ISiteStat[];
+  trend: { date: string; duration: number }[];
+}> {
+  const sitesMap = new Map<string, ISiteStat>();
+  const dailyMap = new Map<string, number>();
+
+  // Initialize all days in range with 0
+  let current = parseDate(startDate);
+  const end = parseDate(endDate);
+
+  while (current <= end) {
+    dailyMap.set(formatDate(current), 0);
+    current = addDays(current, 1);
+  }
+
+  // Single pass over the data
+  await db.sites.where("date").between(startDate, endDate, true, true).each((r) => {
+    // Aggregate Sites
+    const existingSite = sitesMap.get(r.hostname);
+    if (existingSite) {
+      existingSite.duration += r.duration;
+      if (r.lastVisit > existingSite.lastVisit) {
+        existingSite.lastVisit = r.lastVisit;
+      }
+    } else {
+      sitesMap.set(r.hostname, { ...r });
+    }
+
+    // Aggregate Trend
+    const currentVal = dailyMap.get(r.date) ?? 0;
+    dailyMap.set(r.date, currentVal + r.duration);
+  });
+
+  // Process Sites
+  const sites = Array.from(sitesMap.values())
+    .sort((a, b) => b.duration - a.duration)
+    .slice(0, limit);
+
+  // Process Trend
+  const trend = Array.from(dailyMap.entries())
+    .map(([date, duration]) => ({ date, duration }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return { sites, trend };
+}
+
+/**
  * Gets hourly trend for a specific date.
  * @param date YYYY-MM-DD
  */
