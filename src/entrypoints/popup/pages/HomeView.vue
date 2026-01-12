@@ -55,6 +55,7 @@ const mapHourlyToChartItem = (item: { hour: string; duration: number }): ChartIt
     value: item.duration,
     label: showLabel ? `${h}:00` : '',
     tooltip: `${h}:00, ${prettyMs(item.duration, { compact: true })}`,
+    ariaLabel: `${h}:00, ${prettyMs(item.duration, { verbose: true })}`,
     active: false
   };
 };
@@ -73,6 +74,7 @@ const mapDailyToChartItem = (item: { date: string; duration: number }): ChartIte
     value: item.duration,
     label,
     tooltip: `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${prettyMs(item.duration, { compact: true })}`,
+    ariaLabel: `${d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}: ${prettyMs(item.duration, { verbose: true })}`,
     active: item.date === date.value
   };
 };
