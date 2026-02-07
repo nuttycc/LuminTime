@@ -1,12 +1,16 @@
 // oxlint-disable max-lines
 // oxlint-disable no-magic-numbers
 import { recordActivity } from "@/db/service";
+import { runRetentionJob } from "@/db/retention";
 import { SessionManager, type ActiveSessionData } from "@/utils/SessionManager";
 
 const IDLE_DETECTION_INTERVAL = 30;
 
 const SESSION_TICK_ALARM_NAME = "session-update";
 const SESSION_PER_MINUTE = 1;
+
+const RETENTION_ALARM_NAME = "retention-cleanup";
+const RETENTION_ALARM_PERIOD = 60;
 
 const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSession", {
   fallback: {
@@ -58,8 +62,11 @@ export default defineBackground(() => {
   // Session tick handler: periodically settle and restart tracking for data reliability
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === SESSION_TICK_ALARM_NAME) {
-      // Use special 'alarm' type which internally handles the "Restart Current" logic
       sessionManager.handleEvent("alarm");
+    } else if (alarm.name === RETENTION_ALARM_NAME) {
+      runRetentionJob().catch((error) => {
+        console.error("Retention job failed:", error);
+      });
     }
   });
 
@@ -181,4 +188,13 @@ export default defineBackground(() => {
   });
 
   browser.idle.setDetectionInterval(IDLE_DETECTION_INTERVAL);
+
+  void browser.alarms.create(RETENTION_ALARM_NAME, {
+    delayInMinutes: 2,
+    periodInMinutes: RETENTION_ALARM_PERIOD,
+  });
+
+  runRetentionJob(1).catch((error) => {
+    console.error("Initial retention job failed:", error);
+  });
 });

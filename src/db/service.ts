@@ -246,14 +246,22 @@ export async function getRangeStats(
  * @param date YYYY-MM-DD
  */
 export async function getHourlyTrend(date: string): Promise<{ hour: string; duration: number }[]> {
-  // Initialize 24 hours
   const hours = Array.from({ length: 24 }, (_, i) => ({
-    hour: i.toString(), // "0", "1", ... "23"
+    hour: i.toString(),
     duration: 0,
   }));
 
-  // Use .each() to avoid loading all history records into memory at once.
-  // This is a significant memory optimization for heavy users.
+  const aggregated = await db.hourlyStats.where("date").equals(date).toArray();
+
+  if (aggregated.length > 0) {
+    for (const s of aggregated) {
+      if (s.hour >= 0 && s.hour < 24) {
+        hours[s.hour].duration = s.duration;
+      }
+    }
+    return hours;
+  }
+
   await db.history.where("date").equals(date).each((r) => {
     const d = new Date(r.startTime);
     const h = d.getHours();

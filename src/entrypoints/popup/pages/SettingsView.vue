@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { exportAllData, importData, type IExportData } from '@/db/exportImport';
 import { getDatabaseStats, type IDbStats } from '@/db/diagnostics';
+import { getRawRetentionDays, setRawRetentionDays } from '@/db/retention';
 
 const router = useRouter();
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -13,8 +14,18 @@ const dbStats = ref<IDbStats | null>(null);
 const statsLoading = ref(false);
 const statsError = ref<string | null>(null);
 
+const retentionDays = ref(7);
+const retentionOptions = [7, 14, 30, 90];
+
 const goBack = () => {
   router.back();
+};
+
+const handleRetentionChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  const days = parseInt(target.value, 10);
+  retentionDays.value = days;
+  await setRawRetentionDays(days);
 };
 
 const handleExport = async () => {
@@ -96,6 +107,9 @@ const formatBytes = (bytes?: number) => {
 
 onMounted(() => {
   void loadStats();
+  getRawRetentionDays().then((days) => {
+    retentionDays.value = days;
+  });
 });
 </script>
 
@@ -157,6 +171,31 @@ onMounted(() => {
             <!-- Feedback Message -->
             <div v-if="message" :class="['alert text-sm py-2', message.type === 'success' ? 'alert-success' : 'alert-error']">
               <span>{{ message.text }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Retention Section -->
+      <div class="flex flex-col gap-2">
+        <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Data Retention</h2>
+
+        <div class="card bg-base-200 shadow-sm border border-base-300">
+          <div class="card-body p-4 gap-3">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-sm font-medium">Raw History Logs</span>
+                <span class="text-xs opacity-60">Older logs are aggregated into hourly summaries</span>
+              </div>
+              <select
+                class="select select-sm select-bordered w-28"
+                :value="retentionDays"
+                @change="handleRetentionChange"
+              >
+                <option v-for="opt in retentionOptions" :key="opt" :value="opt">
+                  {{ opt }} days
+                </option>
+              </select>
             </div>
           </div>
         </div>

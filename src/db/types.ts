@@ -40,3 +40,13 @@ export type IPageStat = typeof PageStat.infer;
 // 复合主键类型定义
 export type SiteKey = [date: string, hostname: string];
 export type PageKey = [date: string, hostname: string, path: string];
+
+// --- L1.5: 小时聚合 (用于趋势图, 由 retention job 生成) ---
+export const HourlyStat = type({
+  date: "string",
+  hour: "number",
+  duration: "number",
+});
+export type IHourlyStat = typeof HourlyStat.infer;
+
+export type HourKey = [date: string, hour: number];
