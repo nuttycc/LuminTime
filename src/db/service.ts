@@ -252,14 +252,10 @@ export async function getHourlyTrend(date: string): Promise<{ hour: string; dura
   }));
 
   const aggregated = await db.hourlyStats.where("date").equals(date).toArray();
-
-  if (aggregated.length > 0) {
-    for (const s of aggregated) {
-      if (s.hour >= 0 && s.hour < 24) {
-        hours[s.hour].duration = s.duration;
-      }
+  for (const s of aggregated) {
+    if (s.hour >= 0 && s.hour < 24) {
+      hours[s.hour].duration += s.duration;
     }
-    return hours;
   }
 
   await db.history.where("date").equals(date).each((r) => {

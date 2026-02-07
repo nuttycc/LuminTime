@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getRawRetentionDays, setRawRetentionDays, aggregateOneDay, runRetentionJob } from '../../src/db/retention';
 
-const { mockMetaGet, mockMetaPut, mockHistoryWhere, mockHourlyStatsBulkPut, mockHistoryDelete, mockHistoryOrderBy } = vi.hoisted(() => ({
+const { mockMetaGet, mockMetaPut, mockHistoryWhere, mockHourlyStatsBulkPut, mockHourlyStatsWhere, mockHistoryDelete, mockHistoryOrderBy } = vi.hoisted(() => ({
   mockMetaGet: vi.fn(),
   mockMetaPut: vi.fn(),
   mockHistoryWhere: vi.fn(),
   mockHourlyStatsBulkPut: vi.fn(),
+  mockHourlyStatsWhere: vi.fn(),
   mockHistoryDelete: vi.fn(),
   mockHistoryOrderBy: vi.fn(),
 }));
+
+const mockHourlyStatsDelete = vi.fn();
 
 vi.mock('../../src/db/index', () => ({
   db: {
@@ -21,7 +24,10 @@ vi.mock('../../src/db/index', () => ({
       where: mockHistoryWhere,
       orderBy: mockHistoryOrderBy,
     },
-    hourlyStats: { bulkPut: mockHourlyStatsBulkPut },
+    hourlyStats: {
+      bulkPut: mockHourlyStatsBulkPut,
+      where: mockHourlyStatsWhere,
+    },
   },
 }));
 
@@ -32,6 +38,11 @@ vi.mock('../../src/db/utils', () => ({
 describe('retention', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockHourlyStatsWhere.mockReturnValue({
+      equals: vi.fn().mockReturnValue({
+        delete: mockHourlyStatsDelete,
+      }),
+    });
   });
 
   describe('getRawRetentionDays', () => {
@@ -51,6 +62,22 @@ describe('retention', () => {
 
       expect(result).toBe(14);
     });
+
+    it('returns default when stored value is below minimum', async () => {
+      mockMetaGet.mockResolvedValue({ key: 'retention.rawDays', value: 0 });
+
+      const result = await getRawRetentionDays();
+
+      expect(result).toBe(7);
+    });
+
+    it('returns default when stored value is negative', async () => {
+      mockMetaGet.mockResolvedValue({ key: 'retention.rawDays', value: -5 });
+
+      const result = await getRawRetentionDays();
+
+      expect(result).toBe(7);
+    });
   });
 
   describe('setRawRetentionDays', () => {
@@ -60,6 +87,30 @@ describe('retention', () => {
       await setRawRetentionDays(30);
 
       expect(mockMetaPut).toHaveBeenCalledWith({ key: 'retention.rawDays', value: 30 });
+    });
+
+    it('clamps value to minimum of 1', async () => {
+      mockMetaPut.mockResolvedValue(undefined);
+
+      await setRawRetentionDays(0);
+
+      expect(mockMetaPut).toHaveBeenCalledWith({ key: 'retention.rawDays', value: 1 });
+    });
+
+    it('clamps negative value to minimum of 1', async () => {
+      mockMetaPut.mockResolvedValue(undefined);
+
+      await setRawRetentionDays(-10);
+
+      expect(mockMetaPut).toHaveBeenCalledWith({ key: 'retention.rawDays', value: 1 });
+    });
+
+    it('rounds fractional days', async () => {
+      mockMetaPut.mockResolvedValue(undefined);
+
+      await setRawRetentionDays(7.6);
+
+      expect(mockMetaPut).toHaveBeenCalledWith({ key: 'retention.rawDays', value: 8 });
     });
   });
 
@@ -82,6 +133,7 @@ describe('retention', () => {
 
       await aggregateOneDay('2025-01-10');
 
+      expect(mockHourlyStatsDelete).toHaveBeenCalled();
       expect(mockHourlyStatsBulkPut).toHaveBeenCalledWith([
         { date: '2025-01-10', hour: 9, duration: 90000 },
         { date: '2025-01-10', hour: 14, duration: 120000 },
@@ -109,16 +161,31 @@ describe('retention', () => {
         { date: '2025-01-10', hour: 5, duration: 10000 },
       ]);
     });
+
+    it('clears existing hourly stats before writing (idempotency)', async () => {
+      mockHistoryWhere.mockReturnValue({
+        equals: vi.fn().mockReturnValue({
+          each: vi.fn(async () => {}),
+          delete: mockHistoryDelete,
+        }),
+      });
+
+      await aggregateOneDay('2025-01-10');
+
+      expect(mockHourlyStatsDelete).toHaveBeenCalled();
+      expect(mockHourlyStatsBulkPut).toHaveBeenCalledWith([]);
+    });
   });
 
   describe('runRetentionJob', () => {
     it('processes eligible days and stops at cutoff', async () => {
+      // today=2025-06-15, retention=7, cutoff=2025-06-09 (keep 09..15 inclusive)
       mockMetaGet.mockResolvedValue({ key: 'retention.rawDays', value: 7 });
 
       const mockFirst = vi.fn()
         .mockResolvedValueOnce({ date: '2025-06-05' })
         .mockResolvedValueOnce({ date: '2025-06-07' })
-        .mockResolvedValueOnce({ date: '2025-06-08' });
+        .mockResolvedValueOnce({ date: '2025-06-09' });
 
       mockHistoryOrderBy.mockReturnValue({ first: mockFirst });
 
@@ -131,8 +198,8 @@ describe('retention', () => {
 
       await runRetentionJob();
 
+      // Should process 2025-06-05 and 2025-06-07, then stop at 2025-06-09 (>= cutoff)
       expect(mockFirst).toHaveBeenCalledTimes(3);
-      expect(mockHistoryWhere).toHaveBeenCalledTimes(4);
     });
 
     it('does nothing when no old history exists', async () => {

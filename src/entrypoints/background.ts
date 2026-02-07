@@ -12,6 +12,17 @@ const SESSION_PER_MINUTE = 1;
 const RETENTION_ALARM_NAME = "retention-cleanup";
 const RETENTION_ALARM_PERIOD = 60;
 
+let retentionRunning = false;
+async function safeRunRetention(maxDays?: number) {
+  if (retentionRunning) return;
+  retentionRunning = true;
+  try {
+    await runRetentionJob(maxDays);
+  } finally {
+    retentionRunning = false;
+  }
+}
+
 const sessionStorage = storage.defineItem<ActiveSessionData>("session:activeSession", {
   fallback: {
     url: "",
@@ -64,7 +75,7 @@ export default defineBackground(() => {
     if (alarm.name === SESSION_TICK_ALARM_NAME) {
       sessionManager.handleEvent("alarm");
     } else if (alarm.name === RETENTION_ALARM_NAME) {
-      runRetentionJob().catch((error) => {
+      safeRunRetention().catch((error) => {
         console.error("Retention job failed:", error);
       });
     }
@@ -194,7 +205,7 @@ export default defineBackground(() => {
     periodInMinutes: RETENTION_ALARM_PERIOD,
   });
 
-  runRetentionJob(1).catch((error) => {
+  safeRunRetention(1).catch((error) => {
     console.error("Initial retention job failed:", error);
   });
 });
