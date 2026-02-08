@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
-import { getAggregatedPages } from '@/db/service';
+import { getAggregatedPages, deleteSiteData } from '@/db/service';
 import type { IPageStat } from '@/db/types';
 import { useLiveQuery } from '@/composables/useDexieLiveQuery';
 import { addToBlocklist, removeFromBlocklist, getBlocklist, isHostnameBlocked } from '@/db/blocklist';
@@ -11,6 +11,7 @@ import DateNavigator from '@/components/DateNavigator.vue';
 
 const confirmingBlock = ref(false);
 const confirmingUnblock = ref(false);
+const confirmingDelete = ref(false);
 
 const route = useRoute();
 const router = useRouter();
@@ -97,6 +98,7 @@ const closeDropdown = () => {
   (document.activeElement as HTMLElement)?.blur();
   confirmingBlock.value = false;
   confirmingUnblock.value = false;
+  confirmingDelete.value = false;
 };
 
 const notifyBlocklistUpdate = () => {
@@ -112,6 +114,12 @@ const handleUnblockSite = async () => {
   const removed = await removeFromBlocklist(hostname.value);
   if (removed) notifyBlocklistUpdate();
   closeDropdown();
+};
+
+const handleDeleteSiteData = async () => {
+  await deleteSiteData(hostname.value);
+  closeDropdown();
+  goBack();
 };
 </script>
 
@@ -165,17 +173,29 @@ const handleUnblockSite = async () => {
             </template>
             <template v-else>
               <li v-if="!confirmingBlock">
-                <a class="text-error" @click.stop="confirmingBlock = true">
+                <a class="text-warning" @click.stop="confirmingBlock = true">
                   <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                   Block Site
                 </a>
               </li>
               <li v-else>
-                <a class="bg-error/15 text-error font-bold" @click="handleBlockSite()">
+                <a class="bg-warning/15 text-warning font-bold" @click="handleBlockSite()">
                   Confirm Block?
                 </a>
               </li>
             </template>
+            <hr class="my-1 border-base-content/10" />
+            <li v-if="!confirmingDelete">
+              <a class="text-error" @click.stop="confirmingDelete = true">
+                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Delete Data
+              </a>
+            </li>
+            <li v-else>
+              <a class="bg-error/15 text-error font-bold" @click="handleDeleteSiteData()">
+                Confirm Delete?
+              </a>
+            </li>
           </ul>
         </div>
       </div>

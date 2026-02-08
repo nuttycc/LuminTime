@@ -1,5 +1,6 @@
 // oxlint-disable no-array-reverse
 // oxlint-disable max-lines-per-function
+import { Dexie } from "dexie";
 import { db } from "./index";
 import type { SiteKey, PageKey, ISiteStat, IPageStat, IHistoryLog, EventSource } from "./types";
 import { normalizeUrl, getTodayStr } from "./utils";
@@ -401,4 +402,23 @@ export function getTodayTopSites(limit = 10) {
 export function getSitePagesDetail(hostname: string) {
   const today = getTodayStr();
   return getAggregatedPages(hostname, today, today);
+}
+
+/**
+ * Deletes all data (history, sites, pages) for a given hostname.
+ */
+export async function deleteSiteData(hostname: string): Promise<void> {
+  await db.transaction("rw", db.history, db.sites, db.pages, async () => {
+    const historyKeys = await db.history
+      .where("[date+hostname]")
+      .between([Dexie.minKey, hostname], [Dexie.maxKey, hostname], true, true)
+      .primaryKeys();
+    await Promise.all([
+      historyKeys.length > 0 ? db.history.bulkDelete(historyKeys) : Promise.resolve(),
+      db.sites.where("hostname").equals(hostname).delete(),
+      db.pages.where("[date+hostname]")
+        .between([Dexie.minKey, hostname], [Dexie.maxKey, hostname], true, true)
+        .delete(),
+    ]);
+  });
 }
