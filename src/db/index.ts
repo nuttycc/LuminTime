@@ -1,11 +1,13 @@
 import { Dexie, type Table } from "dexie";
-import type { IHistoryLog, ISiteStat, IPageStat } from "./types";
+import type { IHistoryLog, ISiteStat, IPageStat, IHourlyStat } from "./types";
 
 export class LuminTimeDB extends Dexie {
   // 声明表及其类型
   history!: Table<IHistoryLog>;
   sites!: Table<ISiteStat>;
   pages!: Table<IPageStat>;
+  hourlyStats!: Table<IHourlyStat>;
+  meta!: Table<{ key: string; value: unknown }>;
 
   constructor() {
     super("LuminTimeDB");
@@ -24,6 +26,14 @@ export class LuminTimeDB extends Dexie {
       // 主键: [date+hostname+path] 确保每天每个根域名的每个路径只有一条
       // 索引: [date+hostname] (用于快速查找某站下的所有页面)
       pages: "[date+hostname+path], date, [date+hostname], duration",
+    });
+
+    this.version(2).stores({
+      history: "++id, date, [date+hostname], startTime",
+      sites: "[date+hostname], date, hostname, duration",
+      pages: "[date+hostname+path], date, [date+hostname], duration",
+      hourlyStats: "[date+hour], date",
+      meta: "&key",
     });
   }
 }
