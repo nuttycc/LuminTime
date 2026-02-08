@@ -95,11 +95,26 @@ const goToPageHistory = (p: string) => {
   });
 };
 
-const closeDropdown = () => {
-  (document.activeElement as HTMLElement)?.blur();
+const resetConfirmations = () => {
   confirmingBlock.value = false;
   confirmingUnblock.value = false;
   confirmingDelete.value = false;
+};
+
+const handleDropdownFocusOut = (event: FocusEvent) => {
+  const dropdown = event.currentTarget as HTMLElement | null;
+  const nextFocused = event.relatedTarget as Node | null;
+
+  if (!dropdown) return;
+
+  if (!nextFocused || !dropdown.contains(nextFocused)) {
+    resetConfirmations();
+  }
+};
+
+const closeDropdown = () => {
+  (document.activeElement as HTMLElement)?.blur();
+  resetConfirmations();
 };
 
 const notifyBlocklistUpdate = () => {
@@ -109,12 +124,14 @@ const notifyBlocklistUpdate = () => {
 const handleBlockSite = async () => {
   const added = await addToBlocklist(hostname.value);
   if (added) notifyBlocklistUpdate();
+  resetConfirmations();
   closeDropdown();
 };
 
 const handleUnblockSite = async () => {
   const removed = await removeFromBlocklist(hostname.value);
   if (removed) notifyBlocklistUpdate();
+  resetConfirmations();
   closeDropdown();
 };
 
@@ -125,6 +142,7 @@ const handleDeleteSiteData = async () => {
   try {
     await deleteSiteData(hostname.value);
     deleted = true;
+    resetConfirmations();
   } catch (e) {
     console.error('Failed to delete site data', e);
     const errorMessage = e instanceof Error ? e.message : 'Unknown error';
@@ -162,7 +180,7 @@ const handleDeleteSiteData = async () => {
         </div>
       </div>
       <div class="navbar-end w-1/4">
-        <div class="dropdown dropdown-end">
+        <div class="dropdown dropdown-end" @focusout="handleDropdownFocusOut">
           <div tabindex="0" role="button" class="btn btn-ghost btn-circle btn-sm" aria-label="More actions">
             <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
           </div>
