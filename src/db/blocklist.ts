@@ -99,7 +99,7 @@ export async function removeFromBlocklist(hostname: string): Promise<boolean> {
  * Check if a hostname is blocked by the blocklist.
  */
 export function isHostnameBlocked(hostname: string, blocklist: string[]): boolean {
-  const h = hostname.toLowerCase();
-  return blocklist.includes(h);
+  const normalized = normalizeBlockInput(hostname);
+  return blocklist.includes(normalized);
 }
 

@@ -90,6 +90,14 @@ describe("isHostnameBlocked", () => {
       expect(isHostnameBlocked("Example.COM", ["example.com"])).toBe(true);
     });
 
+    test("should strip www. prefix before matching", () => {
+      expect(isHostnameBlocked("www.example.com", ["example.com"])).toBe(true);
+    });
+
+    test("should trim surrounding whitespace before matching", () => {
+      expect(isHostnameBlocked("  www.example.com  ", ["example.com"])).toBe(true);
+    });
+
     test("should not match subdomain against exact rule", () => {
       expect(isHostnameBlocked("sub.example.com", ["example.com"])).toBe(false);
     });
