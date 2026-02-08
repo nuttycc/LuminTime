@@ -10,7 +10,7 @@ import DateNavigator from '@/components/DateNavigator.vue';
 import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
 
 const router = useRouter();
-const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
+const { view, date, startDate, endDate, label, next, prev, goToday, isToday, canNext } = useDateRange();
 
 type TrendData =
   | { hour: string; duration: number }
@@ -139,9 +139,11 @@ const updateView = (v: ViewMode) => {
       :view="view"
       :label="label"
       :can-next="canNext"
+      :is-today="isToday"
       @update:view="updateView"
       @prev="prev"
       @next="next"
+      @today="goToday"
     />
 
     <!-- Main Content -->

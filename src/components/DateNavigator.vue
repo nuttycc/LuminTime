@@ -6,12 +6,14 @@ const props = defineProps<{
   view: ViewMode;
   label: string;
   canNext?: boolean;
+  isToday?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: 'update:view', value: ViewMode): void;
   (e: 'prev'): void;
   (e: 'next'): void;
+  (e: 'today'): void;
 }>();
 
 const prevTip = computed(() => {
@@ -28,12 +30,41 @@ const nextTip = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 w-full bg-base-100 p-2 border-b border-base-200 sticky top-0 z-20">
-    <!-- View Mode Switcher -->
+  <div class="flex flex-col gap-1 w-full bg-base-100 px-2 py-1.5 border-b border-base-200 sticky top-0 z-20">
+    <!-- Row 1: Date Navigation (primary) -->
+    <div class="flex items-center justify-between">
+      <button class="btn btn-ghost btn-xs font-medium" :aria-label="prevTip" @click="emit('prev')">
+        Prev
+      </button>
+
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-sm select-none">{{ label }}</span>
+        <button
+          v-if="!isToday"
+          class="btn btn-ghost btn-xs text-primary font-semibold gap-0.5"
+          aria-label="Go to today"
+          @click="emit('today')"
+        >
+          <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 14l-4 4m0 0l4 4m-4-4h11a4 4 0 000-8h-1" /></svg>
+          Today
+        </button>
+      </div>
+
+      <button
+        class="btn btn-ghost btn-xs font-medium"
+        :aria-label="nextTip"
+        :disabled="canNext === false"
+        @click="emit('next')"
+      >
+        Next
+      </button>
+    </div>
+
+    <!-- Row 2: View Mode Switcher (secondary, smaller) -->
     <div class="flex justify-center">
-      <div class="join grid grid-cols-3 w-full max-w-xs">
+      <div class="join">
         <input
-          class="join-item btn btn-sm btn-soft"
+          class="join-item btn btn-xs btn-soft"
           type="radio"
           name="viewoptions"
           aria-label="Day"
@@ -41,7 +72,7 @@ const nextTip = computed(() => {
           @change="emit('update:view', 'day')"
         />
         <input
-          class="join-item btn btn-sm btn-soft"
+          class="join-item btn btn-xs btn-soft"
           type="radio"
           name="viewoptions"
           aria-label="Week"
@@ -49,35 +80,13 @@ const nextTip = computed(() => {
           @change="emit('update:view', 'week')"
         />
         <input
-          class="join-item btn btn-sm btn-soft"
+          class="join-item btn btn-xs btn-soft"
           type="radio"
           name="viewoptions"
           aria-label="Month"
           :checked="view === 'month'"
           @change="emit('update:view', 'month')"
         />
-      </div>
-    </div>
-
-    <!-- Date Navigation -->
-    <div class="flex items-center justify-between px-2 mt-1">
-      <div class="tooltip tooltip-right" :data-tip="prevTip">
-        <button class="btn btn-ghost btn-circle btn-sm" :aria-label="prevTip" @click="emit('prev')">
-          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-        </button>
-      </div>
-
-      <span class="font-bold text-sm select-none">{{ label }}</span>
-
-      <div class="tooltip tooltip-left" :data-tip="nextTip">
-        <button
-          class="btn btn-ghost btn-circle btn-sm"
-          :aria-label="nextTip"
-          :disabled="canNext === false"
-          @click="emit('next')"
-        >
-          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        </button>
       </div>
     </div>
   </div>

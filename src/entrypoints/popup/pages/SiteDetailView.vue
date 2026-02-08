@@ -15,7 +15,7 @@ const confirmingDelete = ref(false);
 
 const route = useRoute();
 const router = useRouter();
-const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
+const { view, date, startDate, endDate, label, next, prev, goToday, isToday, canNext } = useDateRange();
 
 const hostname = computed(() => route.params.hostname as string);
 
@@ -206,9 +206,11 @@ const handleDeleteSiteData = async () => {
       :view="view"
       :label="label"
       :can-next="canNext"
+      :is-today="isToday"
       @update:view="updateView"
       @prev="prev"
       @next="next"
+      @today="goToday"
     />
 
     <!-- Main Content -->
