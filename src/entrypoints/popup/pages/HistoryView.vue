@@ -10,7 +10,7 @@ import { formatDate, parseDate } from '@/utils/dateUtils';
 
 const route = useRoute();
 const router = useRouter();
-const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
+const { view, date, startDate, endDate, label, next, prev, goToday, isToday, canNext } = useDateRange();
 
 const hostname = computed(() => route.query.hostname as string | undefined);
 const path = computed(() => route.query.path as string | undefined);
@@ -116,9 +116,11 @@ const eventSourceConfig: Record<string, { icon: string; tip: string }> = {
       :view="view"
       :label="label"
       :can-next="canNext"
+      :is-today="isToday"
       @update:view="updateView"
       @prev="prev"
       @next="next"
+      @today="goToday"
     />
 
     <!-- List -->

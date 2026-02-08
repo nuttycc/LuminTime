@@ -1,51 +1,45 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
 import { getAggregatedSites, getHourlyTrend, getRangeStats } from '@/db/service';
 import type { ISiteStat } from '@/db/types';
+import { useLiveQuery } from '@/composables/useDexieLiveQuery';
 import DateNavigator from '@/components/DateNavigator.vue';
 import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
 
 const router = useRouter();
-const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
+const { view, date, startDate, endDate, label, next, prev, goToday, isToday, canNext } = useDateRange();
 
-const sites = ref<ISiteStat[]>([]);
 type TrendData =
   | { hour: string; duration: number }
   | { date: string; duration: number };
 
-const trendData = ref<TrendData[]>([]);
+interface HomeData {
+  sites: ISiteStat[];
+  trend: TrendData[];
+}
 
-const fetchData = async () => {
-  try {
-    let trend: TrendData[] = [];
-    let sitesData: ISiteStat[] = [];
-
+const homeData = useLiveQuery<HomeData>(
+  async () => {
     if (view.value === 'day') {
-      [sitesData, trend] = await Promise.all([
+      const [sitesData, trend] = await Promise.all([
         getAggregatedSites(startDate.value, endDate.value, 20),
-        getHourlyTrend(startDate.value)
+        getHourlyTrend(startDate.value),
       ]);
-    } else {
-      // Optimization: Fetch sites and trend in one DB pass for range views
-      const result = await getRangeStats(startDate.value, endDate.value, 20);
-      sitesData = result.sites;
-      trend = result.trend;
+      return { sites: sitesData, trend };
     }
+    // Optimization: Fetch sites and trend in one DB pass for range views
+    const result = await getRangeStats(startDate.value, endDate.value, 20);
+    return { sites: result.sites, trend: result.trend };
+  },
+  { sites: [], trend: [] },
+  [view, startDate, endDate],
+);
 
-    sites.value = sitesData;
-    trendData.value = trend;
-  } catch (e) {
-    console.error('Failed to fetch data', e);
-  }
-};
-
-// Re-fetch when date range changes
-watch([startDate, endDate], fetchData);
-
-onMounted(fetchData);
+const sites = computed(() => homeData.value.sites);
+const trendData = computed(() => homeData.value.trend);
 
 const mapHourlyToChartItem = (item: { hour: string; duration: number }): ChartItem => {
   const h = parseInt(item.hour, 10);
@@ -145,9 +139,11 @@ const updateView = (v: ViewMode) => {
       :view="view"
       :label="label"
       :can-next="canNext"
+      :is-today="isToday"
       @update:view="updateView"
       @prev="prev"
       @next="next"
+      @today="goToday"
     />
 
     <!-- Main Content -->

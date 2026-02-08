@@ -80,6 +80,16 @@ export function useDateRange() {
   const next = () => navigate(1);
   const prev = () => navigate(-1);
 
+  const goToday = () => {
+    date.value = formatDate(new Date());
+  };
+
+  // Whether the current view includes today
+  const isToday = computed(() => {
+    const today = formatDate(new Date());
+    return startDate.value <= today && today <= endDate.value;
+  });
+
   // Check if we can navigate forward (don't allow future dates)
   const canNext = computed(() => {
     const today = formatDate(new Date());
@@ -121,6 +131,8 @@ export function useDateRange() {
     label,
     next,
     prev,
+    goToday,
+    isToday,
     canNext,
   };
 }

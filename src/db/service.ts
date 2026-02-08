@@ -402,3 +402,22 @@ export function getSitePagesDetail(hostname: string) {
   const today = getTodayStr();
   return getAggregatedPages(hostname, today, today);
 }
+
+/**
+ * Deletes all data (history, sites, pages) for a given hostname.
+ */
+export async function deleteSiteData(hostname: string): Promise<void> {
+  await db.transaction("rw", db.history, db.sites, db.pages, async () => {
+    const historyKeys = await db.history
+      .filter((h) => h.hostname === hostname)
+      .primaryKeys();
+    const pageKeys = await db.pages
+      .filter((p) => p.hostname === hostname)
+      .primaryKeys();
+    await Promise.all([
+      historyKeys.length > 0 ? db.history.bulkDelete(historyKeys) : Promise.resolve(),
+      db.sites.where("hostname").equals(hostname).delete(),
+      pageKeys.length > 0 ? db.pages.bulkDelete(pageKeys) : Promise.resolve(),
+    ]);
+  });
+}

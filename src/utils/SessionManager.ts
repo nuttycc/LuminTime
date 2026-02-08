@@ -25,6 +25,8 @@ export interface SessionDependencies {
   ) => Promise<void>;
   alarmName: string;
   alarmPeriodInMinutes: number;
+  /** Optional callback to check if a URL should be blocked from tracking. */
+  isUrlBlocked?: (url: string) => boolean;
 }
 
 export class SessionManager {
@@ -106,9 +108,10 @@ export class SessionManager {
       const session = await this.deps.storage.getValue();
       await this._endSession(session);
 
-      // 2. Start new session if a valid URL is provided
+      // 2. Start new session if a valid URL is provided (and not blocked)
       const hasNewTarget = typeof data?.url === "string" && data.url.length > 0;
-      if (hasNewTarget) {
+      const isBlocked = hasNewTarget && this.deps.isUrlBlocked?.(data.url as string);
+      if (hasNewTarget && !isBlocked) {
         await this._startSession(data.url as string, data.title, eventSource);
       } else if (this._hasActiveSession) {
         // Transition to idle: clear alarm

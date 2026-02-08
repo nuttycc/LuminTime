@@ -3,7 +3,7 @@
   "description": "A privacy-first browser extension that automatically tracks your online activity.",
   "homepage": "https://github.com/nuttycc/LuminTime",
   "private": true,
-  "version": "0.1.15",
+  "version": "0.1.16",
   "type": "module",
   "scripts": {
     "dev": "wxt",
