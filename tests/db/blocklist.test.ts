@@ -61,17 +61,17 @@ describe("normalizeBlockInput", () => {
     });
   });
 
-  describe("wildcard patterns", () => {
-    test("should preserve wildcard prefix", () => {
-      expect(normalizeBlockInput("*.example.com")).toBe("*.example.com");
+  describe("legacy wildcard migration", () => {
+    test("should strip wildcard prefix to plain hostname", () => {
+      expect(normalizeBlockInput("*.example.com")).toBe("example.com");
     });
 
-    test("should normalize the hostname part of wildcard", () => {
-      expect(normalizeBlockInput("*.WWW.Example.COM")).toBe("*.example.com");
+    test("should normalize the hostname part after stripping wildcard", () => {
+      expect(normalizeBlockInput("*.WWW.Example.COM")).toBe("example.com");
     });
 
-    test("should handle wildcard with URL-like suffix", () => {
-      expect(normalizeBlockInput("*.example.com/path")).toBe("*.example.com");
+    test("should handle wildcard with trailing path", () => {
+      expect(normalizeBlockInput("*.example.com/path")).toBe("example.com");
     });
   });
 });
@@ -95,28 +95,6 @@ describe("isHostnameBlocked", () => {
     });
   });
 
-  describe("wildcard match", () => {
-    test("should match the base domain itself", () => {
-      expect(isHostnameBlocked("example.com", ["*.example.com"])).toBe(true);
-    });
-
-    test("should match a subdomain", () => {
-      expect(isHostnameBlocked("sub.example.com", ["*.example.com"])).toBe(true);
-    });
-
-    test("should match deeply nested subdomain", () => {
-      expect(isHostnameBlocked("a.b.c.example.com", ["*.example.com"])).toBe(true);
-    });
-
-    test("should not match unrelated domain", () => {
-      expect(isHostnameBlocked("notexample.com", ["*.example.com"])).toBe(false);
-    });
-
-    test("should not match partial suffix", () => {
-      expect(isHostnameBlocked("badexample.com", ["*.example.com"])).toBe(false);
-    });
-  });
-
   describe("empty blocklist", () => {
     test("should return false for empty blocklist", () => {
       expect(isHostnameBlocked("example.com", [])).toBe(false);
@@ -125,12 +103,11 @@ describe("isHostnameBlocked", () => {
 
   describe("multiple rules", () => {
     test("should match if any rule matches", () => {
-      const blocklist = ["facebook.com", "*.google.com", "twitter.com"];
+      const blocklist = ["facebook.com", "google.com", "twitter.com"];
       expect(isHostnameBlocked("facebook.com", blocklist)).toBe(true);
-      expect(isHostnameBlocked("maps.google.com", blocklist)).toBe(true);
+      expect(isHostnameBlocked("google.com", blocklist)).toBe(true);
       expect(isHostnameBlocked("twitter.com", blocklist)).toBe(true);
       expect(isHostnameBlocked("github.com", blocklist)).toBe(false);
     });
   });
 });
-

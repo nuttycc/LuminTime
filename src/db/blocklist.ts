@@ -3,18 +3,17 @@ import { db } from "./index";
 const META_KEY_BLOCKLIST = "blocklist.hostnames";
 
 /**
- * Normalize user input into a clean hostname or wildcard pattern.
- * Handles full URLs (https://example.com/path), hostnames with www prefix,
- * and wildcard patterns (*.example.com).
+ * Normalize user input into a clean hostname.
+ * Handles full URLs (https://example.com/path) and hostnames with www prefix.
+ * Legacy wildcard patterns (*.example.com) are stripped to plain hostnames.
  */
 export function normalizeBlockInput(input: string): string {
   let value = input.trim().toLowerCase();
   if (!value) return "";
 
-  // Preserve wildcard prefix, normalize the rest
+  // Strip legacy wildcard prefix
   if (value.startsWith("*.")) {
-    const rest = normalizeBlockInput(value.slice(2));
-    return rest ? `*.${rest}` : "";
+    value = value.slice(2);
   }
 
   // If it looks like a URL (has protocol or starts with //), extract hostname
@@ -43,7 +42,6 @@ export function normalizeBlockInput(input: string): string {
 
 /**
  * Get the current blocklist of hostnames.
- * Returns an array of hostname patterns (exact or wildcard like "*.example.com").
  */
 export async function getBlocklist(): Promise<string[]> {
   const record = await db.meta.get(META_KEY_BLOCKLIST);
@@ -67,7 +65,7 @@ export async function setBlocklist(hostnames: string[]): Promise<void> {
 
 /**
  * Add a hostname to the blocklist.
- * Accepts full URLs, hostnames, or wildcard patterns — all are normalized automatically.
+ * Accepts full URLs or hostnames — all are normalized automatically.
  * @returns true if the hostname was added, false if it was already present.
  */
 export async function addToBlocklist(input: string): Promise<boolean> {
@@ -87,7 +85,7 @@ export async function addToBlocklist(input: string): Promise<boolean> {
  * @returns true if the hostname was removed, false if it was not found.
  */
 export async function removeFromBlocklist(hostname: string): Promise<boolean> {
-  const normalized = hostname.trim().toLowerCase();
+  const normalized = normalizeBlockInput(hostname);
   const current = await getBlocklist();
   const index = current.indexOf(normalized);
   if (index === -1) return false;
@@ -99,21 +97,9 @@ export async function removeFromBlocklist(hostname: string): Promise<boolean> {
 
 /**
  * Check if a hostname is blocked by the blocklist.
- * Supports exact match and wildcard prefix patterns (e.g. "*.example.com").
  */
 export function isHostnameBlocked(hostname: string, blocklist: string[]): boolean {
   const h = hostname.toLowerCase();
-  for (const pattern of blocklist) {
-    if (pattern.startsWith("*.")) {
-      // Wildcard: *.example.com matches example.com and sub.example.com
-      const suffix = pattern.slice(2);
-      if (h === suffix || h.endsWith("." + suffix)) {
-        return true;
-      }
-    } else if (h === pattern) {
-      return true;
-    }
-  }
-  return false;
+  return blocklist.includes(h);
 }
 

@@ -242,7 +242,6 @@ onMounted(() => {
           <div class="card-body p-4 gap-3">
             <p class="text-xs opacity-60">
               Sites in this list will not be tracked. You can enter a URL or hostname directly.
-              Use <code>*.example.com</code> to block all subdomains.
             </p>
 
             <!-- Add new -->
