@@ -2,6 +2,7 @@
 // oxlint-disable no-magic-numbers
 import { recordActivity } from "@/db/service";
 import { runRetentionJob } from "@/db/retention";
+import { getBlocklist, isHostnameBlocked } from "@/db/blocklist";
 import { SessionManager, type ActiveSessionData } from "@/utils/SessionManager";
 
 const IDLE_DETECTION_INTERVAL = 30;
@@ -62,12 +63,36 @@ const getActiveTabUrl = async () => {
 export default defineBackground(() => {
   console.log("Hello background!", { id: browser.runtime.id });
 
+  // --- Blocklist cache ---
+  let cachedBlocklist: string[] = [];
+
+  const refreshBlocklist = () => {
+    getBlocklist()
+      .then((list) => {
+        cachedBlocklist = list;
+        console.log("Blocklist refreshed:", list.length, "entries");
+      })
+      .catch((error) => {
+        console.error("Failed to load blocklist:", error);
+      });
+  };
+
+  const isUrlBlocked = (url: string): boolean => {
+    try {
+      const { hostname } = new URL(url);
+      return isHostnameBlocked(hostname.toLowerCase().replace(/^www\./, ""), cachedBlocklist);
+    } catch {
+      return false;
+    }
+  };
+
   // Initialize SessionManager with dependencies
   const sessionManager = new SessionManager({
     storage: sessionStorage,
     recordActivity,
     alarmName: SESSION_TICK_ALARM_NAME,
     alarmPeriodInMinutes: SESSION_PER_MINUTE,
+    isUrlBlocked,
   });
 
   // Session tick handler: periodically settle and restart tracking for data reliability
@@ -192,6 +217,16 @@ export default defineBackground(() => {
         console.error("Failed to handle idle state change:", error);
       }
     })();
+  });
+
+  // Load blocklist on startup
+  refreshBlocklist();
+
+  // Listen for messages from popup to refresh blocklist
+  browser.runtime.onMessage.addListener((message) => {
+    if (message === "blocklist-updated") {
+      refreshBlocklist();
+    }
   });
 
   sessionManager.init().catch((error) => {

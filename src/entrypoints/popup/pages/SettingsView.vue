@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { exportAllData, importData, type IExportData } from '@/db/exportImport';
 import { getDatabaseStats, type IDbStats } from '@/db/diagnostics';
 import { getRawRetentionDays, setRawRetentionDays } from '@/db/retention';
+import { getBlocklist, addToBlocklist, removeFromBlocklist } from '@/db/blocklist';
 
 const router = useRouter();
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -16,6 +17,10 @@ const statsError = ref<string | null>(null);
 
 const retentionDays = ref(7);
 const retentionOptions = [7, 14, 30, 90];
+
+// --- Blocklist ---
+const blocklist = ref<string[]>([]);
+const newBlockHostname = ref('');
 
 const goBack = () => {
   router.back();
@@ -105,8 +110,36 @@ const formatBytes = (bytes?: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
+const notifyBlocklistUpdate = () => {
+  browser.runtime.sendMessage("blocklist-updated").catch(() => {
+    // Background may not be ready yet, ignore
+  });
+};
+
+const loadBlocklist = async () => {
+  blocklist.value = await getBlocklist();
+};
+
+const handleAddBlock = async () => {
+  const hostname = newBlockHostname.value.trim().toLowerCase();
+  if (!hostname) return;
+  const added = await addToBlocklist(hostname);
+  if (added) {
+    blocklist.value = await getBlocklist();
+    notifyBlocklistUpdate();
+  }
+  newBlockHostname.value = '';
+};
+
+const handleRemoveBlock = async (hostname: string) => {
+  await removeFromBlocklist(hostname);
+  blocklist.value = await getBlocklist();
+  notifyBlocklistUpdate();
+};
+
 onMounted(() => {
   void loadStats();
+  void loadBlocklist();
   getRawRetentionDays().then((days) => {
     retentionDays.value = days;
   });
@@ -197,6 +230,54 @@ onMounted(() => {
                 </option>
               </select>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blocked Sites Section -->
+      <div class="flex flex-col gap-2">
+        <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Blocked Sites</h2>
+
+        <div class="card bg-base-200 shadow-sm border border-base-300">
+          <div class="card-body p-4 gap-3">
+            <p class="text-xs opacity-60">
+              Sites in this list will not be tracked. You can enter a URL or hostname directly.
+              Use <code>*.example.com</code> to block all subdomains.
+            </p>
+
+            <!-- Add new -->
+            <form class="flex gap-2" @submit.prevent="handleAddBlock">
+              <input
+                v-model="newBlockHostname"
+                type="text"
+                class="input input-sm input-bordered flex-1"
+                placeholder="e.g. facebook.com or https://example.com"
+              />
+              <button type="submit" class="btn btn-sm btn-primary" :disabled="!newBlockHostname.trim()">
+                Add
+              </button>
+            </form>
+
+            <!-- List -->
+            <div v-if="blocklist.length === 0" class="text-xs opacity-50 text-center py-2">
+              No blocked sites yet.
+            </div>
+            <ul v-else class="flex flex-col gap-1 max-h-40 overflow-y-auto">
+              <li
+                v-for="host in blocklist"
+                :key="host"
+                class="flex items-center justify-between gap-2 px-2 py-1.5 bg-base-100 rounded-box"
+              >
+                <span class="text-sm font-mono truncate">{{ host }}</span>
+                <button
+                  class="btn btn-ghost btn-xs text-error"
+                  aria-label="Remove"
+                  @click="handleRemoveBlock(host)"
+                >
+                  <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
 import { getAggregatedPages } from '@/db/service';
 import type { IPageStat } from '@/db/types';
+import { useLiveQuery } from '@/composables/useDexieLiveQuery';
+import { addToBlocklist } from '@/db/blocklist';
 import DateNavigator from '@/components/DateNavigator.vue';
 
 const route = useRoute();
@@ -12,28 +14,19 @@ const router = useRouter();
 const { view, date, startDate, endDate, label, next, prev, canNext } = useDateRange();
 
 const hostname = computed(() => route.params.hostname as string);
-const pages = ref<IPageStat[]>([]);
-const loading = ref(false);
+
+const pages = useLiveQuery<IPageStat[]>(
+  () => {
+    if (!hostname.value) return Promise.resolve([]);
+    return getAggregatedPages(hostname.value, startDate.value, endDate.value);
+  },
+  [],
+  [hostname, startDate, endDate],
+);
 
 const currentUrl = ref('');
 
-const fetchData = async () => {
-  if (!hostname.value) return;
-
-  loading.value = true;
-  try {
-    pages.value = await getAggregatedPages(hostname.value, startDate.value, endDate.value);
-  } catch (e) {
-    console.error('Failed to fetch page details', e);
-  } finally {
-    loading.value = false;
-  }
-};
-
-watch([startDate, endDate, hostname], fetchData);
-
 onMounted(async () => {
-  fetchData();
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     if (tabs.length > 0 && tabs[0].url) {
@@ -88,6 +81,14 @@ const goToPageHistory = (p: string) => {
     query: { view: view.value, date: date.value, hostname: hostname.value, path: p }
   });
 };
+
+const handleBlockSite = async () => {
+  const added = await addToBlocklist(hostname.value);
+  if (added) {
+    browser.runtime.sendMessage("blocklist-updated").catch(() => {});
+  }
+  router.replace('/');
+};
 </script>
 
 <template>
@@ -111,7 +112,12 @@ const goToPageHistory = (p: string) => {
            {{ prettyMs(totalDuration, { secondsDecimalDigits: 0 }) }}
         </div>
       </div>
-      <div class="navbar-end w-1/4">
+      <div class="navbar-end w-1/4 gap-0.5">
+        <div class="tooltip tooltip-left" data-tip="Block Site">
+          <button class="btn btn-ghost btn-circle btn-sm text-error" aria-label="Block Site" @click="handleBlockSite">
+            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+          </button>
+        </div>
         <div class="tooltip tooltip-left" data-tip="Site History">
           <button class="btn btn-ghost btn-circle btn-sm" aria-label="Site History" @click="goToSiteHistory">
             <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -133,11 +139,7 @@ const goToPageHistory = (p: string) => {
     <!-- Main Content -->
     <div class="flex-1 p-4">
 
-      <div v-if="loading" class="flex flex-col gap-2">
-         <div v-for="i in 5" :key="i" class="skeleton h-10 w-full rounded opacity-50"></div>
-      </div>
-
-      <div v-else-if="pages.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
+      <div v-if="pages.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
         <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
         <div class="text-sm font-medium">No pages visited</div>
         <div class="text-xs">No specific pages recorded for this domain in the selected period.</div>

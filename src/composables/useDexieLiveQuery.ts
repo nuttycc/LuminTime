@@ -47,3 +47,55 @@ export function useDexieLiveQuery<T>(
 
   return value;
 }
+
+/**
+ * Enhanced version with default value support.
+ * Returns `Ref<T>` (never undefined) by providing an initial/fallback value.
+ * Re-subscribes automatically when any dep in `deps` changes.
+ *
+ * @param querier Function that returns a Promise with the query result
+ * @param defaultValue Fallback value used before the first query resolves
+ * @param deps Reactive dependencies that trigger re-subscription when changed
+ */
+export function useLiveQuery<T>(
+  querier: () => Promise<T>,
+  defaultValue: T,
+  deps?: (Ref | ComputedRef)[],
+): Ref<T> {
+  const value = ref<T>(defaultValue) as Ref<T>;
+  let subscription: { unsubscribe: () => void } | null = null;
+
+  const subscribe = () => {
+    if (subscription) {
+      subscription.unsubscribe();
+      subscription = null;
+    }
+    subscription = liveQuery(querier).subscribe({
+      next: (result) => {
+        value.value = result;
+      },
+      error: (error: Error) => {
+        console.error("Dexie live query error:", error);
+      },
+    });
+  };
+
+  onMounted(() => {
+    subscribe();
+
+    if (deps && deps.length > 0) {
+      watch(deps, () => {
+        subscribe();
+      });
+    }
+  });
+
+  onUnmounted(() => {
+    if (subscription) {
+      subscription.unsubscribe();
+      subscription = null;
+    }
+  });
+
+  return value;
+}
