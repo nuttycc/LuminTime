@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { motion, stagger } from 'motion-v';
 
 export interface ChartItem {
   key: string;
@@ -13,6 +14,18 @@ export interface ChartItem {
 const props = defineProps<{
   items: ChartItem[];
 }>();
+
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: { delayChildren: stagger(0.02) },
+  },
+};
+
+const barVariants = {
+  hidden: { scaleY: 0, opacity: 0 },
+  show: { scaleY: 1, opacity: 1, transition: { duration: 0.4, type: 'spring' as const, bounce: 0.15 } },
+};
 
 const maxDuration = computed(() => {
   if (props.items.length === 0) return 0;
@@ -42,10 +55,13 @@ const shouldShowLabel = (index: number) => {
 </script>
 
 <template>
-  <div
+  <motion.div
     class="w-full h-26 flex items-end justify-between gap-1 px-2 pt-3 pb-3"
     role="list"
     aria-label="Activity trend chart"
+    :variants="containerVariants"
+    initial="hidden"
+    animate="show"
   >
     <div
       v-for="(item, index) in items"
@@ -63,14 +79,15 @@ const shouldShowLabel = (index: number) => {
       </div>
 
       <!-- Bar -->
-      <div
-        class="w-full rounded-t transition-all duration-300 min-w-1"
+      <motion.div
+        :variants="barVariants"
+        class="w-full rounded-t min-w-1 origin-bottom"
         :class="[
           item.value > 0 ? 'bg-primary' : 'bg-base-300',
           item.active ? 'opacity-100 ring-2 ring-primary ring-offset-1' : 'opacity-80 hover:opacity-100'
         ]"
         :style="{ height: getHeight(item.value) }"
-      ></div>
+      />
 
       <!-- Label -->
       <div
@@ -81,5 +98,5 @@ const shouldShowLabel = (index: number) => {
         {{ item.label }}
       </div>
     </div>
-  </div>
+  </motion.div>
 </template>
