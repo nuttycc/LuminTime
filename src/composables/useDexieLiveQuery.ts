@@ -64,6 +64,7 @@ export function useLiveQuery<T>(
 ): Ref<T> {
   const value = ref<T>(defaultValue) as Ref<T>;
   let subscription: { unsubscribe: () => void } | null = null;
+  const canUseIndexedDb = typeof window !== "undefined" && "indexedDB" in window;
 
   const subscribe = () => {
     if (subscription) {
@@ -80,15 +81,24 @@ export function useLiveQuery<T>(
     });
   };
 
-  subscribe();
+  let stopWatch: (() => void) | null = null;
 
-  if (deps && deps.length > 0) {
-    watch(deps, () => {
-      subscribe();
-    });
+  if (canUseIndexedDb) {
+    subscribe();
+
+    if (deps && deps.length > 0) {
+      stopWatch = watch(deps, () => {
+        subscribe();
+      });
+    }
   }
 
   onScopeDispose(() => {
+    if (stopWatch) {
+      stopWatch();
+      stopWatch = null;
+    }
+
     if (subscription) {
       subscription.unsubscribe();
       subscription = null;

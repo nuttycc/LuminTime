@@ -320,6 +320,7 @@ const handleDeleteSiteData = async () => {
               :aria-label="getPageLabel(page)"
               @click="goToPageHistory(page.path)"
               @keydown.enter="goToPageHistory(page.path)"
+              @keydown.space.prevent="goToPageHistory(page.path)"
             >
               <div class="flex justify-between gap-2">
                 <div class="flex flex-col min-w-0 flex-1">
