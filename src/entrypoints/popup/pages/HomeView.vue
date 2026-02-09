@@ -2,12 +2,40 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
+import { motion, AnimatePresence, stagger } from 'motion-v';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
 import { getAggregatedSites, getHourlyTrend, getRangeStats } from '@/db/service';
 import type { ISiteStat } from '@/db/types';
 import { useLiveQuery } from '@/composables/useDexieLiveQuery';
 import DateNavigator from '@/components/DateNavigator.vue';
 import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
+
+const contentVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { delayChildren: stagger(0.08) },
+  },
+};
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
+};
+
+const listContainerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { delayChildren: stagger(0.08) },
+  },
+};
+
+const listItemVariants = {
+  hidden: { opacity: 0, x: -12 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.25 } },
+  exit: { opacity: 0, x: 12, transition: { duration: 0.15 } },
+};
 
 const router = useRouter();
 const { view, date, startDate, endDate, label, next, prev, goToday, isToday, canNext } = useDateRange();
@@ -147,68 +175,91 @@ const updateView = (v: ViewMode) => {
     />
 
     <!-- Main Content -->
-    <div class="flex-1 p-4 space-y-4">
+    <motion.div
+      class="flex-1 p-4 space-y-4"
+      :variants="contentVariants"
+      initial="hidden"
+      animate="show"
+    >
 
       <!-- Summary Card -->
-      <div class="card bg-base-200 shadow-sm border border-base-300">
+      <motion.div :variants="cardVariant" class="card bg-base-200 shadow-sm border border-base-300">
         <div class="card-body p-4 items-center text-center">
           <div class="text-base-content/60 text-xs font-bold uppercase tracking-widest">Total Active Time</div>
           <div class="text-3xl font-black text-primary font-mono">
             {{ totalDuration > 0 ? prettyMs(totalDuration, {secondsDecimalDigits: 0}) : '0s' }}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <!-- Trend Chart -->
-      <div class="card bg-base-100 shadow-sm border border-base-200">
+      <motion.div :variants="cardVariant" class="card bg-base-100 shadow-sm border border-base-200">
         <div class="card-body p-2">
            <TrendChart :items="chartItems" />
         </div>
-      </div>
+      </motion.div>
 
       <!-- Sites List -->
-      <div class="flex flex-col gap-2">
+      <motion.div :variants="cardVariant" class="flex flex-col gap-2">
         <div class="text-xs font-bold text-base-content/40 uppercase px-2">Top Sites</div>
 
-        <div v-if="sites.length === 0" class="flex flex-col items-center justify-center py-4 gap-2 opacity-60">
-          <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <div class="text-sm font-medium">No activity recorded</div>
-          <div class="text-xs">Browse some sites to see data here.</div>
-        </div>
-
-        <div v-else class="flex flex-col gap-1">
-          <button
-            v-for="(site, index) in sites"
-            :key="site.hostname"
-            class="flex items-center gap-3 p-3 hover:bg-base-200/50 rounded-box transition-colors text-left"
-            :aria-label="getSiteLabel(site, index)"
-            @click="goToDetail(site.hostname)"
+        <AnimatePresence mode="wait">
+          <motion.div
+            v-if="sites.length === 0"
+            key="empty"
+            :initial="{ opacity: 0 }"
+            :animate="{ opacity: 0.6 }"
+            :exit="{ opacity: 0 }"
+            class="flex flex-col items-center justify-center py-4 gap-2"
           >
-            <!-- Rank number -->
-            <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0">
-              {{ index + 1 }}
-            </div>
+            <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div class="text-sm font-medium">No activity recorded</div>
+            <div class="text-xs">Browse some sites to see data here.</div>
+          </motion.div>
 
-            <div class="flex flex-col flex-1 min-w-0 gap-1">
-              <div class="flex justify-between items-baseline gap-2">
-                <span class="font-medium truncate text-sm">{{ site.hostname }}</span>
-                <span class="font-mono text-xs font-bold shrink-0">{{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}</span>
+          <motion.div
+            v-else
+            key="list"
+            class="flex flex-col gap-1"
+            :variants="listContainerVariants"
+            initial="hidden"
+            animate="show"
+          >
+            <motion.button
+              v-for="(site, index) in sites"
+              :key="site.hostname"
+              layout
+              :variants="listItemVariants"
+              class="flex items-center gap-3 p-3 hover:bg-base-200/50 rounded-box transition-colors text-left"
+              :aria-label="getSiteLabel(site, index)"
+              @click="goToDetail(site.hostname)"
+            >
+              <!-- Rank number -->
+              <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0">
+                {{ index + 1 }}
               </div>
 
-              <!-- Progress bar -->
-              <div class="w-full bg-base-300 rounded-full h-1.5 overflow-hidden">
-                <div
-                  class="bg-primary h-full rounded-full"
-                  :style="{ width: `${sitePercentage(site.duration)}%` }"
-                ></div>
+              <div class="flex flex-col flex-1 min-w-0 gap-1">
+                <div class="flex justify-between items-baseline gap-2">
+                  <span class="font-medium truncate text-sm">{{ site.hostname }}</span>
+                  <span class="font-mono text-xs font-bold shrink-0">{{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}</span>
+                </div>
+
+                <!-- Progress bar -->
+                <div class="w-full bg-base-300 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    class="bg-primary h-full rounded-full"
+                    :style="{ width: `${sitePercentage(site.duration)}%` }"
+                  ></div>
+                </div>
               </div>
-            </div>
 
-            <svg class="size-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-          </button>
-        </div>
-      </div>
+              <svg class="size-4 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </motion.button>
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
 
-    </div>
+    </motion.div>
   </div>
 </template>

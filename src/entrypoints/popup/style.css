@@ -28,7 +28,7 @@ body,
 .popup-scroll {
   flex: 1;
   overflow-y: auto;
-  /* scrollbar-gutter: stable; */
+  /* scrollbar-gutter: stable both-edges; */
 }
 
 /* DaisyUI theme customization for popup */

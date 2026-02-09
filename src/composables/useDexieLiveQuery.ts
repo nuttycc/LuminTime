@@ -1,5 +1,5 @@
 import { liveQuery } from "dexie";
-import { ref, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from "vue";
+import { ref, watch, onMounted, onUnmounted, onScopeDispose, type Ref, type ComputedRef } from "vue";
 
 /**
  * Convert Dexie liveQuery to Vue reactive ref with dependency tracking
@@ -80,17 +80,15 @@ export function useLiveQuery<T>(
     });
   };
 
-  onMounted(() => {
-    subscribe();
+  subscribe();
 
-    if (deps && deps.length > 0) {
-      watch(deps, () => {
-        subscribe();
-      });
-    }
-  });
+  if (deps && deps.length > 0) {
+    watch(deps, () => {
+      subscribe();
+    });
+  }
 
-  onUnmounted(() => {
+  onScopeDispose(() => {
     if (subscription) {
       subscription.unsubscribe();
       subscription = null;
