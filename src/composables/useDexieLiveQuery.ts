@@ -3,18 +3,14 @@ import { onMounted, onScopeDispose, type ComputedRef, type Ref, ref, watch } fro
 
 type DexieSubscription = { unsubscribe: () => void };
 
-type WatchDependency = Ref | ComputedRef;
+type QueryDeps = Ref | ComputedRef | unknown[];
 
-function toWatchDependencies(deps?: Ref | ComputedRef | unknown[]): WatchDependency[] {
+function normalizeDeps(deps?: QueryDeps): unknown[] {
   if (deps === undefined) {
     return [];
   }
 
-  if (Array.isArray(deps)) {
-    return deps.filter((dep): dep is WatchDependency => typeof dep === "object" && dep !== null);
-  }
-
-  return [deps];
+  return Array.isArray(deps) ? deps : [deps];
 }
 
 function createSubscriptionManager<T>(querier: () => Promise<T>, onNext: (result: T) => void) {
@@ -40,10 +36,7 @@ function createSubscriptionManager<T>(querier: () => Promise<T>, onNext: (result
     });
   }
 
-  return {
-    subscribe,
-    teardown,
-  };
+  return { subscribe, teardown };
 }
 
 function canUseIndexedDb(): boolean {
@@ -52,10 +45,10 @@ function canUseIndexedDb(): boolean {
 
 export function useDexieLiveQuery<T>(
   querier: () => Promise<T>,
-  deps?: Ref | ComputedRef | unknown[],
+  deps?: QueryDeps,
 ): Ref<T | undefined> {
   const value = ref<T>();
-  const dependencies = toWatchDependencies(deps);
+  const dependencies = normalizeDeps(deps);
   const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
     value.value = result;
   });
@@ -85,7 +78,7 @@ export function useDexieLiveQuery<T>(
 export function useLiveQuery<T>(
   querier: () => Promise<T>,
   defaultValue: T,
-  deps?: WatchDependency[],
+  deps?: (Ref | ComputedRef)[],
 ): Ref<T> {
   const value = ref<T>(defaultValue) as Ref<T>;
   const dependencies = deps ?? [];
