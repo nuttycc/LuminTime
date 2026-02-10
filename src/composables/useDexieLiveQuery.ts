@@ -14,7 +14,16 @@ export function useDexieLiveQuery<T>(
   const value = ref<T>();
   let subscription: { unsubscribe: () => void } | null = null;
 
-  const subscribe = () => {
+  function teardownSubscription(): void {
+    if (!subscription) {
+      return;
+    }
+
+    subscription.unsubscribe();
+    subscription = null;
+  }
+
+  function subscribe(): void {
     subscription = liveQuery(querier).subscribe({
       next: (result) => {
         value.value = result;
@@ -23,7 +32,12 @@ export function useDexieLiveQuery<T>(
         console.error("Dexie live query error:", error);
       },
     });
-  };
+  }
+
+  function resubscribe(): void {
+    teardownSubscription();
+    subscribe();
+  }
 
   onMounted(() => {
     subscribe();
@@ -31,18 +45,13 @@ export function useDexieLiveQuery<T>(
     if (deps !== undefined) {
       const depArray = Array.isArray(deps) ? deps : [deps];
       watch(depArray, () => {
-        if (subscription) {
-          subscription.unsubscribe();
-        }
-        subscribe();
+        resubscribe();
       });
     }
   });
 
   onUnmounted(() => {
-    if (subscription) {
-      subscription.unsubscribe();
-    }
+    teardownSubscription();
   });
 
   return value;
@@ -66,11 +75,18 @@ export function useLiveQuery<T>(
   let subscription: { unsubscribe: () => void } | null = null;
   const canUseIndexedDb = typeof window !== "undefined" && "indexedDB" in window;
 
-  const subscribe = () => {
-    if (subscription) {
-      subscription.unsubscribe();
-      subscription = null;
+  function teardownSubscription(): void {
+    if (!subscription) {
+      return;
     }
+
+    subscription.unsubscribe();
+    subscription = null;
+  }
+
+  function subscribe(): void {
+    teardownSubscription();
+
     subscription = liveQuery(querier).subscribe({
       next: (result) => {
         value.value = result;
@@ -79,7 +95,7 @@ export function useLiveQuery<T>(
         console.error("Dexie live query error:", error);
       },
     });
-  };
+  }
 
   let stopWatch: (() => void) | null = null;
 
@@ -99,10 +115,7 @@ export function useLiveQuery<T>(
       stopWatch = null;
     }
 
-    if (subscription) {
-      subscription.unsubscribe();
-      subscription = null;
-    }
+    teardownSubscription();
   });
 
   return value;
