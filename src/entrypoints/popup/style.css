@@ -28,7 +28,14 @@ body,
 .popup-scroll {
   flex: 1;
   overflow-y: auto;
-  /* scrollbar-gutter: stable both-edges; */
+  scrollbar-width: none; /* Firefox */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+}
+
+/* Hide scrollbar for Chrome, Safari, Edge */
+.popup-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* DaisyUI theme customization for popup */

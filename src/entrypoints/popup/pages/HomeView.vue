@@ -107,6 +107,8 @@ const chartItems = computed<ChartItem[]>(() => {
   );
 });
 
+const chartRenderKey = computed(() => `${view.value}-${startDate.value}-${endDate.value}`);
+
 const totalDuration = computed(() => {
   return sites.value.reduce((sum, site) => sum + site.duration, 0);
 });
@@ -195,7 +197,7 @@ const updateView = (v: ViewMode) => {
       <!-- Trend Chart -->
       <motion.div :variants="cardVariant" class="card bg-base-100 shadow-sm border border-base-200">
         <div class="card-body p-2">
-           <TrendChart :items="chartItems" />
+           <TrendChart :key="chartRenderKey" :items="chartItems" />
         </div>
       </motion.div>
 
