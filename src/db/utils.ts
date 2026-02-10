@@ -1,12 +1,11 @@
 export interface NormalizedUrl {
-  hostname: string; // e.g. "google.com" (without www)
-  path: string; // e.g. "/watch?v=dQw4w9WgXcQ" (已清洗追踪参数)
-  protocol: string; // e.g. "https:"
-  fullPath: string; // 完整的清洗后的 URL
-  isWebPage: boolean; // 是否为常规网页 (http/https)
+  hostname: string;
+  path: string;
+  protocol: string;
+  fullPath: string;
+  isWebPage: boolean;
 }
 
-// 需要移除的常见的追踪参数黑名单
 const TRACKING_PARAMS = new Set([
   "utm_source",
   "utm_medium",
@@ -20,10 +19,6 @@ const TRACKING_PARAMS = new Set([
   "source",
 ]);
 
-/**
- * 清洗 URL 查询参数
- * 保留功能性参数 (如 youtube video id)，移除营销追踪参数
- */
 function cleanSearchParams(search: string): string {
   if (!search || search.length <= 1) return "";
 
@@ -45,61 +40,65 @@ function cleanSearchParams(search: string): string {
   return cleanedString ? `?${cleanedString}` : "";
 }
 
+function getSystemHostname(protocol: string): string {
+  switch (protocol) {
+    case "file:":
+      return "Local File";
+    case "chrome-extension:":
+      return "Extension";
+    case "about:":
+      return "Browser";
+    default:
+      return "System";
+  }
+}
+
+function normalizeHostname(hostname: string): string {
+  if (hostname.startsWith("www.")) {
+    return hostname.slice(4);
+  }
+
+  return hostname;
+}
+
+function normalizePath(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    return pathname.slice(0, -1);
+  }
+
+  return pathname;
+}
+
 export function normalizeUrl(urlStr: string): NormalizedUrl {
   try {
     const url = new URL(urlStr);
     const protocol = url.protocol.toLowerCase();
     const isWebPage = protocol === "http:" || protocol === "https:";
 
-    // 1. 特殊协议处理 (非 HTTP/HTTPS)
     if (!isWebPage) {
-      let systemHostname = "System";
-      if (protocol === "file:") systemHostname = "Local File";
-      if (protocol === "chrome-extension:") systemHostname = "Extension";
-      if (protocol === "about:") systemHostname = "Browser";
-
       return {
-        hostname: systemHostname,
-        path: url.pathname, // 系统页通常不需要 query
-        protocol: protocol,
+        hostname: getSystemHostname(protocol),
+        path: url.pathname,
+        protocol,
         fullPath: urlStr,
         isWebPage: false,
       };
     }
 
-    // 2. 主机名提取
-    // 强制转小写，虽然 URL 对象通常会自动处理，但显式处理更安全
-    let hostname = url.hostname.toLowerCase();
-    if (hostname.startsWith("www.")) {
-      hostname = hostname.slice(4);
-    }
-
-    // 3. 路径清洗 (移除末尾斜杠)
-    let pathname = url.pathname;
-    if (pathname.length > 1 && pathname.endsWith("/")) {
-      pathname = pathname.slice(0, -1);
-    }
-
-    // 4. 参数清洗 (移除 UTM 等)
+    const normalizedHostname = normalizeHostname(url.hostname.toLowerCase());
+    const normalizedPathname = normalizePath(url.pathname);
     const cleanSearch = cleanSearchParams(url.search);
-
-    // 组合最终的 Path
-    const finalPath = pathname + cleanSearch;
-
-    // 重新组合 FullPath (使用清洗后的部分)
-    // 注意：这里不包含 hash (#)，因为通常 hash 用于锚点定位，不改变页面内容
-    // 除非是在做 SPA (单页应用) 的特定路由分析
-    const finalFullPath = `${protocol}//${url.hostname.toLowerCase()}${finalPath}`;
+    const path = `${normalizedPathname}${cleanSearch}`;
+    const fullPath = `${protocol}//${url.hostname.toLowerCase()}${path}`;
 
     return {
-      hostname: hostname,
-      path: finalPath,
-      protocol: protocol,
-      fullPath: finalFullPath,
+      hostname: normalizedHostname,
+      path,
+      protocol,
+      fullPath,
       isWebPage: true,
     };
-  } catch (e) {
-    // 极少数解析失败的情况
+  } catch {
     return {
       hostname: "Invalid",
       path: urlStr,
@@ -110,9 +109,6 @@ export function normalizeUrl(urlStr: string): NormalizedUrl {
   }
 }
 
-/**
- * 获取当前日期的字符串 (YYYY-MM-DD)
- */
 export function getTodayStr(): string {
   const now = new Date();
   const year = now.getFullYear();
