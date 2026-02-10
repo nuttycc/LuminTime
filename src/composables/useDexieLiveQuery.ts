@@ -1,6 +1,37 @@
 import { liveQuery } from "dexie";
 import { ref, watch, onMounted, onUnmounted, onScopeDispose, type Ref, type ComputedRef } from "vue";
 
+type DexieSubscription = { unsubscribe: () => void };
+
+function createSubscriptionManager<T>(querier: () => Promise<T>, onNext: (result: T) => void) {
+  let subscription: DexieSubscription | null = null;
+
+  function teardown(): void {
+    if (!subscription) {
+      return;
+    }
+
+    subscription.unsubscribe();
+    subscription = null;
+  }
+
+  function subscribe(): void {
+    teardown();
+
+    subscription = liveQuery(querier).subscribe({
+      next: onNext,
+      error: (error: Error) => {
+        console.error("Dexie live query error:", error);
+      },
+    });
+  }
+
+  return {
+    subscribe,
+    teardown,
+  };
+}
+
 /**
  * Convert Dexie liveQuery to Vue reactive ref with dependency tracking
  * @param querier Function that returns a Promise with the query result
@@ -12,32 +43,9 @@ export function useDexieLiveQuery<T>(
   deps?: Ref | ComputedRef | unknown[],
 ): Ref<T | undefined> {
   const value = ref<T>();
-  let subscription: { unsubscribe: () => void } | null = null;
-
-  function teardownSubscription(): void {
-    if (!subscription) {
-      return;
-    }
-
-    subscription.unsubscribe();
-    subscription = null;
-  }
-
-  function subscribe(): void {
-    subscription = liveQuery(querier).subscribe({
-      next: (result) => {
-        value.value = result;
-      },
-      error: (error: Error) => {
-        console.error("Dexie live query error:", error);
-      },
-    });
-  }
-
-  function resubscribe(): void {
-    teardownSubscription();
-    subscribe();
-  }
+  const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
+    value.value = result;
+  });
 
   onMounted(() => {
     subscribe();
@@ -45,13 +53,13 @@ export function useDexieLiveQuery<T>(
     if (deps !== undefined) {
       const depArray = Array.isArray(deps) ? deps : [deps];
       watch(depArray, () => {
-        resubscribe();
+        subscribe();
       });
     }
   });
 
   onUnmounted(() => {
-    teardownSubscription();
+    teardown();
   });
 
   return value;
@@ -72,30 +80,10 @@ export function useLiveQuery<T>(
   deps?: (Ref | ComputedRef)[],
 ): Ref<T> {
   const value = ref<T>(defaultValue) as Ref<T>;
-  let subscription: { unsubscribe: () => void } | null = null;
+  const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
+    value.value = result;
+  });
   const canUseIndexedDb = typeof window !== "undefined" && "indexedDB" in window;
-
-  function teardownSubscription(): void {
-    if (!subscription) {
-      return;
-    }
-
-    subscription.unsubscribe();
-    subscription = null;
-  }
-
-  function subscribe(): void {
-    teardownSubscription();
-
-    subscription = liveQuery(querier).subscribe({
-      next: (result) => {
-        value.value = result;
-      },
-      error: (error: Error) => {
-        console.error("Dexie live query error:", error);
-      },
-    });
-  }
 
   let stopWatch: (() => void) | null = null;
 
@@ -115,7 +103,7 @@ export function useLiveQuery<T>(
       stopWatch = null;
     }
 
-    teardownSubscription();
+    teardown();
   });
 
   return value;
