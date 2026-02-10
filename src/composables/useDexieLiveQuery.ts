@@ -46,19 +46,25 @@ export function useDexieLiveQuery<T>(
   const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
     value.value = result;
   });
+  let stopWatch: (() => void) | null = null;
 
   onMounted(() => {
     subscribe();
 
     if (deps !== undefined) {
       const depArray = Array.isArray(deps) ? deps : [deps];
-      watch(depArray, () => {
+      stopWatch = watch(depArray, () => {
         subscribe();
       });
     }
   });
 
   onUnmounted(() => {
+    if (stopWatch) {
+      stopWatch();
+      stopWatch = null;
+    }
+
     teardown();
   });
 
