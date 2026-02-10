@@ -1,5 +1,5 @@
 import { liveQuery } from "dexie";
-import { ref, watch, onMounted, onUnmounted, type Ref, type ComputedRef } from "vue";
+import { ref, watch, onMounted, onUnmounted, onScopeDispose, type Ref, type ComputedRef } from "vue";
 
 /**
  * Convert Dexie liveQuery to Vue reactive ref with dependency tracking
@@ -64,6 +64,7 @@ export function useLiveQuery<T>(
 ): Ref<T> {
   const value = ref<T>(defaultValue) as Ref<T>;
   let subscription: { unsubscribe: () => void } | null = null;
+  const canUseIndexedDb = typeof window !== "undefined" && "indexedDB" in window;
 
   const subscribe = () => {
     if (subscription) {
@@ -80,17 +81,24 @@ export function useLiveQuery<T>(
     });
   };
 
-  onMounted(() => {
+  let stopWatch: (() => void) | null = null;
+
+  if (canUseIndexedDb) {
     subscribe();
 
     if (deps && deps.length > 0) {
-      watch(deps, () => {
+      stopWatch = watch(deps, () => {
         subscribe();
       });
     }
-  });
+  }
 
-  onUnmounted(() => {
+  onScopeDispose(() => {
+    if (stopWatch) {
+      stopWatch();
+      stopWatch = null;
+    }
+
     if (subscription) {
       subscription.unsubscribe();
       subscription = null;

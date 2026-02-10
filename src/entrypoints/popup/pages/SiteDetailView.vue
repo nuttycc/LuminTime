@@ -2,12 +2,40 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
+import { motion, AnimatePresence, stagger } from 'motion-v';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
 import { getAggregatedPages, deleteSiteData } from '@/db/service';
 import type { IPageStat } from '@/db/types';
 import { useLiveQuery } from '@/composables/useDexieLiveQuery';
 import { addToBlocklist, removeFromBlocklist, getBlocklist, isHostnameBlocked } from '@/db/blocklist';
 import DateNavigator from '@/components/DateNavigator.vue';
+
+const contentVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { delayChildren: stagger(0.08) },
+  },
+};
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
+
+const listContainerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { delayChildren: stagger(0.04) },
+  },
+};
+
+const listItemVariants = {
+  hidden: { opacity: 0, x: -12 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.25 } },
+  exit: { opacity: 0, x: 12, transition: { duration: 0.15 } },
+};
 
 const confirmingBlock = ref(false);
 const confirmingUnblock = ref(false);
@@ -248,53 +276,77 @@ const handleDeleteSiteData = async () => {
     />
 
     <!-- Main Content -->
-    <div class="flex-1 p-4">
-      <div v-if="message" :class="['alert text-sm py-2 mb-3', message.type === 'success' ? 'alert-success' : 'alert-error']">
+    <motion.div
+      class="flex-1 p-4"
+      :variants="contentVariants"
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div v-if="message" :variants="cardVariant" :class="['alert text-sm py-2 mb-3', message.type === 'success' ? 'alert-success' : 'alert-error']">
         <span>{{ message.text }}</span>
-      </div>
+      </motion.div>
 
-      <div v-if="pages.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
-        <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-        <div class="text-sm font-medium">No pages visited</div>
-        <div class="text-xs">No specific pages recorded for this domain in the selected period.</div>
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          v-if="pages.length === 0"
+          key="empty"
+          :initial="{ opacity: 0 }"
+          :animate="{ opacity: 0.6 }"
+          :exit="{ opacity: 0 }"
+          class="flex flex-col items-center justify-center py-10 gap-2"
+        >
+          <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          <div class="text-sm font-medium">No pages visited</div>
+          <div class="text-xs">No specific pages recorded for this domain in the selected period.</div>
+        </motion.div>
 
-      <ul v-else class="flex flex-col gap-2">
-         <li
-            v-for="page in pages"
-            :key="page.path"
-            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200 cursor-pointer focus-visible:ring-2 focus-visible:outline-none"
-            :class="{ 'bg-primary/10 border-primary/20': isActivePage(page) }"
-            role="button"
-            tabindex="0"
-            :aria-label="getPageLabel(page)"
-            @click="goToPageHistory(page.path)"
-            @keydown.enter="goToPageHistory(page.path)"
-          >
-            <div class="flex justify-between gap-2">
-              <div class="flex flex-col min-w-0 flex-1">
-                 <div class="font-medium text-sm truncate" :title="page.title || 'Untitled'">
-                   {{ page.title || 'Untitled' }}
-                 </div>
-                 <div class="text-xs text-base-content/50 truncate font-mono" :title="page.fullPath">
-                   {{ page.path }}
-                 </div>
+        <motion.ul
+          v-else
+          key="list"
+          class="flex flex-col gap-2"
+          :variants="listContainerVariants"
+          initial="hidden"
+          animate="show"
+        >
+           <motion.li
+              v-for="page in pages"
+              :key="page.path"
+              layout
+              :variants="listItemVariants"
+              class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200 cursor-pointer focus-visible:ring-2 focus-visible:outline-none"
+              :class="{ 'bg-primary/10 border-primary/20': isActivePage(page) }"
+              role="button"
+              tabindex="0"
+              :aria-label="getPageLabel(page)"
+              @click="goToPageHistory(page.path)"
+              @keydown.enter="goToPageHistory(page.path)"
+              @keydown.space.prevent="goToPageHistory(page.path)"
+            >
+              <div class="flex justify-between gap-2">
+                <div class="flex flex-col min-w-0 flex-1">
+                   <div class="font-medium text-sm truncate" :title="page.title || 'Untitled'">
+                     {{ page.title || 'Untitled' }}
+                   </div>
+                   <div class="text-xs text-base-content/50 truncate font-mono" :title="page.fullPath">
+                     {{ page.path }}
+                   </div>
+                </div>
+                <div class="font-mono text-xs font-bold self-start mt-0.5">
+                   {{ prettyMs(page.duration, { secondsDecimalDigits: 0 }) }}
+                </div>
               </div>
-              <div class="font-mono text-xs font-bold self-start mt-0.5">
-                 {{ prettyMs(page.duration, { secondsDecimalDigits: 0 }) }}
-              </div>
-            </div>
 
-            <!-- Mini Progress -->
-             <div class="w-full bg-base-200 rounded-full h-1 mt-1 overflow-hidden">
-                <div
-                  class="bg-secondary h-full rounded-full"
-                  :style="{ width: `${pagePercentage(page.duration)}%` }"
-                ></div>
-              </div>
-          </li>
-      </ul>
+              <!-- Mini Progress -->
+               <div class="w-full bg-base-200 rounded-full h-1 mt-1 overflow-hidden">
+                  <div
+                    class="bg-secondary h-full rounded-full"
+                    :style="{ width: `${pagePercentage(page.duration)}%` }"
+                  ></div>
+                </div>
+            </motion.li>
+        </motion.ul>
+      </AnimatePresence>
 
-    </div>
+    </motion.div>
   </div>
 </template>

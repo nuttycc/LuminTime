@@ -2,11 +2,39 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import prettyMs from 'pretty-ms';
+import { motion, AnimatePresence, stagger } from 'motion-v';
 import { useDateRange, type ViewMode } from '@/composables/useDateRange';
 import { getHistoryLogs } from '@/db/service';
 import type { IHistoryLog } from '@/db/types';
 import DateNavigator from '@/components/DateNavigator.vue';
 import { formatDate, parseDate } from '@/utils/dateUtils';
+
+const contentVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { delayChildren: stagger(0.08) },
+  },
+};
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
+
+const listContainerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { delayChildren: stagger(0.04) },
+  },
+};
+
+const listItemVariants = {
+  hidden: { opacity: 0, x: -12 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.25 } },
+  exit: { opacity: 0, x: 12, transition: { duration: 0.15 } },
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -124,54 +152,64 @@ const eventSourceConfig: Record<string, { icon: string; tip: string }> = {
     />
 
     <!-- List -->
-    <div class="flex-1 p-4">
-      <div v-if="logs.length === 0" class="flex flex-col items-center justify-center py-10 gap-2 opacity-60">
-        <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        <div class="text-sm font-medium">No history recorded</div>
-        <div class="text-xs">No activity found for this period.</div>
-      </div>
+    <motion.div class="flex-1 p-4" :variants="contentVariants" initial="hidden" animate="show">
+      <AnimatePresence mode="wait">
+        <motion.div
+          v-if="logs.length === 0"
+          key="empty"
+          class="flex flex-col items-center justify-center py-10 gap-2 opacity-60"
+          :initial="{ opacity: 0 }"
+          :animate="{ opacity: 1 }"
+          :exit="{ opacity: 0 }"
+        >
+          <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div class="text-sm font-medium">No history recorded</div>
+          <div class="text-xs">No activity found for this period.</div>
+        </motion.div>
 
-      <div v-else class="flex flex-col gap-4">
-        <div v-for="group in groupedLogs" :key="group.date" class="flex flex-col gap-1">
-           <div class="sticky top-0 bg-base-100/95 backdrop-blur-sm z-10 px-2 py-1 text-xs font-bold text-base-content/50 uppercase border-b border-base-200">
-             {{ formatDateLabel(group.date) }}
-           </div>
+        <motion.div v-else key="logs" class="flex flex-col gap-4" :variants="listContainerVariants" initial="hidden" animate="show">
+          <motion.div v-for="group in groupedLogs" :key="group.date" class="flex flex-col gap-1" :variants="listItemVariants">
+             <div class="sticky top-0 bg-base-100/95 backdrop-blur-sm z-10 px-2 py-1 text-xs font-bold text-base-content/50 uppercase border-b border-base-200">
+               {{ formatDateLabel(group.date) }}
+             </div>
 
-           <div
-             v-for="log in group.logs"
-             :key="log.id || log.startTime"
-             class="flex items-center gap-3 p-2 hover:bg-base-200/50 rounded-box transition-colors text-left border-b border-base-100 last:border-0"
-           >
-              <div class="flex items-center gap-1.5 shrink-0 opacity-60">
-                <div
-                  v-if="log.eventSource && eventSourceConfig[log.eventSource]"
-                  class="tooltip tooltip-right"
-                  :data-tip="eventSourceConfig[log.eventSource].tip"
-                >
-                  <span class="text-[10px]">{{ eventSourceConfig[log.eventSource].icon }}</span>
+             <motion.div
+               v-for="log in group.logs"
+               :key="log.id || log.startTime"
+               class="flex items-center gap-3 p-2 hover:bg-base-200/50 rounded-box transition-colors text-left border-b border-base-100 last:border-0"
+               :variants="{ hidden: { opacity: 0 }, show: { opacity: 1 } }"
+             >
+                <div class="flex items-center gap-1.5 shrink-0 opacity-60">
+                  <div
+                    v-if="log.eventSource && eventSourceConfig[log.eventSource]"
+                    class="tooltip tooltip-right"
+                    :data-tip="eventSourceConfig[log.eventSource].tip"
+                  >
+                    <span class="text-[10px]">{{ eventSourceConfig[log.eventSource].icon }}</span>
+                  </div>
+                  <div class="font-mono text-xs font-bold w-10">{{ formatTime(log.startTime) }}</div>
                 </div>
-                <div class="font-mono text-xs font-bold w-10">{{ formatTime(log.startTime) }}</div>
-              </div>
 
-              <div class="flex flex-col flex-1 min-w-0">
-                <div class="font-medium text-xs truncate" :title="log.title || 'Untitled'">
-                  {{ log.title || 'Untitled' }}
+                <div class="flex flex-col flex-1 min-w-0">
+                  <div class="font-medium text-xs truncate" :title="log.title || 'Untitled'">
+                    {{ log.title || 'Untitled' }}
+                  </div>
+                  <div class="text-[10px] text-base-content/50 truncate font-mono" :title="log.path">
+                    {{ formatLogPath(log) }}
+                  </div>
                 </div>
-                <div class="text-[10px] text-base-content/50 truncate font-mono" :title="log.path">
-                  {{ formatLogPath(log) }}
+
+                <div class="font-mono text-xs font-bold opacity-80 shrink-0">
+                   {{ prettyMs(log.duration, { compact: true }) }}
                 </div>
-              </div>
+             </motion.div>
+          </motion.div>
 
-              <div class="font-mono text-xs font-bold opacity-80 shrink-0">
-                 {{ prettyMs(log.duration, { compact: true }) }}
-              </div>
-           </div>
-        </div>
-
-        <div v-if="logs.length >= 2000" class="text-center py-4 text-xs text-base-content/50">
-           History limit reached (2000 items). Refine date range to see more.
-        </div>
-      </div>
-    </div>
+          <div v-if="logs.length >= 2000" class="text-center py-4 text-xs text-base-content/50">
+             History limit reached (2000 items). Refine date range to see more.
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
   </div>
 </template>

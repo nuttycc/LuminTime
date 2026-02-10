@@ -1,10 +1,21 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { motion } from 'motion-v';
 import { exportAllData, importData, type IExportData } from '@/db/exportImport';
 import { getDatabaseStats, type IDbStats } from '@/db/diagnostics';
 import { getRawRetentionDays, setRawRetentionDays } from '@/db/retention';
 import { getBlocklist, addToBlocklist, removeFromBlocklist } from '@/db/blocklist';
+
+const contentVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
+};
+
+const sectionVariant = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+};
 
 const router = useRouter();
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -164,10 +175,10 @@ onMounted(() => {
     </div>
 
     <!-- Content -->
-    <div class="flex-1 p-4 space-y-6">
+    <motion.div class="flex-1 p-4 space-y-6" :variants="contentVariants" initial="hidden" animate="show">
 
       <!-- Data Management Section -->
-      <div class="flex flex-col gap-2">
+      <motion.div class="flex flex-col gap-2" :variants="sectionVariant">
         <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Data Management</h2>
 
         <div class="card bg-base-200 shadow-sm border border-base-300">
@@ -207,10 +218,10 @@ onMounted(() => {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <!-- Data Retention Section -->
-      <div class="flex flex-col gap-2">
+      <motion.div class="flex flex-col gap-2" :variants="sectionVariant">
         <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Data Retention</h2>
 
         <div class="card bg-base-200 shadow-sm border border-base-300">
@@ -232,10 +243,10 @@ onMounted(() => {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <!-- Blocked Sites Section -->
-      <div class="flex flex-col gap-2">
+      <motion.div class="flex flex-col gap-2" :variants="sectionVariant">
         <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Blocked Sites</h2>
 
         <div class="card bg-base-200 shadow-sm border border-base-300">
@@ -279,10 +290,10 @@ onMounted(() => {
             </ul>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <!-- Advanced Section -->
-      <div class="flex flex-col gap-2">
+      <motion.div class="flex flex-col gap-2" :variants="sectionVariant">
         <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Advanced</h2>
 
         <div class="card bg-base-200 shadow-sm border border-base-300">
@@ -318,8 +329,8 @@ onMounted(() => {
 
           </div>
         </div>
-      </div>
+      </motion.div>
 
-    </div>
+    </motion.div>
   </div>
 </template>
