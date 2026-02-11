@@ -58,28 +58,39 @@ export async function addToBlocklist(input: string): Promise<boolean> {
     return false;
   }
 
-  const current = await getBlocklist();
-  if (current.includes(normalized)) {
-    return false;
-  }
+  return db.transaction("rw", db.meta, async () => {
+    const record = await db.meta.get(META_KEY_BLOCKLIST);
+    const current = Array.isArray(record?.value) ? [...(record.value as string[])] : [];
 
-  current.push(normalized);
-  await db.meta.put({ key: META_KEY_BLOCKLIST, value: current });
-  return true;
+    if (current.includes(normalized)) {
+      return false;
+    }
+
+    current.push(normalized);
+    await db.meta.put({ key: META_KEY_BLOCKLIST, value: current });
+    return true;
+  });
 }
 
 export async function removeFromBlocklist(hostname: string): Promise<boolean> {
   const normalized = normalizeBlockInput(hostname);
-  const current = await getBlocklist();
-  const index = current.indexOf(normalized);
-
-  if (index === -1) {
+  if (!normalized) {
     return false;
   }
 
-  current.splice(index, 1);
-  await db.meta.put({ key: META_KEY_BLOCKLIST, value: current });
-  return true;
+  return db.transaction("rw", db.meta, async () => {
+    const record = await db.meta.get(META_KEY_BLOCKLIST);
+    const current = Array.isArray(record?.value) ? [...(record.value as string[])] : [];
+    const index = current.indexOf(normalized);
+
+    if (index === -1) {
+      return false;
+    }
+
+    current.splice(index, 1);
+    await db.meta.put({ key: META_KEY_BLOCKLIST, value: current });
+    return true;
+  });
 }
 
 export function isHostnameBlocked(hostname: string, blocklist: string[]): boolean {

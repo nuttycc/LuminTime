@@ -66,7 +66,16 @@ function buildDateRangeDescending(startDate: string, endDate: string, limit: num
 }
 
 function isTrackableWebUrl(url: string): boolean {
-  return Boolean(url) && url.startsWith("http");
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export function splitByMidnight(startTime: number, duration: number): DaySplit[] {
@@ -286,6 +295,7 @@ export async function getAggregatedPages(
     }
 
     existing.duration += page.duration;
+    existing.title = page.title ?? existing.title;
   }
 
   return Array.from(pageMap.values()).sort((a, b) => b.duration - a.duration);
@@ -317,13 +327,10 @@ export async function getHistoryLogs(
   }
 
   const dates = buildDateRangeDescending(startDate, endDate, MAX_DATE_QUERIES);
-  const dayResults = await Promise.all(
-    dates.map((dayStr) => db.history.where("[date+hostname]").equals([dayStr, hostname]).toArray()),
-  );
-
   const records: IHistoryLog[] = [];
 
-  for (const dayRecords of dayResults) {
+  for (const dayStr of dates) {
+    const dayRecords = await db.history.where("[date+hostname]").equals([dayStr, hostname]).toArray();
     dayRecords.sort((a, b) => b.startTime - a.startTime);
 
     const filteredRecords = path ? dayRecords.filter((record) => record.path === path) : dayRecords;

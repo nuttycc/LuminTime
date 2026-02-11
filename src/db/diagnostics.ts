@@ -12,7 +12,7 @@ async function getStorageEstimate(): Promise<{
   storageUsage?: number;
   storageQuota?: number;
 }> {
-  if (!navigator.storage?.estimate) {
+  if (typeof navigator === "undefined" || !navigator.storage?.estimate) {
     return {};
   }
 

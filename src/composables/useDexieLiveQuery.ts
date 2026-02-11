@@ -1,17 +1,8 @@
 import { liveQuery } from "dexie";
 import { onMounted, onScopeDispose, type ComputedRef, type Ref, ref, watch } from "vue";
+import { isClient, toArray } from "@vueuse/shared";
 
 type DexieSubscription = { unsubscribe: () => void };
-
-type QueryDeps = Ref | ComputedRef | unknown[];
-
-function normalizeDeps(deps?: QueryDeps): unknown[] {
-  if (deps === undefined) {
-    return [];
-  }
-
-  return Array.isArray(deps) ? deps : [deps];
-}
 
 function createSubscriptionManager<T>(querier: () => Promise<T>, onNext: (result: T) => void) {
   let subscription: DexieSubscription | null = null;
@@ -39,16 +30,18 @@ function createSubscriptionManager<T>(querier: () => Promise<T>, onNext: (result
   return { subscribe, teardown };
 }
 
-function canUseIndexedDb(): boolean {
-  return typeof window !== "undefined" && "indexedDB" in window;
-}
-
 export function useDexieLiveQuery<T>(
   querier: () => Promise<T>,
-  deps?: QueryDeps,
+  deps?: Ref | ComputedRef | unknown[],
 ): Ref<T | undefined> {
   const value = ref<T>();
-  const dependencies = normalizeDeps(deps);
+  const hasIndexedDb = isClient && "indexedDB" in globalThis;
+
+  if (!hasIndexedDb) {
+    return value;
+  }
+
+  const dependencies = deps === undefined ? [] : toArray(deps);
   const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
     value.value = result;
   });
@@ -78,17 +71,18 @@ export function useDexieLiveQuery<T>(
 export function useLiveQuery<T>(
   querier: () => Promise<T>,
   defaultValue: T,
-  deps?: (Ref | ComputedRef)[],
+  deps?: Ref | ComputedRef | unknown[],
 ): Ref<T> {
   const value = ref<T>(defaultValue) as Ref<T>;
-  const dependencies = deps ?? [];
+  const hasIndexedDb = isClient && "indexedDB" in globalThis;
+  const dependencies = deps === undefined ? [] : toArray(deps);
   const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
     value.value = result;
   });
 
   let stopWatch: (() => void) | null = null;
 
-  if (canUseIndexedDb()) {
+  if (hasIndexedDb) {
     subscribe();
 
     if (dependencies.length > 0) {

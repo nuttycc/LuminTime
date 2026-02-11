@@ -1,3 +1,4 @@
+import { type } from "arktype";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -13,16 +14,36 @@ import {
 
 export type ViewMode = "day" | "week" | "month";
 
+const ViewModeSchema = type("'day' | 'week' | 'month'");
+const DateQuerySchema = type("/^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$/");
+
+const SHORT_MONTH_DAY_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+};
+
 function getTodayDateStr(): string {
   return formatDate(new Date());
 }
 
-function normalizeViewMode(value: string | undefined): ViewMode {
-  if (value === "week" || value === "month") {
-    return value;
+function normalizeViewMode(value: unknown): ViewMode {
+  const result = ViewModeSchema(value);
+
+  if (!(result instanceof type.errors)) {
+    return result;
   }
 
   return "day";
+}
+
+function normalizeDate(value: unknown): string {
+  const result = DateQuerySchema(value);
+
+  if (!(result instanceof type.errors)) {
+    return result;
+  }
+
+  return getTodayDateStr();
 }
 
 export function useDateRange() {
@@ -30,14 +51,14 @@ export function useDateRange() {
   const router = useRouter();
 
   const view = computed<ViewMode>({
-    get: () => normalizeViewMode(route.query.view as string | undefined),
+    get: () => normalizeViewMode(route.query.view),
     set: (value) => {
       void router.replace({ query: { ...route.query, view: value } });
     },
   });
 
   const date = computed<string>({
-    get: () => (route.query.date as string) || getTodayDateStr(),
+    get: () => normalizeDate(route.query.date),
     set: (value) => {
       void router.replace({ query: { ...route.query, date: value } });
     },
@@ -121,13 +142,7 @@ export function useDateRange() {
       const start = parseDate(startDate.value);
       const end = parseDate(endDate.value);
 
-      return `${start.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      })} - ${end.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      })}`;
+      return `${start.toLocaleDateString(undefined, SHORT_MONTH_DAY_FORMAT)} - ${end.toLocaleDateString(undefined, SHORT_MONTH_DAY_FORMAT)}`;
     }
 
     return currentDate.toLocaleDateString(undefined, {
