@@ -1,46 +1,72 @@
+import { type } from "arktype";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  formatDate,
-  parseDate,
-  getStartOfWeek,
-  getEndOfWeek,
-  getStartOfMonth,
-  getEndOfMonth,
   addDays,
   addMonths,
+  formatDate,
+  getEndOfMonth,
+  getEndOfWeek,
+  getStartOfMonth,
+  getStartOfWeek,
+  parseDate,
 } from "@/utils/dateUtils";
 
 export type ViewMode = "day" | "week" | "month";
+
+const ViewModeSchema = type("'day' | 'week' | 'month'");
+const DateQuerySchema = type("/^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$/");
+
+const SHORT_MONTH_DAY_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+};
+
+function getTodayDateStr(): string {
+  return formatDate(new Date());
+}
+
+function normalizeViewMode(value: unknown): ViewMode {
+  const result = ViewModeSchema(value);
+
+  if (!(result instanceof type.errors)) {
+    return result;
+  }
+
+  return "day";
+}
+
+function normalizeDate(value: unknown): string {
+  const result = DateQuerySchema(value);
+
+  if (!(result instanceof type.errors)) {
+    return result;
+  }
+
+  return getTodayDateStr();
+}
 
 export function useDateRange() {
   const route = useRoute();
   const router = useRouter();
 
-  // Current view mode (default to day)
   const view = computed<ViewMode>({
-    get: () => {
-      const v = route.query.view as string | undefined;
-      return v === "day" || v === "week" || v === "month" ? v : "day";
-    },
-    set: (v) => {
-      void router.replace({ query: { ...route.query, view: v } });
+    get: () => normalizeViewMode(route.query.view),
+    set: (value) => {
+      void router.replace({ query: { ...route.query, view: value } });
     },
   });
 
-  // Current reference date (default to today)
   const date = computed<string>({
-    get: () => (route.query.date as string) || formatDate(new Date()),
-    set: (d) => {
-      void router.replace({ query: { ...route.query, date: d } });
+    get: () => normalizeDate(route.query.date),
+    set: (value) => {
+      void router.replace({ query: { ...route.query, date: value } });
     },
   });
 
-  // Reference date object
-  const dateObj = computed(() => parseDate(date.value));
+  const dateObj = computed<Date>(() => parseDate(date.value));
 
-  // Calculated start date based on view
-  const startDate = computed(() => {
+  const startDate = computed<string>(() => {
     switch (view.value) {
       case "week":
         return formatDate(getStartOfWeek(dateObj.value));
@@ -51,8 +77,7 @@ export function useDateRange() {
     }
   });
 
-  // Calculated end date based on view
-  const endDate = computed(() => {
+  const endDate = computed<string>(() => {
     switch (view.value) {
       case "week":
         return formatDate(getEndOfWeek(dateObj.value));
@@ -63,64 +88,67 @@ export function useDateRange() {
     }
   });
 
-  // Navigate by direction: 1 for next, -1 for previous
-  const navigate = (direction: 1 | -1) => {
+  function navigate(direction: 1 | -1): void {
     switch (view.value) {
       case "week":
         date.value = formatDate(addDays(dateObj.value, 7 * direction));
-        break;
+        return;
       case "month":
         date.value = formatDate(addMonths(dateObj.value, direction));
-        break;
+        return;
       default:
         date.value = formatDate(addDays(dateObj.value, direction));
     }
-  };
+  }
 
-  const next = () => navigate(1);
-  const prev = () => navigate(-1);
+  function next(): void {
+    navigate(1);
+  }
 
-  const goToday = () => {
-    date.value = formatDate(new Date());
-  };
+  function prev(): void {
+    navigate(-1);
+  }
 
-  // Whether the current view includes today
-  const isToday = computed(() => {
-    const today = formatDate(new Date());
+  function goToday(): void {
+    date.value = getTodayDateStr();
+  }
+
+  const isToday = computed<boolean>(() => {
+    const today = getTodayDateStr();
     return startDate.value <= today && today <= endDate.value;
   });
 
-  // Check if we can navigate forward (don't allow future dates)
-  const canNext = computed(() => {
-    const today = formatDate(new Date());
+  const canNext = computed<boolean>(() => {
+    const today = getTodayDateStr();
     return endDate.value < today;
   });
 
-  // Label for display
-  const label = computed(() => {
-    const d = dateObj.value;
-    const options: Intl.DateTimeFormatOptions = { year: "numeric", month: "short", day: "numeric" };
+  const label = computed<string>(() => {
+    const currentDate = dateObj.value;
 
     if (view.value === "day") {
-      // Check if it's today
-      const today = formatDate(new Date());
-      if (date.value === today) return "Today";
-      return d.toLocaleDateString(undefined, options);
+      if (date.value === getTodayDateStr()) {
+        return "Today";
+      }
+
+      return currentDate.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
     }
 
     if (view.value === "week") {
       const start = parseDate(startDate.value);
       const end = parseDate(endDate.value);
-      const startStr = start.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      const endStr = end.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      return `${startStr} - ${endStr}`;
+
+      return `${start.toLocaleDateString(undefined, SHORT_MONTH_DAY_FORMAT)} - ${end.toLocaleDateString(undefined, SHORT_MONTH_DAY_FORMAT)}`;
     }
 
-    if (view.value === "month") {
-      return d.toLocaleDateString(undefined, { year: "numeric", month: "long" });
-    }
-
-    return "";
+    return currentDate.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+    });
   });
 
   return {

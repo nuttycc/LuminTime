@@ -1,5 +1,6 @@
 import { liveQuery } from "dexie";
-import { ref, watch, onMounted, onUnmounted, onScopeDispose, type Ref, type ComputedRef } from "vue";
+import { onMounted, onScopeDispose, type ComputedRef, type Ref, ref, watch } from "vue";
+import { isClient, toArray } from "@vueuse/shared";
 
 type DexieSubscription = { unsubscribe: () => void };
 
@@ -26,40 +27,36 @@ function createSubscriptionManager<T>(querier: () => Promise<T>, onNext: (result
     });
   }
 
-  return {
-    subscribe,
-    teardown,
-  };
+  return { subscribe, teardown };
 }
 
-/**
- * Convert Dexie liveQuery to Vue reactive ref with dependency tracking
- * @param querier Function that returns a Promise with the query result
- * @param deps Optional dependency array to trigger re-queries
- * @returns Ref with the query result
- */
 export function useDexieLiveQuery<T>(
   querier: () => Promise<T>,
   deps?: Ref | ComputedRef | unknown[],
 ): Ref<T | undefined> {
   const value = ref<T>();
+  const hasIndexedDb = isClient && "indexedDB" in globalThis;
+
+  if (!hasIndexedDb) {
+    return value;
+  }
+
+  const dependencies = deps === undefined ? [] : toArray(deps);
   const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
     value.value = result;
   });
+
   let stopWatch: (() => void) | null = null;
 
   onMounted(() => {
     subscribe();
 
-    if (deps !== undefined) {
-      const depArray = Array.isArray(deps) ? deps : [deps];
-      stopWatch = watch(depArray, () => {
-        subscribe();
-      });
+    if (dependencies.length > 0) {
+      stopWatch = watch(dependencies, subscribe);
     }
   });
 
-  onUnmounted(() => {
+  onScopeDispose(() => {
     if (stopWatch) {
       stopWatch();
       stopWatch = null;
@@ -71,35 +68,25 @@ export function useDexieLiveQuery<T>(
   return value;
 }
 
-/**
- * Enhanced version with default value support.
- * Returns `Ref<T>` (never undefined) by providing an initial/fallback value.
- * Re-subscribes automatically when any dep in `deps` changes.
- *
- * @param querier Function that returns a Promise with the query result
- * @param defaultValue Fallback value used before the first query resolves
- * @param deps Reactive dependencies that trigger re-subscription when changed
- */
 export function useLiveQuery<T>(
   querier: () => Promise<T>,
   defaultValue: T,
-  deps?: (Ref | ComputedRef)[],
+  deps?: Ref | ComputedRef | unknown[],
 ): Ref<T> {
   const value = ref<T>(defaultValue) as Ref<T>;
+  const hasIndexedDb = isClient && "indexedDB" in globalThis;
+  const dependencies = deps === undefined ? [] : toArray(deps);
   const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
     value.value = result;
   });
-  const canUseIndexedDb = typeof window !== "undefined" && "indexedDB" in window;
 
   let stopWatch: (() => void) | null = null;
 
-  if (canUseIndexedDb) {
+  if (hasIndexedDb) {
     subscribe();
 
-    if (deps && deps.length > 0) {
-      stopWatch = watch(deps, () => {
-        subscribe();
-      });
+    if (dependencies.length > 0) {
+      stopWatch = watch(dependencies, subscribe);
     }
   }
 
