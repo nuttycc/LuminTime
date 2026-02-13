@@ -14,6 +14,8 @@ const RETENTION_ALARM_NAME = "retention-cleanup";
 const RETENTION_ALARM_PERIOD = 60;
 
 let retentionRunning = false;
+let lastKnownBrowserFocused: boolean | null = null;
+
 async function safeRunRetention(maxDays?: number) {
   if (retentionRunning) return;
   retentionRunning = true;
@@ -95,15 +97,65 @@ export default defineBackground(() => {
     isUrlBlocked,
   });
 
+  const startTrackingFromFocusedWindow = async () => {
+    const result = await getActiveTabUrl();
+    sessionManager.handleEvent("switch", {
+      url: result?.url ?? null,
+      title: result?.title,
+      eventSource: "window_focus",
+    });
+  };
+
+  const applyBrowserFocusState = async (isFocused: boolean) => {
+    if (!isFocused) {
+      if (lastKnownBrowserFocused !== false) {
+        lastKnownBrowserFocused = false;
+        sessionManager.handleEvent("idle", { url: null });
+      }
+      return false;
+    }
+
+    if (lastKnownBrowserFocused === false) {
+      lastKnownBrowserFocused = true;
+      await startTrackingFromFocusedWindow();
+      return true;
+    }
+
+    if (lastKnownBrowserFocused === null) {
+      lastKnownBrowserFocused = true;
+    }
+
+    return true;
+  };
+
+  const reconcileBrowserFocusState = async () => {
+    try {
+      const focusedWindow = await browser.windows.getLastFocused();
+      return await applyBrowserFocusState(focusedWindow.focused);
+    } catch (error) {
+      if (isExpectedBrowserError(error)) {
+        console.debug("Unable to reconcile browser focus state:", error);
+        return null;
+      }
+      console.error("Failed to reconcile browser focus state:", error);
+      return null;
+    }
+  };
+
   // Session tick handler: periodically settle and restart tracking for data reliability
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === SESSION_TICK_ALARM_NAME) {
-      sessionManager.handleEvent("alarm");
-    } else if (alarm.name === RETENTION_ALARM_NAME) {
-      safeRunRetention().catch((error) => {
-        console.error("Retention job failed:", error);
-      });
-    }
+    void (async () => {
+      if (alarm.name === SESSION_TICK_ALARM_NAME) {
+        const isFocused = await reconcileBrowserFocusState();
+        if (isFocused) {
+          sessionManager.handleEvent("alarm");
+        }
+      } else if (alarm.name === RETENTION_ALARM_NAME) {
+        safeRunRetention().catch((error) => {
+          console.error("Retention job failed:", error);
+        });
+      }
+    })();
   });
 
   // tab activates
@@ -121,7 +173,7 @@ export default defineBackground(() => {
         });
       } catch (error) {
         if (isExpectedBrowserError(error)) {
-          console.debug("[TabActivated] Tab unavailable:", error);
+          console.debug("Tab unavailable:", error);
           return;
         }
         console.error("Failed to handle tab activation:", error);
@@ -150,7 +202,7 @@ export default defineBackground(() => {
         });
       } catch (error) {
         if (isExpectedBrowserError(error)) {
-          console.debug("[Navigation] Tab/window unavailable:", error);
+          console.debug("Navigation: Tab/window unavailable:", error);
           return;
         }
         console.error(`Failed to process navigation to ${details.url}:`, error);
@@ -164,18 +216,13 @@ export default defineBackground(() => {
       try {
         console.log("Window focus changed, current:", windowId);
         if (windowId === browser.windows.WINDOW_ID_NONE) {
-          sessionManager.handleEvent("idle", { url: null });
+          await applyBrowserFocusState(false);
         } else {
-          const result = await getActiveTabUrl();
-          sessionManager.handleEvent("switch", {
-            url: result?.url ?? null,
-            title: result?.title,
-            eventSource: "window_focus",
-          });
+          await applyBrowserFocusState(true);
         }
       } catch (error) {
         if (isExpectedBrowserError(error)) {
-          console.debug("[WindowFocus] Window unavailable:", error);
+          console.debug("Focused window unavailable:", error);
           return;
         }
         console.error("Failed to process window focus change:", error);
@@ -211,7 +258,7 @@ export default defineBackground(() => {
         }
       } catch (error) {
         if (isExpectedBrowserError(error)) {
-          console.debug("[IdleState] Browser state unavailable:", error);
+          console.debug("Browser state unavailable:", error);
           return;
         }
         console.error("Failed to handle idle state change:", error);
@@ -229,9 +276,14 @@ export default defineBackground(() => {
     }
   });
 
-  sessionManager.init().catch((error) => {
-    console.error("Failed to initialize session manager:", error);
-  });
+  void (async () => {
+    try {
+      await sessionManager.init();
+      await reconcileBrowserFocusState();
+    } catch (error) {
+      console.error("Failed to initialize session manager:", error);
+    }
+  })();
 
   browser.idle.setDetectionInterval(IDLE_DETECTION_INTERVAL);
 

@@ -119,7 +119,7 @@ export class SessionManager {
         await this._clearAlarm();
       }
     } catch (error) {
-      console.error("SessionManager: Error in transition", error);
+      console.error("Session: Error in transition", error);
     }
   }
 
@@ -129,6 +129,8 @@ export class SessionManager {
   private async _executeAlarmTick() {
     try {
       const session = await this.deps.storage.getValue();
+
+      console.log("Session: Alarm tick", session);
 
       // Only tick if we have a valid active session
       if (session.url) {
@@ -140,7 +142,7 @@ export class SessionManager {
         await this._clearAlarm();
       }
     } catch (error) {
-      console.error("SessionManager: Error in alarm tick", error);
+      console.error("Session: Error in alarm tick", error);
     }
   }
 
@@ -166,7 +168,10 @@ export class SessionManager {
 
     // Clear from storage
     await this.deps.storage.removeValue();
-    console.log("SessionManager: Tracking ended:", session.url);
+    console.log("Session: Tracking ended:", session.url, {
+      elapsedMs: elapsed,
+      finalDurationMs: finalDuration,
+    });
   }
 
   private async _startSession(url: string, title?: string, eventSource?: EventSource) {
@@ -184,7 +189,7 @@ export class SessionManager {
       this._hasActiveSession = true;
       await this._ensureAlarm();
     }
-    console.log("SessionManager: Tracking started:", url);
+    console.log("Session: Tracking started:", url);
   }
 
   private async _ensureAlarm() {
@@ -193,12 +198,12 @@ export class SessionManager {
       await browser.alarms.create(this.deps.alarmName, {
         periodInMinutes: this.deps.alarmPeriodInMinutes,
       });
-      console.log("SessionManager: Alarm created");
+      console.log("Session: Alarm created");
     }
   }
 
   private async _clearAlarm() {
     await browser.alarms.clear(this.deps.alarmName);
-    console.log("SessionManager: Alarm cleared");
+    console.log("Session: Alarm cleared");
   }
 }
