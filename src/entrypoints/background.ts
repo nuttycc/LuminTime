@@ -99,7 +99,7 @@ export default defineBackground(() => {
 
   const startTrackingFromFocusedWindow = async () => {
     const result = await getActiveTabUrl();
-    sessionManager.handleEvent("switch", {
+    sessionManager.handleEvent("idle", {
       url: result?.url ?? null,
       title: result?.title,
       eventSource: "window_focus",
