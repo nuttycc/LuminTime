@@ -99,7 +99,7 @@ async function getHeatmapForWeek(startDate: string, endDate: string): Promise<nu
 async function getTopSitesForRange(
   startDate: string,
   endDate: string,
-  limit: number,
+  limit?: number,
 ): Promise<Map<string, ISiteStat>> {
   const siteMap = new Map<string, ISiteStat>();
 
@@ -114,16 +114,16 @@ async function getTopSitesForRange(
         existing.duration += record.duration;
         if (record.lastVisit > existing.lastVisit) {
           existing.lastVisit = record.lastVisit;
+          existing.iconUrl = record.iconUrl;
         }
       }
     });
 
-  // Sort and keep top N
+  // Sort and keep top N (if limit specified)
   const sorted = Array.from(siteMap.entries())
-    .sort((a, b) => b[1].duration - a[1].duration)
-    .slice(0, limit);
+    .sort((a, b) => b[1].duration - a[1].duration);
 
-  return new Map(sorted);
+  return new Map(limit ? sorted.slice(0, limit) : sorted);
 }
 
 export async function getWeeklyInsights(
@@ -140,7 +140,7 @@ export async function getWeeklyInsights(
       getDailyTrendForRange(thisWeekStart, thisWeekEnd),
       getHeatmapForWeek(thisWeekStart, thisWeekEnd),
       getTopSitesForRange(thisWeekStart, thisWeekEnd, 5),
-      getTopSitesForRange(lastWeekStart, lastWeekEnd, 10),
+      getTopSitesForRange(lastWeekStart, lastWeekEnd),
     ]);
 
   const changePercent = lastWeekTotal > 0 ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100 : 0;

@@ -5,7 +5,7 @@ import prettyMs from 'pretty-ms';
 import { motion, AnimatePresence, stagger } from 'motion-v';
 import { useLiveQuery } from '@/composables/useDexieLiveQuery';
 import { getWeeklyInsights, type WeeklyInsights, type SiteComparison } from '@/db/insights';
-import { formatDate, getStartOfWeek, getEndOfWeek } from '@/utils/dateUtils';
+import { formatDate, getStartOfWeek, getEndOfWeek, parseDate } from '@/utils/dateUtils';
 import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
 
 const contentVariants = {
@@ -60,7 +60,7 @@ const insights = useLiveQuery<WeeklyInsights>(
 // Daily trend chart items
 const chartItems = computed<ChartItem[]>(() => {
   return insights.value.dailyTrend.map((item) => {
-    const d = new Date(item.date + 'T00:00:00');
+    const d = parseDate(item.date);
     const label = d.toLocaleDateString(undefined, { weekday: 'narrow' });
     return {
       key: item.date,
@@ -105,7 +105,7 @@ const getSiteChangeText = (site: SiteComparison): string => {
 
 const getSiteChangeBadgeClass = (site: SiteComparison): string => {
   if (site.lastWeek === 0) return 'badge-info';
-  return site.changePercent > 0 ? 'badge-error' : 'badge-success';
+  return site.changePercent >= 0 ? 'badge-error' : 'badge-success';
 };
 
 const goBack = () => {
@@ -114,8 +114,8 @@ const goBack = () => {
 
 // Week label for header
 const weekLabel = computed(() => {
-  const start = new Date(startStr + 'T00:00:00');
-  const end = new Date(endStr + 'T00:00:00');
+  const start = parseDate(startStr);
+  const end = parseDate(endStr);
   const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   return `${fmt(start)} – ${fmt(end)}`;
 });
