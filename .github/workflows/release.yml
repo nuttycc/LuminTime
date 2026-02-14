@@ -50,11 +50,38 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate release notes from commits
+        id: notes
+        run: |
+          CURRENT_TAG="v${{ steps.pkg.outputs.version }}"
+          PREV_TAG="$(git tag --list 'v*' --sort=-version:refname | head -n 1)"
+
+          {
+            echo "## Highlights"
+            echo "- Release ${CURRENT_TAG}"
+            echo
+            echo "## Commits"
+            if [ -n "$PREV_TAG" ]; then
+              echo "_Changes since \`$PREV_TAG\`_"
+              echo
+              git log --pretty=format:'- %s (%h)' "$PREV_TAG..HEAD"
+              echo
+              echo
+              echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$CURRENT_TAG"
+            else
+              echo "_Initial release commits_"
+              echo
+              git log --pretty=format:'- %s (%h)'
+            fi
+          } > RELEASE_NOTES.md
+
+          echo "notes_file=RELEASE_NOTES.md" >> $GITHUB_OUTPUT
+
       - name: Publish versioned release
         run: |
           gh release create "v${{ steps.pkg.outputs.version }}" \
             --title "v${{ steps.pkg.outputs.version }}" \
-            --generate-notes \
+            --notes-file "${{ steps.notes.outputs.notes_file }}" \
             .output/*.zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
