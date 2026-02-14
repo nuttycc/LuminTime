@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "1254f3acfc55",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/db/insights.ts",
+    "src/entrypoints/popup/pages/HomeView.vue",
+    "src/entrypoints/popup/pages/InsightsView.vue",
+    "src/entrypoints/popup/router.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/12/54f3acfc55/0/metadata.json",
+      "transcript": "/12/54f3acfc55/0/full.jsonl",
+      "context": "/12/54f3acfc55/0/context.md",
+      "content_hash": "/12/54f3acfc55/0/content_hash.txt",
+      "prompt": "/12/54f3acfc55/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 6059,
+    "cache_creation_tokens": 308959,
+    "cache_read_tokens": 1066073,
+    "output_tokens": 10439,
+    "api_call_count": 30
+  }
+}

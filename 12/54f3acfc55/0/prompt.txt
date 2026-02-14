@@ -1,0 +1,143 @@
+Implement the following plan:
+
+# Insights (周报/洞察) 页面
+
+## Context
+
+LuminTime 目前有 4 个页面：Home、SiteDetail、History、Settings。用户可以按日/周/月查看时间趋势和站点排名，但缺少**跨周期对比**和**行为模式发现**能力。新增 Insights 页面，提供本周 vs 上周对比、活跃时段热力图、站点变化趋势等洞察，让用户有理由定期回顾自己的浏览习惯。
+
+## 需要修改/新增的文件
+
+| 操作 | 文件路径 |
+|------|----------|
+| 新增 | `src/entrypoints/popup/pages/InsightsView.vue` |
+| 新增 | `src/db/insights.ts` |
+| 修改 | `src/entrypoints/popup/router.ts` |
+| 修改 | `src/entrypoints/popup/pages/HomeView.vue` |
+
+## 实现步骤
+
+### 1. 新增 DB 查询层 `src/db/insights.ts`
+
+新增以下查询函数，复用现有 `db` 实例和 `sites`/`hourlyStats`/`history` 表：
+
+```ts
+// 获取 Insights 页面所需的全部数据
+export async function getWeeklyInsights(thisWeekStart: string, thisWeekEnd: string): Promise<WeeklyInsights>
+```
+
+**WeeklyInsights 接口**:
+```ts
+interface WeeklyInsights {
+  thisWeekTotal: number           // 本周总时长(ms)
+  lastWeekTotal: number           // 上周总时长(ms)
+  changePercent: number           // 环比变化百分比
+  dailyTrend: { date: string; duration: number }[]  // 本周每日时长(7天)
+  heatmap: number[][]             // 7(天) × 24(小时) 矩阵，值为 duration(ms)
+  topSitesComparison: SiteComparison[]  // Top 5 站点对比
+}
+
+interface SiteComparison {
+  hostname: string
+  thisWeek: number    // 本周时长
+  lastWeek: number    // 上周时长
+  changePercent: number
+}
+```
+
+**实现思路**:
+- 使用 `addDays(parseDate(thisWeekStart), -7)` 计算上周日期范围
+- 本周/上周总时长：复用 `db.sites.where("date").between()` 模式
+- 热力图：查询 `db.hourlyStats` + `db.history`（同 `getHourlyTrend` 的模式），但遍历 7 天
+- 站点对比：分别对本周/上周调用 `getAggregatedSites` 的内部逻辑，取 Top 5 合集做 diff
+
+### 2. 新增页面 `src/entrypoints/popup/pages/InsightsView.vue`
+
+**布局结构**（遵循现有页面模式）：
+
+```
+navbar (sticky) — 左侧返回按钮，中间标题 "Insights"
+─────────────────────────────────────
+内容区 (flex-1 p-4 space-y-4, motion.div)
+├── 概览卡片 — 本周总时长 + 环比变化(↑/↓%)
+├── 每日趋势 — 复用 TrendChart 组件(7根柱子)
+├── 活跃时段热力图 — 7×24 grid，颜色深浅表示时长
+└── 站点变化 — Top 5 站点，显示本周/上周时长 + 变化百分比
+```
+
+**关键实现细节**:
+
+**a) 概览卡片**
+- 样式同 HomeView 的 Summary Card（`card bg-base-200 shadow-sm border border-base-300`）
+- 主数字：`prettyMs(thisWeekTotal)`
+- 副文本：`vs last week: ↑12%` 或 `↓8%`，使用绿/红色区分
+- 无上周数据时显示 "No previous data"
+
+**b) 每日趋势**
+- 直接复用 `<TrendChart :items="dailyChartItems" />`
+- 映射 dailyTrend 为 ChartItem[]，label 用星期缩写（Mon/Tue/...）
+
+**c) 热力图 (新组件内联)**
+- 7 行 × 24 列 CSS Grid
+- 每个格子 `w-full aspect-square rounded-sm`
+- 颜色用 `bg-primary` + opacity 映射（0 → opacity-5, max → opacity-100）
+- 行标签：Mon-Sun，列标签：每隔 4 小时显示 (0, 4, 8, 12, 16, 20)
+- hover 时显示 tooltip（星期+小时+时长）
+
+**d) 站点变化列表**
+- 每项显示：hostname、本周时长、变化百分比 badge
+- badge 颜色：增加→红色（花时间更多），减少→绿色（花时间更少），新增→蓝色
+- 动画：复用 `listContainerVariants` + `listItemVariants` 模式
+
+**数据获取**:
+```ts
+const today = new Date()
+const weekStart = getStartOfWeek(today)
+const weekEnd = getEndOfWeek(today)
+const startStr = formatDate(weekStart)
+const endStr = formatDate(weekEnd)
+
+const insights = useLiveQuery(
+  () => getWeeklyInsights(startStr, endStr),
+  defaultInsights,
+  []
+)
+```
+
+### 3. 修改路由 `src/entrypoints/popup/router.ts`
+
+新增路由：
+```ts
+{ path: "/insights", component: InsightsView }
+```
+
+### 4. 修改 HomeView — 添加入口按钮
+
+在 HomeView navbar 的按钮区域（`navbar-end`），在 History 按钮前插入 Insights 按钮：
+- 使用灯泡或图表 SVG 图标
+- tooltip: "Insights"
+- 点击跳转 `router.push('/insights')`
+
+## 不做的事
+
+- 不新增独立组件文件用于热力图（内联在 InsightsView 中，因为只用一次）
+- 不添加日期导航（固定显示当前周 vs 上周，保持简洁）
+- 不新增 DB 表或修改 schema
+- 不做 i18n（与现有项目一致，英文 UI）
+
+## 验证方式
+
+1. `bun run dev` 启动开发服务器
+2. 在浏览器中加载扩展，点击 popup
+3. 验证 HomeView 上新增的 Insights 入口按钮可点击
+4. 验证 Insights 页面正常加载，显示四个模块
+5. 验证有数据时各模块数据正确，无数据时显示合理空状态
+6. 验证返回按钮能正常回到 HomeView
+7. 运行 `bun run typecheck` 确认无类型错误
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/lan/.REDACTED.jsonl
+
+---
+
+git commit, please.
