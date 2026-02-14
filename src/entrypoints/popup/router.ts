@@ -3,6 +3,7 @@ import HomeView from "./pages/HomeView.vue";
 import SiteDetailView from "./pages/SiteDetailView.vue";
 import HistoryView from "./pages/HistoryView.vue";
 import SettingsView from "./pages/SettingsView.vue";
+import InsightsView from "./pages/InsightsView.vue";
 
 // oxlint-disable typescript-eslint/no-unsafe-assignment
 const routes: RouteRecordRaw[] = [
@@ -21,6 +22,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/settings",
     component: SettingsView,
+  },
+  {
+    path: "/insights",
+    component: InsightsView,
   },
 ];
 
