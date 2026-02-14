@@ -1,8 +1,12 @@
-## AI
+# AI, Agent
 .copilot/
 .claude/
+.entire/
 
-# docs, notes
+# IDE
+.vscode/
+
+# Docs, Notes
 repomix.config.json
 repomix-output.xml
 
