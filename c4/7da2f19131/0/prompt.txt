@@ -1,0 +1,13 @@
+check review comments on PR #49.
+
+---
+
+re-check every issues from devin and gemini, then give your views.
+
+---
+
+修复 >=low 的issues.
+
+---
+
+push the fix
