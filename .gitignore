@@ -1,3 +1,7 @@
+## AI
+.copilot/
+.claude/
+
 # docs, notes
 repomix.config.json
 repomix-output.xml
