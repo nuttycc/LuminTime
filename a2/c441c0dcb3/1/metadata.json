@@ -1,0 +1,47 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "a2c441c0dcb3",
+  "session_id": "f88b7451-a48c-483b-9801-cb4da94c2bc2",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-15T10:13:10.371823427Z",
+  "branch": "feat/generative-art-heatmap",
+  "checkpoints_count": 5,
+  "files_touched": [
+    ".bash_profile",
+    ".bashrc",
+    ".gitconfig",
+    ".gitmodules",
+    ".mcp.json",
+    ".profile",
+    ".ripgreprc",
+    ".vscode",
+    ".zprofile",
+    ".zshrc",
+    "HEAD",
+    "config",
+    "hooks",
+    "objects",
+    "refs",
+    "src/components/ArtHeatmap.vue",
+    "src/components/artHeatmap.ts",
+    "src/entrypoints/popup/pages/InsightsView.vue",
+    "tests/components/artHeatmap.test.ts"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 1347,
+    "cache_creation_tokens": 780203,
+    "cache_read_tokens": 3107638,
+    "output_tokens": 13307,
+    "api_call_count": 82
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-15T10:13:10.258846055Z",
+    "agent_lines": 285,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 285,
+    "agent_percentage": 100
+  }
+}
