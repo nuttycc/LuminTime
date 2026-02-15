@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "a2c441c0dcb3",
+  "strategy": "manual-commit",
+  "branch": "feat/generative-art-heatmap",
+  "checkpoints_count": 0,
+  "files_touched": [
+    ".bash_profile",
+    ".bashrc",
+    ".gitconfig",
+    ".gitmodules",
+    ".mcp.json",
+    ".profile",
+    ".ripgreprc",
+    ".vscode",
+    ".zprofile",
+    ".zshrc",
+    "HEAD",
+    "config",
+    "hooks",
+    "objects",
+    "refs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a2/c441c0dcb3/0/metadata.json",
+      "transcript": "/a2/c441c0dcb3/0/full.jsonl",
+      "context": "/a2/c441c0dcb3/0/context.md",
+      "content_hash": "/a2/c441c0dcb3/0/content_hash.txt",
+      "prompt": "/a2/c441c0dcb3/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 11387,
+    "cache_creation_tokens": 180597,
+    "cache_read_tokens": 442447,
+    "output_tokens": 9097,
+    "api_call_count": 13
+  }
+}
