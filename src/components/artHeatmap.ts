@@ -9,10 +9,11 @@ export function intensity(val: number, maxVal: number): number {
   return Math.max(0.08, val / maxVal);
 }
 
-/** Deterministic pseudo-random in [0, 1) based on grid coordinates. */
+/** Deterministic pseudo-random in [0, 1) based on grid coordinates.
+ *  Uses a 2D sinusoidal hash inspired by GLSL (The Book of Shaders).
+ *  The +1.0 offset avoids the sin(0)=0 degenerate case at (0,0). */
 export function noise(dayIdx: number, hour: number): number {
-  const seed = dayIdx * 24 + hour;
-  return ((Math.sin(seed * 127.1 + seed * 311.7) * 43758.5453) % 1 + 1) % 1;
+  return ((Math.sin(dayIdx * 127.1 + hour * 311.7 + 1.0) * 43758.5453) % 1 + 1) % 1;
 }
 
 /**
@@ -32,7 +33,8 @@ export function getCellStyle(val: number, maxVal: number, dayIdx: number, hour: 
     };
   }
 
-  // Hue shift: night hours (0-6, 20-23) → cool/blue offset, day hours (8-18) → warm offset
+  // Hue shift: smooth sinusoidal cycle over 24h — coolest (−15°) near midnight,
+  // warmest (+15°) around midday, crossover points near hour ~6 and ~17
   const hourNorm = hour / 23;
   const hueShift = Math.sin(hourNorm * Math.PI * 2 - Math.PI / 2) * 15;
 
