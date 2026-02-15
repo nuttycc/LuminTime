@@ -7,6 +7,7 @@ import { useLiveQuery } from '@/composables/useDexieLiveQuery';
 import { getWeeklyInsights, type WeeklyInsights, type SiteComparison } from '@/db/insights';
 import { formatDate, getStartOfWeek, getEndOfWeek, parseDate } from '@/utils/dateUtils';
 import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
+import ArtHeatmap from '@/components/ArtHeatmap.vue';
 
 const contentVariants = {
   hidden: { opacity: 0 },
@@ -76,25 +77,6 @@ const chartItems = computed<ChartItem[]>(() => {
 const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hourLabels = [0, 4, 8, 12, 16, 20];
 
-const heatmapMax = computed(() => {
-  let max = 0;
-  for (const row of insights.value.heatmap) {
-    for (const val of row) {
-      if (val > max) max = val;
-    }
-  }
-  return max;
-});
-
-const getCellOpacity = (value: number): number => {
-  if (value === 0 || heatmapMax.value === 0) return 0.05;
-  return Math.max(0.1, value / heatmapMax.value);
-};
-
-const getCellTooltip = (dayIdx: number, hour: number): string => {
-  const value = insights.value.heatmap[dayIdx][hour];
-  return `${dayLabels[dayIdx]} ${hour}:00 – ${prettyMs(value, { compact: true })}`;
-};
 
 // Site comparison helpers
 const getSiteChangeText = (site: SiteComparison): string => {
@@ -176,42 +158,7 @@ const weekLabel = computed(() => {
       <motion.div :variants="cardVariant" class="card bg-base-100 shadow-sm border border-base-200">
         <div class="card-body p-3">
           <div class="text-xs font-bold text-base-content/40 uppercase mb-2">Active Hours</div>
-
-          <!-- Hour labels -->
-          <div class="grid gap-px ml-8" style="grid-template-columns: repeat(24, minmax(0, 1fr));">
-            <div
-              v-for="h in 24"
-              :key="'hl-' + h"
-              class="text-center text-[8px] text-base-content/40 select-none"
-            >
-              {{ hourLabels.includes(h - 1) ? (h - 1) : '' }}
-            </div>
-          </div>
-
-          <!-- Heatmap grid -->
-          <div v-for="(row, dayIdx) in insights.heatmap" :key="'day-' + dayIdx" class="flex items-center gap-1">
-            <!-- Day label -->
-            <div class="w-7 text-[10px] text-base-content/50 text-right shrink-0 select-none">
-              {{ dayLabels[dayIdx] }}
-            </div>
-
-            <!-- Cells -->
-            <div class="grid gap-px flex-1" style="grid-template-columns: repeat(24, minmax(0, 1fr));">
-              <div
-                v-for="(val, hour) in row"
-                :key="'c-' + dayIdx + '-' + hour"
-                class="aspect-square rounded-sm bg-primary group relative cursor-default"
-                :style="{ opacity: getCellOpacity(val) }"
-              >
-                <!-- Tooltip -->
-                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10 w-max">
-                  <div class="bg-neutral text-neutral-content text-[10px] rounded py-0.5 px-1.5 shadow text-center whitespace-nowrap">
-                    {{ getCellTooltip(dayIdx, hour) }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ArtHeatmap :data="insights.heatmap" :day-labels="dayLabels" :hour-labels="hourLabels" />
         </div>
       </motion.div>
 
