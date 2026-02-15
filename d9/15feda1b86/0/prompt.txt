@@ -1,0 +1,297 @@
+Implement the following plan:
+
+# Feature #2: Generative Art Heatmap
+
+## Context
+
+InsightsView 的活跃时间热力图目前仅用 `bg-primary` + opacity 映射浏览时长，视觉效果单调。目标是将其替换为"生成式艺术"风格的热力图——使用数据驱动的径向渐变、色相偏移、发光效果和有机形状变化，使 168 个单元格组成一幅类似"城市灯光航拍"的数据可视化画作。
+
+**决策：不引入 css-doodle 库。** 分析后发现 css-doodle 的 Shadow DOM 隔离导致无法读取 DaisyUI 主题变量，且对 7×24 数据网格的逐单元数据绑定支持不佳。改用纯 CSS 生成式技法（oklch 渐变 + clip-path + box-shadow）在现有 Vue 网格上实现同等视觉效果，零新依赖。
+
+## Changes
+
+### 1. Create `src/components/ArtHeatmap.vue`
+
+新的可复用可视化组件，接收热力图数据并渲染生成式风格网格。
+
+**Props:**
+```ts
+interface Props {
+  data: number[][]      // 7×24 ms matrix
+  dayLabels: string[]   // ['Mon', 'Tue', ...]
+  hourLabels: number[]  // [0, 4, 8, 12, 16, 20]
+}
+```
+
+**核心逻辑：**
+- `maxVal` computed：找到矩阵中的最大值
+- `intensity(val)` → 归一化到 0..1，最小阈值 0.08
+- `noise(dayIdx, hour)` → 基于坐标的确定性伪随机（无真随机，保证每次渲染一致）
+- `getCellStyle(val, dayIdx, hour)` → 返回 CSS style 对象，包含：
+  - **径向渐变**：中心偏移随坐标变化（有机感），颜色使用 `oklch()` 从 DaisyUI `--p` 主题色派生
+  - **色相偏移**：夜间时段偏冷（蓝），白天偏暖（橙），映射 hour 0-23 → hue ±15°
+  - **发光效果**：高强度单元格 (>0.6) 添加 `box-shadow` 辉光
+  - **圆角变化**：低强度更圆润柔和，高强度更锐利结晶
+  - **微缩放**：`noise` 驱动 `scale(0.92..1.0)` 打破网格均匀感
+- `formatTooltip(dayIdx, hour)` → 保持现有格式 "Day HH:00 – duration"
+
+**空单元格**处理：不是透明，而是显示微弱的圆形灰点，维持网格节奏感。
+
+**模板结构**：与 TrendChart 模式一致——hour 标签行 + 7 个 day 行（v-for），每个单元格含 tooltip 子 div，使用 `group-hover:block` 模式。入场动画使用 motion-v stagger。
+
+### 2. Modify `src/entrypoints/popup/pages/InsightsView.vue`
+
+- 导入 `ArtHeatmap` 组件
+- 将 heatmap 区域（行 176-216）替换为 `<ArtHeatmap :data="insights.heatmap" :day-labels="dayLabels" :hour-labels="hourLabels" />`
+- 移除 `heatmapMax`、`getCellOpacity`、`getCellTooltip` 三个函数（逻辑迁移到组件内部）
+- 保留 `dayLabels`、`hourLabels` 常量作为 props 传递
+
+## Verification
+
+1. `bun run dev` → 在 popup 中打开 Insights 页，检查热力图视觉效果
+2. 切换浏览器 light/dark 主题，确认颜色自动适配
+3. hover 各单元格确认 tooltip 正常显示
+4. 空数据状态（全零矩阵）确认显示微弱网格
+5. `bun run compile` 通过类型检查
+6. `bun run lint` 通过 lint
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/lan/.REDACTED.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
+
+---
+
+当前我是打开 扩展手动验证效果，有什么自动化验证 popup 的方案吗？类似普通 web 一样
+
+---
+
+#2 打开报错：No webpage was found for the web address: http://localhost:3000/popup.html
+HTTP ERROR 404，pleas check.
+
+---
+
+尝试使用 chrome-mcp chrome-extension://ccbgpffdfgoenhlheflkkpmiljmhcgff/popup.html
+
+---
+
+Base directory for this skill: /home/lan/.claude/plugins/cache/chrome-devtools-plugins/chrome-devtools-mcp/latest/skills/chrome-devtools
+
+## Core Concepts
+
+**Browser lifecycle**: Browser starts automatically on first tool call using a persistent Chrome profile. Configure via CLI args in the MCP server configuration: `npx chrome-devtools-mcp@latest --help`.
+
+**Page selection**: Tools operate on the currently selected page. Use `list_pages` to see available pages, then `select_page` to switch context.
+
+**Element interaction**: Use `take_snapshot` to get page structure with element `uid`s. Each element has a unique `uid` for interaction. If an element isn't found, take a fresh snapshot - the element may have been removed or the page changed.
+
+## Workflow Patterns
+
+### Before interacting with a page
+
+1. Navigate: `navigate_page` or `new_page`
+2. Wait: `wait_for` to ensure content is loaded if you know what you look for.
+3. Snapshot: `take_snapshot` to understand page structure
+4. Interact: Use element `uid`s from snapshot for `click`, `fill`, etc.
+
+### Efficient data retrieval
+
+- Use `filePath` parameter for large outputs (screenshots, snapshots, traces)
+- Use pagination (`pageIdx`, `pageSize`) and filtering (`types`) to minimize data
+- Set `includeSnapshot: false` on input actions unless you need updated page state
+
+### Tool selection
+
+- **Automation/interaction**: `take_snapshot` (text-based, faster, better for automation)
+- **Visual inspection**: `take_screenshot` (when user needs to see visual state)
+- **Additional details**: `evaluate_script` for data not in accessibility tree
+
+### Parallel execution
+
+You can send multiple tool calls in parallel, but maintain correct order: navigate → wait → snapshot → interact.
+
+## Troubleshooting
+
+If `chrome-devtools-mcp` is insufficient, guide users to use Chrome DevTools UI:
+
+- https://developer.chrome.com/docs/devtools
+- https://developer.chrome.com/docs/devtools/ai-assistance
+
+If there are errors launching `chrome-devtools-mcp` or Chrome, refer to https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/troubleshooting.md.
+
+
+ARGUMENTS: chrome-extension://ccbgpffdfgoenhlheflkkpmiljmhcgff/popup.html
+
+---
+
+try again
+
+---
+
+什么意思啊？
+https://github.com/ChromeDevTools/chrome-devtools-mcp
+现在在 WSL 中，chrome 在 window 里，怎么做？
+
+---
+
+try it
+
+---
+
+try again
+
+---
+
+怎么做啊？你能救救啊
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+怎么建立可靠的测试？当前我是手动加载扩展，然后打开 popup 用眼睛看确认。不方便。有什么方案优化这个工作？
+
+---
+
+访问 http://localhost:3000/popup.html 报错 404, check it
+
+---
+
+说说 #2
+
+---
+
+你推荐怎么做？之后很依赖 AI Agent 开发，个人项目
+
+---
+
+测试应该怎么写？我是说，哪些需要测试，哪些不需要，如何区分
+
+---
+
+DO IT.
+
+---
+
+push a pr
+
+---
+
+## Context
+
+- Current git status: On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/entrypoints/popup/pages/InsightsView.vue
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	src/components/ArtHeatmap.vue
+	src/components/artHeatmap.ts
+	tests/components/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): diff --git a/src/entrypoints/popup/pages/InsightsView.vue b/src/entrypoints/popup/pages/InsightsView.vue
+index b4ac9b3..b8ee013 100644
+--- a/src/entrypoints/popup/pages/InsightsView.vue
++++ b/src/entrypoints/popup/pages/InsightsView.vue
+@@ -7,6 +7,7 @@ import { useLiveQuery } from '@/composables/useDexieLiveQuery';
+ import { getWeeklyInsights, type WeeklyInsights, type SiteComparison } from '@/db/insights';
+ import { formatDate, getStartOfWeek, getEndOfWeek, parseDate } from '@/utils/dateUtils';
+ import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
++import ArtHeatmap from '@/components/ArtHeatmap.vue';
+ 
+ const contentVariants = {
+   hidden: { opacity: 0 },
+@@ -76,25 +77,6 @@ const chartItems = computed<ChartItem[]>(() => {
+ const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+ const hourLabels = [0, 4, 8, 12, 16, 20];
+ 
+-const heatmapMax = computed(() => {
+-  let max = 0;
+-  for (const row of insights.value.heatmap) {
+-    for (const val of row) {
+-      if (val > max) max = val;
+-    }
+-  }
+-  return max;
+-});
+-
+-const getCellOpacity = (value: number): number => {
+-  if (value === 0 || heatmapMax.value === 0) return 0.05;
+-  return Math.max(0.1, value / heatmapMax.value);
+-};
+-
+-const getCellTooltip = (dayIdx: number, hour: number): string => {
+-  const value = insights.value.heatmap[dayIdx][hour];
+-  return `${dayLabels[dayIdx]} ${hour}:00 – ${prettyMs(value, { compact: true })}`;
+-};
+ 
+ // Site comparison helpers
+ const getSiteChangeText = (site: SiteComparison): string => {
+@@ -176,42 +158,7 @@ const weekLabel = computed(() => {
+       <motion.div :variants="cardVariant" class="card bg-base-100 shadow-sm border border-base-200">
+         <div class="card-body p-3">
+           <div class="text-xs font-bold text-base-content/40 uppercase mb-2">Active Hours</div>
+-
+-          <!-- Hour labels -->
+-          <div class="grid gap-px ml-8" style="grid-template-columns: repeat(24, minmax(0, 1fr));">
+-            <div
+-              v-for="h in 24"
+-              :key="'hl-' + h"
+-              class="text-center text-[8px] text-base-content/40 select-none"
+-            >
+-              {{ hourLabels.includes(h - 1) ? (h - 1) : '' }}
+-            </div>
+-          </div>
+-
+-          <!-- Heatmap grid -->
+-          <div v-for="(row, dayIdx) in insights.heatmap" :key="'day-' + dayIdx" class="flex items-center gap-1">
+-            <!-- Day label -->
+-            <div class="w-7 text-[10px] text-base-content/50 text-right shrink-0 select-none">
+-              {{ dayLabels[dayIdx] }}
+-            </div>
+-
+-            <!-- Cells -->
+-            <div class="grid gap-px flex-1" style="grid-template-columns: repeat(24, minmax(0, 1fr));">
+-              <div
+-                v-for="(val, hour) in row"
+-                :key="'c-' + dayIdx + '-' + hour"
+-                class="aspect-square rounded-sm bg-primary group relative cursor-default"
+-                :style="{ opacity: getCellOpacity(val) }"
+-              >
+-                <!-- Tooltip -->
+-                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10 w-max">
+-                  <div class="bg-neutral text-neutral-content text-[10px] rounded py-0.5 px-1.5 shadow text-center whitespace-nowrap">
+-                    {{ getCellTooltip(dayIdx, hour) }}
+-                  </div>
+-                </div>
+-              </div>
+-            </div>
+-          </div>
++          <ArtHeatmap :data="insights.heatmap" :day-labels="dayLabels" :hour-labels="hourLabels" />
+         </div>
+       </motion.div>
+- Current branch: main
+
+## Your task
+
+Based on the above changes:
+
+1. Create a new branch if on main
+2. Create a single commit with an appropriate message
+3. Push the branch to origin
+4. Create a pull request using `gh pr create`
+5. You have the capability to call multiple tools in a single response. You MUST do all of the above in a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.
+
+---
+
+Check THIS PR, VIEW DEVIN REVIEW COMMENTS AND GIVE YOUR OPINIONS.
+
+---
+
+FIX,PLEASE.
