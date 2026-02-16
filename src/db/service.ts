@@ -24,7 +24,7 @@ export function addSiteDuration(map: Map<string, ISiteStat>, stat: ISiteStat): v
   existing.duration += stat.duration;
   if (stat.lastVisit > existing.lastVisit) {
     existing.lastVisit = stat.lastVisit;
-    existing.iconUrl = stat.iconUrl;
+    existing.iconUrl = stat.iconUrl ?? existing.iconUrl;
   }
 }
 
