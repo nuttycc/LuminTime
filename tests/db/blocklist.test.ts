@@ -31,7 +31,9 @@ describe("normalizeBlockInput", () => {
     });
 
     test("should extract hostname from https URL with path", () => {
-      expect(normalizeBlockInput("https://haskellforall.com/2026/02/beyond-agentic-coding")).toBe("haskellforall.com");
+      expect(normalizeBlockInput("https://haskellforall.com/2026/02/beyond-agentic-coding")).toBe(
+        "haskellforall.com",
+      );
     });
 
     test("should extract hostname from http URL", () => {

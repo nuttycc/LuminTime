@@ -1,9 +1,9 @@
 {
   "name": "lumin-time",
+  "version": "0.1.18",
+  "private": true,
   "description": "A privacy-first browser extension that automatically tracks your online activity.",
   "homepage": "https://github.com/nuttycc/LuminTime",
-  "private": true,
-  "version": "0.1.18",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -43,12 +43,12 @@
     "vue-tsc": "^3.2.4",
     "wxt": "^0.20.17"
   },
+  "overrides": {
+    "vite": "^8.0.0-beta.14"
+  },
   "trustedDependencies": [
     "esbuild",
     "sharp",
     "spawn-sync"
-  ],
-  "overrides": {
-    "vite": "^8.0.0-beta.14"
-  }
+  ]
 }

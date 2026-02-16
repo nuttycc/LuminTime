@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { motion, stagger } from 'motion-v';
+import { computed } from "vue";
+import { motion, stagger } from "motion-v";
 
 export interface ChartItem {
   key: string;
@@ -24,17 +24,21 @@ const containerVariants = {
 
 const barVariants = {
   hidden: { scaleY: 0, opacity: 0 },
-  show: { scaleY: 1, opacity: 1, transition: { duration: 0.4, type: 'spring' as const, bounce: 0.15 } },
+  show: {
+    scaleY: 1,
+    opacity: 1,
+    transition: { duration: 0.4, type: "spring" as const, bounce: 0.15 },
+  },
 };
 
 const maxDuration = computed(() => {
   if (props.items.length === 0) return 0;
-  return Math.max(...props.items.map(d => d.value));
+  return Math.max(...props.items.map((d) => d.value));
 });
 
 const getHeight = (duration: number) => {
-  if (maxDuration.value === 0) return '0%';
-  if (duration > 0 && duration / maxDuration.value < 0.05) return '5%';
+  if (maxDuration.value === 0) return "0%";
+  if (duration > 0 && duration / maxDuration.value < 0.05) return "5%";
   return `${(duration / maxDuration.value) * 100}%`;
 };
 
@@ -73,9 +77,11 @@ const shouldShowLabel = (index: number) => {
     >
       <!-- Tooltip -->
       <div class="absolute bottom-full mb-1 hidden group-hover:block z-10 w-max max-w-[150px]">
-         <div class="bg-neutral text-neutral-content text-xs rounded py-1 px-2 shadow text-center wrap-break-word">
-           {{ item.tooltip }}
-         </div>
+        <div
+          class="bg-neutral text-neutral-content text-xs rounded py-1 px-2 shadow text-center wrap-break-word"
+        >
+          {{ item.tooltip }}
+        </div>
       </div>
 
       <!-- Bar -->
@@ -84,7 +90,9 @@ const shouldShowLabel = (index: number) => {
         class="w-full rounded-t min-w-1 origin-bottom"
         :class="[
           item.value > 0 ? 'bg-primary' : 'bg-base-300',
-          item.active ? 'opacity-100 ring-2 ring-primary ring-offset-1' : 'opacity-80 hover:opacity-100'
+          item.active
+            ? 'opacity-100 ring-2 ring-primary ring-offset-1'
+            : 'opacity-80 hover:opacity-100',
         ]"
         :style="{ height: getHeight(item.value) }"
       />

@@ -7,6 +7,7 @@
 ```
 
 Examples:
+
 - `feat/dark-mode`
 - `fix/timer-accuracy`
 - `refactor/state-management`
@@ -23,27 +24,31 @@ Same format as commit messages:
 
 Add one of these labels for auto-generated release notes:
 
-| Label | Use for |
-|-------|---------|
-| `enhancement` or `feature` | New features |
-| `bug` or `fix` | Bug fixes |
-| `performance` | Performance improvements |
-| `documentation` | Documentation updates |
+| Label                      | Use for                  |
+| -------------------------- | ------------------------ |
+| `enhancement` or `feature` | New features             |
+| `bug` or `fix`             | Bug fixes                |
+| `performance`              | Performance improvements |
+| `documentation`            | Documentation updates    |
 
 ## PR Body Template
 
 ```markdown
 ## Summary
+
 - Brief description of changes
 
 ## Type
+
 <!-- Add label: enhancement, bug, documentation, performance -->
 
 ## Changes
+
 - Change 1
 - Change 2
 
 ## Test
+
 - [ ] Tested locally
 ```
 

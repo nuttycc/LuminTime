@@ -35,17 +35,20 @@ A privacy-first browser extension that automatically tracks your online activity
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/nuttycc/LuminTime.git
    cd LuminTime
    ```
 
 2. Install dependencies:
+
    ```bash
    bun install
    ```
 
 3. Start the development server:
+
    ```bash
    bun run dev
    ```
@@ -70,16 +73,19 @@ src/
 ## Tech Stack
 
 ### Framework & UI
+
 - **[WXT](https://wxt.dev/)** – Modern web extension framework with HMR support
 - **[Vue 3](https://vuejs.org/)** – Progressive JavaScript framework
 - **[Tailwind CSS 4](https://tailwindcss.com/)** – Utility-first CSS
 - **[DaisyUI 5](https://daisyui.com/)** – Tailwind components library
 
 ### Data & Storage
+
 - **[Dexie.js](https://dexie.dev/)** – Wrapper library for IndexedDB
 - **[Arktype](https://arktype.io/)** – Runtime type validation
 
 ### Development & Testing
+
 - **[Vitest](https://vitest.dev/)** – Unit test framework
 - **[VueUse](https://vueuse.org/)** – Composition utilities for Vue
 - **[Es-Toolkit](https://es-toolkit.dev/)** – Modern JavaScript utilities
@@ -99,5 +105,3 @@ MIT License
 ## Support
 
 For issues, feature requests, or questions, please open an issue on [GitHub](https://github.com/nuttycc/LuminTime/issues).
-
-

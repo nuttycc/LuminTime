@@ -1,11 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "import",
-    "typescript",
-    "unicorn",
-    "vue"
-  ],
+  "plugins": ["import", "typescript", "unicorn", "vue"],
   "categories": {
     "correctness": "error",
     "pedantic": "off",
@@ -25,7 +20,6 @@
     "import/no-cycle": "error",
     "import/no-unassigned-import": "off",
     "unicorn/filename-case": "off",
-    "no-unused-vars": "off",
     "sort-keys": "off",
     "new-cap": "off",
     "func-style": "off",
@@ -41,20 +35,14 @@
   },
   "overrides": [
     {
-      "files": [
-        "*.test.ts",
-        "*.spec.ts"
-      ],
+      "files": ["*.test.ts", "*.spec.ts"],
       "rules": {
         "@typescript-eslint/no-explicit-any": "off",
         "max-lines-per-function": "off"
       }
     },
     {
-      "files": [
-        "src/entrypoints/**/*.ts",
-        "src/entrypoints/**/*.vue"
-      ],
+      "files": ["src/entrypoints/**/*.ts", "src/entrypoints/**/*.vue"],
       "rules": {
         "import/no-unassigned-import": "off"
       }

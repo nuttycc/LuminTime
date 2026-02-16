@@ -61,7 +61,8 @@ describe("getAggregatedPages", () => {
       expect(indexName).toBe("[date+hostname]");
       return {
         equals: ([date, hostname]: [string, string]) => ({
-          toArray: async () => rowsByDate.get(date)?.filter((row) => row.hostname === hostname) ?? [],
+          toArray: async () =>
+            rowsByDate.get(date)?.filter((row) => row.hostname === hostname) ?? [],
         }),
       };
     });

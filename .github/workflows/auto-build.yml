@@ -3,7 +3,7 @@ name: Nightly Build and Release
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
 
 concurrency:
   group: nightly-build-release-${{ github.ref }}

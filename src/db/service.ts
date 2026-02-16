@@ -330,7 +330,10 @@ export async function getHistoryLogs(
   const records: IHistoryLog[] = [];
 
   for (const dayStr of dates) {
-    const dayRecords = await db.history.where("[date+hostname]").equals([dayStr, hostname]).toArray();
+    const dayRecords = await db.history
+      .where("[date+hostname]")
+      .equals([dayStr, hostname])
+      .toArray();
     dayRecords.sort((a, b) => b.startTime - a.startTime);
 
     const filteredRecords = path ? dayRecords.filter((record) => record.path === path) : dayRecords;

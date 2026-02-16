@@ -131,12 +131,12 @@ but commit ui-branch -m "..."    # Commit from ui-branch's staging area
 
 The operation performed depends on what you combine:
 
-| Source | Target | Operation | Example |
-|--------|--------|-----------|---------|
-| File | Branch | Stage file to branch | `but rub a1 bu` |
-| File | Commit | Amend file into commit | `but rub a1 c3` |
-| Commit | Commit | Squash commits | `but rub c2 c3` |
-| Commit | Branch | Move commit to branch | `but rub c2 bu` |
+| Source | Target | Operation              | Example         |
+| ------ | ------ | ---------------------- | --------------- |
+| File   | Branch | Stage file to branch   | `but rub a1 bu` |
+| File   | Commit | Amend file into commit | `but rub a1 c3` |
+| Commit | Commit | Squash commits         | `but rub c2 c3` |
+| Commit | Branch | Move commit to branch  | `but rub c2 bu` |
 
 ### Higher-Level Conveniences
 

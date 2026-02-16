@@ -15,7 +15,11 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 .popup-root {

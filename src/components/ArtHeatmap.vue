@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import prettyMs from 'pretty-ms';
-import { motion, stagger } from 'motion-v';
-import { getCellStyle as _getCellStyle } from './artHeatmap';
+import { computed } from "vue";
+import prettyMs from "pretty-ms";
+import { motion, stagger } from "motion-v";
+import { getCellStyle as _getCellStyle } from "./artHeatmap";
 
 const props = defineProps<{
   data: number[][];
@@ -19,7 +19,11 @@ const rowVariants = {
 
 const cellVariants = {
   hidden: { opacity: 0, scale: 0.5 },
-  show: { opacity: 1, scale: 1, transition: { duration: 0.3, type: 'spring' as const, bounce: 0.2 } },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.3, type: "spring" as const, bounce: 0.2 },
+  },
 };
 
 const maxVal = computed(() => {
@@ -49,7 +53,7 @@ const formatTooltip = (dayIdx: number, hour: number): string => {
       :key="'hl-' + h"
       class="text-center text-[8px] text-base-content/40 select-none"
     >
-      {{ hourLabels.includes(h - 1) ? (h - 1) : '' }}
+      {{ hourLabels.includes(h - 1) ? h - 1 : "" }}
     </div>
   </div>
 
@@ -77,8 +81,12 @@ const formatTooltip = (dayIdx: number, hour: number): string => {
         :style="getCellStyle(val, dayIdx, hour)"
       >
         <!-- Tooltip -->
-        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10 w-max">
-          <div class="bg-neutral text-neutral-content text-[10px] rounded py-0.5 px-1.5 shadow text-center whitespace-nowrap">
+        <div
+          class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10 w-max"
+        >
+          <div
+            class="bg-neutral text-neutral-content text-[10px] rounded py-0.5 px-1.5 shadow text-center whitespace-nowrap"
+          >
             {{ formatTooltip(dayIdx, hour) }}
           </div>
         </div>

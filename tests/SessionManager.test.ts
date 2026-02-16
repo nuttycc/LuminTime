@@ -46,7 +46,7 @@ describe("SessionManager", () => {
       }),
     };
 
-    mockRecordActivity = vi.fn((url: string, duration: number, title?: string) => {
+    mockRecordActivity = vi.fn((url: string, duration: number, _title?: string) => {
       console.log(`[Mock] recordActivity: ${url} (${duration}ms)`);
       return Promise.resolve();
     }) as SessionDependencies["recordActivity"];

@@ -1,0 +1,32 @@
+repos:
+  - repo: builtin
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: [--maxkb=512]
+
+  - repo: local
+    hooks:
+      - id: oxlint
+        name: oxlint
+        entry: bunx oxlint --type-aware --fix
+        language: system
+        types_or: [ts, vue]
+
+      - id: oxfmt
+        name: oxfmt
+        entry: bunx oxfmt --write
+        language: system
+        types_or: [ts, vue]
+
+      - id: type-check
+        name: vue-tsc type check
+        entry: bunx vue-tsc --noEmit
+        language: system
+        pass_filenames: false
+        types_or: [ts, vue]
+        stages: [pre-push]

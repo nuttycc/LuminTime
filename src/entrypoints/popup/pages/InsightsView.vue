@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import prettyMs from 'pretty-ms';
-import { motion, AnimatePresence, stagger } from 'motion-v';
-import { useLiveQuery } from '@/composables/useDexieLiveQuery';
-import { getWeeklyInsights, type WeeklyInsights, type SiteComparison } from '@/db/insights';
-import { formatDate, getStartOfWeek, getEndOfWeek, parseDate } from '@/utils/dateUtils';
-import TrendChart, { type ChartItem } from '@/components/TrendChart.vue';
-import ArtHeatmap from '@/components/ArtHeatmap.vue';
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import prettyMs from "pretty-ms";
+import { motion, AnimatePresence, stagger } from "motion-v";
+import { useLiveQuery } from "@/composables/useDexieLiveQuery";
+import { getWeeklyInsights, type WeeklyInsights, type SiteComparison } from "@/db/insights";
+import { formatDate, getStartOfWeek, getEndOfWeek, parseDate } from "@/utils/dateUtils";
+import TrendChart, { type ChartItem } from "@/components/TrendChart.vue";
+import ArtHeatmap from "@/components/ArtHeatmap.vue";
 
 const contentVariants = {
   hidden: { opacity: 0 },
@@ -62,32 +62,31 @@ const insights = useLiveQuery<WeeklyInsights>(
 const chartItems = computed<ChartItem[]>(() => {
   return insights.value.dailyTrend.map((item) => {
     const d = parseDate(item.date);
-    const label = d.toLocaleDateString(undefined, { weekday: 'narrow' });
+    const label = d.toLocaleDateString(undefined, { weekday: "narrow" });
     return {
       key: item.date,
       value: item.duration,
       label,
-      tooltip: `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: ${prettyMs(item.duration, { compact: true })}`,
-      ariaLabel: `${d.toLocaleDateString(undefined, { weekday: 'long' })}: ${prettyMs(item.duration, { verbose: true })}`,
+      tooltip: `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}: ${prettyMs(item.duration, { compact: true })}`,
+      ariaLabel: `${d.toLocaleDateString(undefined, { weekday: "long" })}: ${prettyMs(item.duration, { verbose: true })}`,
     };
   });
 });
 
 // Heatmap
-const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const hourLabels = [0, 4, 8, 12, 16, 20];
-
 
 // Site comparison helpers
 const getSiteChangeText = (site: SiteComparison): string => {
-  if (site.lastWeek === 0) return 'New';
+  if (site.lastWeek === 0) return "New";
   const pct = Math.abs(Math.round(site.changePercent));
   return site.changePercent >= 0 ? `↑${pct}%` : `↓${pct}%`;
 };
 
 const getSiteChangeBadgeClass = (site: SiteComparison): string => {
-  if (site.lastWeek === 0) return 'badge-info';
-  return site.changePercent >= 0 ? 'badge-error' : 'badge-success';
+  if (site.lastWeek === 0) return "badge-info";
+  return site.changePercent >= 0 ? "badge-error" : "badge-success";
 };
 
 const goBack = () => {
@@ -98,7 +97,7 @@ const goBack = () => {
 const weekLabel = computed(() => {
   const start = parseDate(startStr);
   const end = parseDate(endStr);
-  const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return `${fmt(start)} – ${fmt(end)}`;
 });
 </script>
@@ -109,7 +108,14 @@ const weekLabel = computed(() => {
     <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
       <div class="navbar-start w-1/4">
         <button class="btn btn-ghost btn-circle btn-sm" aria-label="Back" @click="goBack">
-          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
         </button>
       </div>
       <div class="navbar-center w-2/4 justify-center">
@@ -128,18 +134,27 @@ const weekLabel = computed(() => {
       initial="hidden"
       animate="show"
     >
-
       <!-- Overview Card -->
       <motion.div :variants="cardVariant" class="card bg-base-200 shadow-sm border border-base-300">
         <div class="card-body p-4 items-center text-center">
-          <div class="text-base-content/60 text-xs font-bold uppercase tracking-widest">This Week</div>
+          <div class="text-base-content/60 text-xs font-bold uppercase tracking-widest">
+            This Week
+          </div>
           <div class="text-3xl font-black text-primary font-mono">
-            {{ insights.thisWeekTotal > 0 ? prettyMs(insights.thisWeekTotal, { secondsDecimalDigits: 0 }) : '0s' }}
+            {{
+              insights.thisWeekTotal > 0
+                ? prettyMs(insights.thisWeekTotal, { secondsDecimalDigits: 0 })
+                : "0s"
+            }}
           </div>
           <div v-if="insights.lastWeekTotal > 0" class="text-sm mt-1">
             <span class="text-base-content/50">vs last week: </span>
-            <span :class="insights.changePercent >= 0 ? 'text-error' : 'text-success'" class="font-semibold">
-              {{ insights.changePercent >= 0 ? '↑' : '↓' }}{{ Math.abs(Math.round(insights.changePercent)) }}%
+            <span
+              :class="insights.changePercent >= 0 ? 'text-error' : 'text-success'"
+              class="font-semibold"
+            >
+              {{ insights.changePercent >= 0 ? "↑" : "↓"
+              }}{{ Math.abs(Math.round(insights.changePercent)) }}%
             </span>
           </div>
           <div v-else class="text-xs text-base-content/40 mt-1">No previous week data</div>
@@ -164,7 +179,9 @@ const weekLabel = computed(() => {
 
       <!-- Site Changes -->
       <motion.div :variants="cardVariant" class="flex flex-col gap-2">
-        <div class="text-xs font-bold text-base-content/40 uppercase px-2">Top Sites vs Last Week</div>
+        <div class="text-xs font-bold text-base-content/40 uppercase px-2">
+          Top Sites vs Last Week
+        </div>
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -175,7 +192,19 @@ const weekLabel = computed(() => {
             :exit="{ opacity: 0 }"
             class="flex flex-col items-center justify-center py-4 gap-2"
           >
-            <svg class="size-12 text-base-content/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            <svg
+              class="size-12 text-base-content/30"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
             <div class="text-sm font-medium">No site data this week</div>
             <div class="text-xs">Browse some sites to see comparisons here.</div>
           </motion.div>
@@ -203,7 +232,9 @@ const weekLabel = computed(() => {
                 </div>
                 <div class="flex justify-between text-xs text-base-content/50">
                   <span>This week: {{ prettyMs(site.thisWeek, { compact: true }) }}</span>
-                  <span v-if="site.lastWeek > 0">Last week: {{ prettyMs(site.lastWeek, { compact: true }) }}</span>
+                  <span v-if="site.lastWeek > 0"
+                    >Last week: {{ prettyMs(site.lastWeek, { compact: true }) }}</span
+                  >
                   <span v-else class="italic">New this week</span>
                 </div>
               </div>
@@ -211,7 +242,6 @@ const weekLabel = computed(() => {
           </motion.div>
         </AnimatePresence>
       </motion.div>
-
     </motion.div>
   </div>
 </template>

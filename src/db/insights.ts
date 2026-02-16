@@ -120,8 +120,7 @@ async function getTopSitesForRange(
     });
 
   // Sort and keep top N (if limit specified)
-  const sorted = Array.from(siteMap.entries())
-    .sort((a, b) => b[1].duration - a[1].duration);
+  const sorted = Array.from(siteMap.entries()).sort((a, b) => b[1].duration - a[1].duration);
 
   return new Map(limit ? sorted.slice(0, limit) : sorted);
 }
@@ -143,16 +142,16 @@ export async function getWeeklyInsights(
       getTopSitesForRange(lastWeekStart, lastWeekEnd),
     ]);
 
-  const changePercent = lastWeekTotal > 0 ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100 : 0;
+  const changePercent =
+    lastWeekTotal > 0 ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100 : 0;
 
   // Build site comparison from union of top 5 this week hostnames
   const topSitesComparison: SiteComparison[] = [];
   for (const [hostname, site] of thisWeekSites) {
     const lastWeekSite = lastWeekSites.get(hostname);
     const lastWeekDuration = lastWeekSite?.duration ?? 0;
-    const siteChange = lastWeekDuration > 0
-      ? ((site.duration - lastWeekDuration) / lastWeekDuration) * 100
-      : 0;
+    const siteChange =
+      lastWeekDuration > 0 ? ((site.duration - lastWeekDuration) / lastWeekDuration) * 100 : 0;
 
     topSitesComparison.push({
       hostname,

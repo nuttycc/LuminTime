@@ -54,6 +54,7 @@ but skill install --path <path>    # Install/update skill (agents use --path wit
 ```
 
 **Note for AI agents:**
+
 - When installing or updating this skill programmatically, always use `--path` to specify the exact installation directory. The `--detect` flag requires user interaction if multiple installations exist.
 - **Use `--json` flag for all commands** to get structured, parseable output. This is especially important for `but status --json` to reliably parse workspace state.
 
@@ -81,6 +82,7 @@ For detailed command syntax and all available options, see [references/reference
 - `but diff <id>` - Show diff
 
 **Flags explanation:**
+
 - `--json` - Output structured JSON instead of human-readable text (always use for agents)
 - `-f` - Include detailed file lists in status output (combines with --json: `but status --json -f`)
 
@@ -102,6 +104,7 @@ For detailed command syntax and all available options, see [references/reference
 - `but absorb` - Absorb ALL uncommitted changes (use with caution)
 
 **Getting IDs for --changes:**
+
 - **File IDs**: `but status --json` - commit entire files
 - **Hunk IDs**: `but diff --json` - commit individual hunks (for fine-grained control when a file has multiple changes)
 

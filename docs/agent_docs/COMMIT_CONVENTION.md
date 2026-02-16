@@ -8,15 +8,15 @@
 
 ## Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
+| Type       | Description                       |
+| ---------- | --------------------------------- |
+| `feat`     | New feature                       |
+| `fix`      | Bug fix                           |
+| `docs`     | Documentation only                |
 | `refactor` | Code refactoring (no feature/fix) |
-| `perf` | Performance improvement |
-| `test` | Add or update tests |
-| `chore` | Build, dependencies, configs |
+| `perf`     | Performance improvement           |
+| `test`     | Add or update tests               |
+| `chore`    | Build, dependencies, configs      |
 
 ## Scope (optional)
 

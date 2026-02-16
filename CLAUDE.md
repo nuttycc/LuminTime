@@ -29,6 +29,7 @@ popup/ (Vue 3 SPA)
 ```
 
 **Data model (3-layer hierarchy):**
+
 - `HistoryLog` — raw session events, indexed by `[date+hostname]`
 - `SiteStat` — daily aggregates per hostname, indexed by duration for rankings
 - `PageStat` — daily aggregates per path
@@ -36,15 +37,15 @@ popup/ (Vue 3 SPA)
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/entrypoints/background.ts` | Service worker entry; wires browser events → SessionManager |
-| `src/utils/SessionManager.ts` | Core tracking logic with DI, debounce, async queue |
-| `src/db/index.ts` | Dexie database instance & schema |
-| `src/db/types.ts` | Arktype schemas for all tables |
-| `src/db/service.ts` | Query & aggregation functions |
-| `src/entrypoints/popup/router.ts` | Vue Router with 5 routes |
-| `wxt.config.ts` | Extension manifest, permissions, Tailwind plugin |
+| File                              | Purpose                                                     |
+| --------------------------------- | ----------------------------------------------------------- |
+| `src/entrypoints/background.ts`   | Service worker entry; wires browser events → SessionManager |
+| `src/utils/SessionManager.ts`     | Core tracking logic with DI, debounce, async queue          |
+| `src/db/index.ts`                 | Dexie database instance & schema                            |
+| `src/db/types.ts`                 | Arktype schemas for all tables                              |
+| `src/db/service.ts`               | Query & aggregation functions                               |
+| `src/entrypoints/popup/router.ts` | Vue Router with 5 routes                                    |
+| `wxt.config.ts`                   | Extension manifest, permissions, Tailwind plugin            |
 
 ## Code Style
 
@@ -57,7 +58,7 @@ popup/ (Vue 3 SPA)
 ## Gotchas
 
 - **Midnight splitting:** Sessions crossing midnight are split into separate HistoryLog records via `splitByMidnight()` — daily aggregations depend on this
-- **URL normalization:** `www.` stripped, tracking params (utm_*, fbclid, gclid) removed; handles file://, chrome-extension://, about:// protocols
+- **URL normalization:** `www.` stripped, tracking params (utm\_\*, fbclid, gclid) removed; handles file://, chrome-extension://, about:// protocols
 - **Blocklist cache:** Background script keeps in-memory cache; popup sends `"blocklist-updated"` message to refresh it after changes
 - **SessionManager debounce:** 500ms debounce on tab switches prevents recording rapid switches as separate sessions
 - **Dexie compound keys:** Tables use `[date+hostname]` as primary key; upsert pattern = fetch → update or insert, all within single transaction

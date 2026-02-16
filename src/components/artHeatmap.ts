@@ -13,22 +13,28 @@ export function intensity(val: number, maxVal: number): number {
  *  Uses a 2D sinusoidal hash inspired by GLSL (The Book of Shaders).
  *  The +1.0 offset avoids the sin(0)=0 degenerate case at (0,0). */
 export function noise(dayIdx: number, hour: number): number {
-  return ((Math.sin(dayIdx * 127.1 + hour * 311.7 + 1.0) * 43758.5453) % 1 + 1) % 1;
+  return (((Math.sin(dayIdx * 127.1 + hour * 311.7 + 1.0) * 43758.5453) % 1) + 1) % 1;
 }
 
 /**
  * Generate CSS style object for a single heatmap cell.
  * Uses oklch gradients, hue shifts, glow, and organic shape variation.
  */
-export function getCellStyle(val: number, maxVal: number, dayIdx: number, hour: number): Record<string, string> {
+export function getCellStyle(
+  val: number,
+  maxVal: number,
+  dayIdx: number,
+  hour: number,
+): Record<string, string> {
   const t = intensity(val, maxVal);
   const n = noise(dayIdx, hour);
 
   // Empty cell: subtle grey dot
   if (t === 0) {
     return {
-      background: 'radial-gradient(circle at 50% 50%, oklch(0.55 0.01 0 / 0.12) 40%, transparent 70%)',
-      borderRadius: '50%',
+      background:
+        "radial-gradient(circle at 50% 50%, oklch(0.55 0.01 0 / 0.12) 40%, transparent 70%)",
+      borderRadius: "50%",
       transform: `scale(${0.7 + n * 0.15})`,
     };
   }
