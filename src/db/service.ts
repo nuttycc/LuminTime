@@ -13,7 +13,7 @@ interface DaySplit {
   duration: number;
 }
 
-function addSiteDuration(map: Map<string, ISiteStat>, stat: ISiteStat): void {
+export function addSiteDuration(map: Map<string, ISiteStat>, stat: ISiteStat): void {
   const existing = map.get(stat.hostname);
 
   if (!existing) {
@@ -24,16 +24,17 @@ function addSiteDuration(map: Map<string, ISiteStat>, stat: ISiteStat): void {
   existing.duration += stat.duration;
   if (stat.lastVisit > existing.lastVisit) {
     existing.lastVisit = stat.lastVisit;
+    existing.iconUrl = stat.iconUrl;
   }
 }
 
-function getSortedTopSites(map: Map<string, ISiteStat>, limit: number): ISiteStat[] {
+export function getSortedTopSites(map: Map<string, ISiteStat>, limit: number): ISiteStat[] {
   return Array.from(map.values())
     .sort((a, b) => b.duration - a.duration)
     .slice(0, limit);
 }
 
-function buildDailyMap(startDate: string, endDate: string): Map<string, number> {
+export function buildDailyMap(startDate: string, endDate: string): Map<string, number> {
   const dailyMap = new Map<string, number>();
   let current = parseDate(startDate);
   const end = parseDate(endDate);
@@ -46,7 +47,7 @@ function buildDailyMap(startDate: string, endDate: string): Map<string, number> 
   return dailyMap;
 }
 
-function toSortedTrend(dailyMap: Map<string, number>): { date: string; duration: number }[] {
+export function toSortedTrend(dailyMap: Map<string, number>): { date: string; duration: number }[] {
   return Array.from(dailyMap.entries())
     .map(([date, duration]) => ({ date, duration }))
     .sort((a, b) => a.date.localeCompare(b.date));

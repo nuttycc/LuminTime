@@ -1,11 +1,13 @@
 import { stagger } from "motion-v";
 
-export function contentVariants(staggerVal = 0.08) {
+type StaggerOptions = NonNullable<Parameters<typeof stagger>[1]>;
+
+export function contentVariants(staggerVal = 0.08, staggerOptions?: StaggerOptions) {
   return {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { delayChildren: stagger(staggerVal) },
+      transition: { delayChildren: stagger(staggerVal, staggerOptions) },
     },
   };
 }
