@@ -1,0 +1,578 @@
+---
+description: A web component for drawing patterns with CSS
+---
+
+## Introduction
+
+_<css-doodle />_  is based on[Shadow DOM v1](https://developers.google.com/web/fundamentals/web-components/shadowdom) and[Custom Elements v1](https://html.spec.whatwg.org/multipage/scripting.html#custom-elements). You can use it on all major browsers right now without polyfills.
+
+ The component will generate a grid of divs by the rules (plain CSS) inside it. You can easily manipulate those cells using CSS to come up with a graphic pattern or an animated graph.
+
+**The limit is the limit of CSS itself**.
+
+### Donate 
+
+ Support us by becoming a [Backer](https://opencollective.com/css-doodle#backer) or [Sponsor](https://opencollective.com/css-doodle#sponsors) on [open collective](https://opencollective.com/css-doodle).
+
+## Getting Started
+
+ Download the [latest version](https://esm.sh/css-doodle/css-doodle.min.js?raw) or include it directly from a CDN:
+
+You can also use ES Modules in modern browsers:
+
+If you're using a build tool, you can install it via [npm](http://npmjs.org/package/css-doodle) and import it in JavaScript:
+
+ npm install css-doodle /\* index.js \*/ import 'css-doodle' 
+
+Start creating!
+
+ /\* put your code here \*/ 
+
+## Usage
+
+ The syntax of _css-doodle_ is based on CSS and provides several extra utility functions and shorthand properties.
+
+* [Attributes](#attributes)  
+   * [grid](#attribute-grid)  
+   * [use](#attribute-use)  
+   * [seed](#attribute-seed)
+* [Selectors](#selectors)  
+   * [:doodle](#selector-:doodle)  
+   * [:container](#selector-:container)  
+   * [@nth](#selector-@nth)  
+   * [@even](#selector-@even)  
+   * [@odd](#selector-@odd)  
+   * [@at](#selector-@at)  
+   * [@random](#selector-@random)  
+   * [@row](#selector-@row)  
+   * [@col](#selector-@col)  
+   * [@match](#selector-@match)
+* [Properties](#properties)  
+   * [@grid](#property-@grid)  
+   * [@use](#property-@use)  
+   * [@size](#property-@size)  
+   * [@place](#property-@place)  
+   * [@shape](#property-@shape)
+* [Functions](#functions)  
+   * [@index](#function-@index)  
+   * [@row](#function-@row)  
+   * [@col](#function-@col)  
+   * [@size-row](#function-@size-row)  
+   * [@size-col](#function-@size-col)  
+   * [@size](#function-@size)  
+   * [@pick](#function-@pick)  
+   * [@pick-n](#function-@pick-n)  
+   * [@pick-d](#function-@pick-d)  
+   * [@rand](#function-@rand)  
+   * [@last-\*](#function-@last)  
+   * [@repeat](#function-@repeat)  
+   * [@multiple](#function-@multiple)  
+   * [@n,nx,ny,N](#function-@n)  
+   * [@stripe](#function-@stripe)  
+   * [@svg](#function-@svg)  
+   * [@svg-filter](#function-@svg-filter)  
+   * [@<Math>](#function-@Math)  
+   * [@calc](#function-@calc)  
+   * [@var](#function-@var)  
+   * [@hex](#function-@hex)  
+   * [@doodle](#function-@doodle)  
+   * [@shaders](#function-@shaders)  
+   * [@shape](#function-@shape)  
+   * [@plot](#function-@plot)
+* [JS API](#js-api)  
+   * [grid](#js-api-grid)  
+   * [use](#js-api-use)  
+   * [seed](#js-api-seed)  
+   * [update](#js-api-update)  
+   * [export](#js-api-export)
+
+ @grid: 18 / 100vmax / #0a0c27; --hue: calc(180 + 1.5 \* @x \* @y); background: hsl(var(--hue), 50%, 70%); margin: -.5px; transition: @r(.5s) ease; clip-path: polygon(@pick( '0 0, 100% 0, 100% 100%', '0 0, 100% 0, 0 100%', '0 0, 100% 100%, 0 100%', '100% 0, 100% 100%, 0 100%' )); 
+
+### Attributes
+
+#### Grid
+
+ The number of rows and columns in the grid is defined by the `grid` attribute on the element, ranged from _1_ to _64_. It's default to be _1x1_ when no value or 0 is given.
+
+ :doodle { width: 8em; height: 8em; gap: 1px; } background: #60569e;  :doodle { gap: 1px; @size: 8em; } background: #60569e; 
+
+The row or column is limited up to _4096_ only when the grid is 1-dimensional: 
+
+ :doodle { @size: 8em 12em; /\* width: 8em; height: 12em; \*/ gap: 1px; } background: #60569e; width: @rand(5%, 100%); /\* from 5% to 100% by random \*/  :doodle { @size: 8em 12em; gap: 1px; } transition: .2s ease @rand(500ms); background: #60569e; will-change: width; width: @rand(5%, 100%); 
+
+ The `n x m` follows the order of _(col, row)_ or _(x, y)_. The following formats of `grid` value are all recognizable:
+
+* `grid = "0"`
+* `grid = "5"`
+* `grid = "20"`
+* `grid = "5x7"`
+* `grid = "5 x 7"`
+* `grid = "5,7"`
+
+ There's an alternative way to set up the `grid` by using the [@grid](#property-@grid) property.
+
+ :doodle { @grid: 5 / 8em; } background: #60569e; transform: scale(@rand(.2, .9));  :doodle { @grid: 5; @size: 8em; } background: #60569e; transform: scale(@r(.2, .9)); 
+
+#### use
+
+ Import rules from [CSS custom properties](https://developer.mozilla.org/en-US/docs/Web/CSS/--%2A) (CSS variables).
+
+ It's highly recommended to write the rules this way if you want to use css-doodle in production websites. So it won't break when the network is slow or when the browser does not support Web Component.
+
+#### seed
+
+ All random values will be regenerated to the same value as last time based on the _seed_ value. It's quite useful if you want to keep a snapshot.
+
+ :doodle { @grid: 5 / 8em; } background: #60569e; transform: scale(@rand(.2, .9));  @grid: 5 / 8em; background: #60569e; transform: scale(@rand(.2, .9)); 
+
+ A random `seed` will be generated by default if you don't specify explictly, and you can always get the generated value with [JS API](#js-api-seed) later.
+
+ @grid: 1 / 100vw 100vh / #0a0c27; background-size: 200px 200px; background-image: @doodle( @grid: 6 / 100%; @size: 4px; font-size: 4px; color: hsl(@r240, 30%, 50%); box-shadow: @m3x5( calc(4em - @nx\*1em) @ny(\*1em) @p(@m3(currentColor), @m2(#0000)), calc(2em + @nx\*1em) @ny(\*1em) @lp ); ); 
+
+### Selectors
+
+#### :doodle
+
+ The `:doodle` is a special selector indicates to the component element itself. Note that the styles would be over-written by your normal CSS files outside.(try to hover on the doodle) 
+
+ :doodle { --s: 0 } :doodle(:hover) { --s: 1 } transition: .5s cubic-bezier(.175, .885, .32, 1.275); transition-delay: @rand(500ms); transform: translateY(calc(var(--s) \* 100%));  :doodle { @grid: 5 / 8em; --s: 0; gap: 1px; } :doodle(:hover) { --s: 1; } --offset: calc(var(--s) \* 100%); transform: translateY(var(--offset)); transition: .5s cubic-bezier(.175, .885, .32, 1.275); transition-delay: @rand(500ms); transform-origin: 50% 50%; background: #60569e; 
+
+#### :container
+
+ The `:container` is the container element that holds all the cells, which is using [Grid Layout](https://www.w3.org/TR/css-grid-1/). You may want to set `gap` inside it.
+
+ :doodle { overflow: hidden; } :container { gap: 1px; transform: rotate(45deg) scale(1.5); }  :doodle { @grid: 8 / 8em; overflow: hidden; } :container { gap: 1px; transform: rotate(45deg) scale(1.5); } background: #60569e; 
+
+ It inherits all the grid properties from `:doodle` so that's why this also works:
+
+ :doodle { gap: 1px; } 
+
+#### @nth(n, ...)
+
+ Select the nth cell like ` :nth-child(n)` does.
+
+ /\* :nth-child is still valid though \*/ :nth-child(1) { background: #60569e; } @nth(5) { background: #60569e; } @nth(3n + 8) { background: #e6437d; } @nth(1, 5, 3n + 8) { :after { content: @index; color: #fff; } }  :doodle { @size: 8em; gap: 1px; } background: #f5f5f5; :nth-child(1) { background: #60569e; } @nth(5) { background: #60569e; } @nth(3n + 8) { background: #e6437d; } @nth(1, 5, 3n + 8) { :after { content: @index; font-size: .8em; color: #fff; } } 
+
+#### @even
+
+Select cells like ` :nth-child(even)` but shorter.
+
+ @even { background: #60569e; }  :doodle { @size: 8em; } @even { background: #60569e; :after { content: @index; font-size: .8em; color: #fff; } } 
+
+#### @odd
+
+Select cells like ` :nth-child(odd)`.
+
+ @odd { background: #60569e; }  :doodle { @size: 8em; } @odd { background: #60569e; :after { content: @index; font-size: .8em; color: #fff; } } 
+
+#### @at(col, row)
+
+Select cell at specific column and row.
+
+ @at(4, 2) { background: #60569e; }  :doodle { @size: 8em; gap: 1px; } background: #f5f5f5; @at(4, 2) { background: #60569e; :after { content: @x, @y; font-size: .5em; color: #fff; } } 
+
+#### @random(\[ ratio \])
+
+Select cells randomly. The `ratio` accepts value between `0` and `1`. Defaults to `0.5`.
+
+ @random { background: #60569e; }  :doodle { @size: 8em; gap: 1px; } background: #f5f5f5; transition: .2s; @random { background: #60569e; :after { content: @index; font-size: .8em; color: #fff; } } 
+
+The selector can be applied multiple times.
+
+ @random { border-top: 1px solid #60569e; } @random { border-left: 1px solid #60569e; } @random(.2) { :after { content: ''; background: hsl(@rand(360), 60%, 70%); @size: @rand(3px); } }  :doodle { @grid: 16 / 8em; } margin: -.5px; @random { border-top: 1px solid #60569e; } @random { border-left: 1px solid #60569e; } @random(.2) { :after { content: ''; background: hsl(@rand(360), 60%, 70%); @size: @rand(3px); } } 
+
+#### @row(n, ...)
+
+ Select the nth row of the grid.
+
+ @row(3) { background: #60569e; }  :doodle { @size: 8em; } background: #f5f5f5; margin: .5px; @row(3) { background: #60569e; :after { content: @row; font-size: .8em; color: #fff; } } 
+
+ The `odd` and `even` is supported.
+
+ @row(even) { background: #60569e; }  :doodle { @size: 8em; } background: #f5f5f5; margin: .5px; @row(even) { background: #60569e; :after { content: @row; font-size: .8em; color: #fff; } } @row(even) { :after { content: @row; font-size: .8em; color: #fff; } } 
+
+#### @col(n, ...)
+
+ Select the nth column of the grid.
+
+ @col(3) { background: #60569e; }  :doodle { @size: 8em; } background: #f5f5f5; margin: .5px; @col(3) { background: #60569e; :after { content: @col; font-size: .8em; color: #fff; } } 
+
+ You can use `odd` and `even` too.
+
+ @col(odd) { background: #60569e; }  :doodle { @size: 8em; } background: #f5f5f5; margin: .5px; @col(odd) { background: #60569e; :after { content: @col; font-size: .8em; color: #fff; } } 
+
+#### @match(expression)
+
+ Target the cells based on general Math expressions. The variable`i`, `I`,`x`, `X`,`y` and `Y` can be used without prefix `@` symbol for calculation.
+
+ @match(i <= 8 || i >= 18) { background: #60569e; } 
+
+ For convenience the symbols `≤` and `≥` have the meanings of `<=` and `>=` respectively.
+
+ @match(x ≤ y) { background: #60569e; }  :doodle { @size: 8em; } background: #f5f5f5; margin: .5px; @match(x ≤ y) { background: #60569e; } 
+
+The equal sign can be both `=` and `==`.
+
+ @match(x = y) { background: #60569e; } @match(X-x+1 == y) { background: #60569e; }  :doodle { @size: 8em; } background: #f5f5f5; margin: .5px; @match(x = y) { background: #60569e; } @match(X-x+1 == y) { background: #60569e; } 
+
+A more complex example.
+
+ @grid: 21 / 8em; @match(tan.cos.sin(x\*y) > 1) { background: #60569e; }  :doodle { @size: 8em; } background: #f5f5f5; @match(tan.cos.sin(x\*y) > 1) { background: #60569e; } 
+
+ /\* Fibonacci spiral \*/ @grid: 1 / 100vw 100vh / #125cde; @content: @Svg( viewBox: -50 -50 100 100 padding -20; circle\*500 { fill: hsl(@calc(120-90\*@sin.n), 80%, 50%); r: @sqrt(@n/60); cx: @calc(@n\*.618^4 \* cos(2π\*@n\*.618)); cy: @calc(@n\*.618^4 \* sin(2π\*@n\*.618)); } ); 
+
+### Properties
+
+#### @grid
+
+This is another way to define the `grid` value and it has higher priority.
+
+ :doodle { /\* will be 3x3 instead of 5x5 \*/ @grid: 3x3; @size: 8em; }  :doodle { @grid: 3 / 8em; } background: #60569e; margin: .5px; 
+
+Set grid and doodle size at the same time: 
+
+ :doodle { @grid: 8 / 8em; }  :doodle { @grid: 8 / 8em; gap: 1px; } background: #60569e; 
+
+The `:doodle` selector can be ommited if there's no other rules for it.
+
+ @grid: 8 / 8em; background: #60569e; 
+
+#### @use
+
+Like [@use](#attribute-use) attribute but as part of the rule.
+
+ @use: var(--rule-a), var(--rule-b); /\* or \*/ @use: var(--rule-a); @use: var(--rule-b); /\* more rules \*/ background-color: #60569e;  @use: var(--rule-a), var(--rule-b); 
+
+#### @size
+
+Set width and height in one place.
+
+ @size: 10em; /\* width: 10em; height: 10em; \*/ @size: 8em 6em; /\* width: 8em; height: 6em; \*/  @grid: 1 / 8em; @size: 8em 6em; background: #60569e; :after { content: 8em x 6em; color: #fff; font-size: .8em; } 
+
+#### @place
+
+Place cells relative to the grid. 
+
+ @size: 1.6em; @nth(1) { @place: 0 top } @nth(2) { @place: right 25% } @nth(3) { @place: center } @nth(4) { @place: .8em calc(100% - .8em) } @nth(5) { @place: 75% 80% }  :doodle { @grid: 1x5 / 8em noclip; border: 1px solid #60569e; } @size: 1.6em; background: rgba(72, 74, 142, .8); @nth(1) { @place: 0 top; } @nth(2) { @place: right 25%; } @nth(3) { @place: center; } @nth(4) { @place: .8em calc(100% - .8em); } @nth(5) { @place: 75% 80%; } :after { content: @index; color: #fff; font-size: .8em; } 
+
+#### @shape
+
+Turns the element into a shape which is generated with `clip-path` and `polygon()`.
+
+ :doodle { @grid: 7 / 8em; @shape: circle; } @even { @shape: hypocycloid 4; background: #60569e; transform: scale(2) rotate(-60deg); }  :doodle { @grid: 7 / 8em; @shape: circle; } @even { @shape: hypocycloid 4; background: #60569e; transform: scale(2) rotate(-60deg); } 
+
+##### Basic shapes
+
+ For more shapes you can use [@shape()](#function-@shape) function.
+
+ @grid: 7 / 100vmax / #0a0c27; @shape: clover 5; background: hsla(-@i(\*4), 70%, 68%, @r.8); transform: scale(@r(.2, 1.5)) translate(@m2.@r(±50%)); 
+
+### Functions
+
+#### @index
+
+Returns the current index value of the cell.
+
+ :after { content: @index(); color: #fff; }  :doodle { @size: 8em; } background: #60569e; margin: .5px; :after { content: @index; color: #fff; font-size: .8em; } 
+
+ The parentheses can be omitted if the function has no parameters.
+
+ @grid: 5x1 / 8em; @place: center; @size: calc(100% / 5 \* @index); opacity: calc(1.1 - 1 / 5 \* @index); z-index: calc(5 - @index); background: #60569e;  @grid: 5x1 / 8em; @place: center; @size: calc(100% / @size() \* @i); z-index: calc(@size - @i); opacity: calc(1.1 - 1 / @size \* @i); background: #60569e; :after { content: @index(); position: absolute; top: .2em; right: .2em; color: #fff; font-size: .6em; } 
+
+ Alias: `@i` 
+
+#### @row
+
+Returns the current row number of the cell.
+
+ :after { content: @row; color: #fff; }  :doodle { @size: 8em; } background: #60569e; margin: .5px; :after { content: @row; color: #fff; font-size: .8em; } 
+
+ Alias: `@y` 
+
+#### @col
+
+ Returns the current column number of the cell.
+
+ :after { content: @col; color: #fff; }  :doodle { @size: 8em; } background: #60569e; margin: .5px; :after { content: @col; color: #fff; font-size: .8em; } 
+
+ Alias: `@x` 
+
+#### @size-row
+
+ Returns the max row number of the grid.
+
+ @grid: 4x3 / 8em; :after { content: @row / @size-row; }  @grid: 4x3 / 8em; background: #60569e; margin: .5px; :after { content: @row/@size-row; color: #fff; font-size: .8em; } 
+
+ Alias: `@Y` 
+
+#### @size-col
+
+ Returns the max column number of the grid.
+
+ @grid: 4x3 / 8em; :after { content: @col / @size-col; }  @grid: 4x3 / 8em; background: #60569e; margin: .5px; :after { content: @col/@size-col; color: #fff; font-size: .8em; } 
+
+ Alias: `@X` 
+
+#### @size
+
+Returns the total cells count of the grid.
+
+ @grid: 3 / 8em; :after { content: @i / @size; }  @grid: 3 / 8em; background: #60569e; margin: .5px; :after { content: @i / @size; color: #fff; font-size: .8em; } 
+
+ These numbers can be used to generate dynamic values together with `calc()`.
+
+ background: rgba( 96, 86, 158, calc(@row \* @col / @size) );  @grid: 5/8em; --alpha: calc(@row \* @col / @size); background: rgba(96, 86, 158, var(--alpha)); :after { content: @calc(@row \* @col); color: #fff; font-size: .8em; } 
+
+ Alias: `@I` 
+
+#### @pick(v1, v2,...)
+
+ Randomly pick a value from the given list.  
+(try to click on the doodle) 
+
+ opacity: @pick(1, .6, .3, .1); :after { content: @pick(1, 2, 3, 4); }  :doodle { @size: 8em; } opacity: @pick(1, .6, .3, .1); background: #60569e; :after { content: @pick(1, 2, 3, 4); color: #fff; font-size: .8em; } 
+
+ It supports range format like this: `[0-9a-z]` 
+
+ opacity: @pick(1, .6, .3, .1); :after { content: @pick(\[a-z\]); }  :doodle { @size: 8em; } opacity: @pick(1, .6, .3, .1); background: #60569e; :after { content: @pick(\[a-z\]); color: #fff; font-size: .8em; } 
+
+ Alias: `@p` 
+
+#### @pick-n(v1, v2,...)
+
+ Pick a value from the given list one by one.
+
+ opacity: @pick-n(1, .6, .3, .1); :after { content: @pick-n(\[1-4\]); }  :doodle { @size: 8em; } opacity: @pick-n(1, .6, .3, .1); background: #60569e; :after { content: @pick-n(\[1-4\]); color: #fff; font-size: .8em; } 
+
+ Alias: `@pn` 
+
+#### @pick-d(v1, v2,...)
+
+ Pick a value like `@pick-n()`, but with distinct random order.
+
+ opacity: @pick-d(1, .6, .3, .1); :after { content: @pick-d(\[a-z\]); }  :doodle { @size: 8em; } opacity: @pick-d(1, .6, .3, .1); background: #60569e; :after { content: @pick-d(\[a-z\]); color: #fff; font-size: .8em; } 
+
+ Alias: `@pd` 
+
+#### @rand(start \[,end\])
+
+ Returns a random value between two numbers.  
+(try to click the doodle) 
+
+ background: rgba(96, 86, 158, @rand(.9)); transition: .2s ease @rand(200ms); transform: rotate(@rand(360deg)); clip-path: polygon( @rand(100%) 0, 100% @rand(100%), 0 @rand(100%) );  :doodle { @size: 8em; } background: rgba(96, 86, 158, @rand(.9)); transition: .2s ease @rand(200ms); will-change: transform; transform: rotate(@rand(360deg)); clip-path: polygon( @rand(100%) 0, 100% @rand(100%), 0 @rand(100%) ); 
+
+ Alias: `@r` 
+
+#### @last-pick, @last-rand
+
+ Returns the last value of `@pick`, `@pick-n`, `@pick-d` and `@rand`.
+
+ background: linear-gradient( @pick-d(45deg, -45deg), @pick(#60569e, #e6437d), rgba(255, 255, 255, 0), @last-pick() );  @grid: 5 / 8em; background: linear-gradient( @pick-d(45deg, -45deg), @pick(#60569e, #e6437d), rgba(255, 255, 255, 0), @last-pick() ); 
+
+ Alias: `@lp` and `@lr`, respectively.
+
+#### @repeat(times, value)
+
+ Compose the given value multiple times.  
+(try to click the doodle) 
+
+ border-radius: @repeat(4, @rand(40%, 60%)); /\* dots \*/ :after { background: #@repeat(6, @pick(\[0-9a-f\])); /\* ... \*/ }  :doodle { @size: 8em; gap: 1px } background: #60569e; transition: .2s; transform: scale(.95); border-radius: @repeat(4, @rand(40%, 60%)); :after { content: ''; position: absolute; transition: .2s; left: @rand(20%, 80%); top: @rand(20%, 80%); @size: 5px; border-radius: 50%; background: #@repeat(6, @p(\[0-9a-f\])); } 
+
+ Alias: `@rep` 
+
+#### @multiple(times, value)
+
+ Same as `@repeat()`, but seperated with _commas_. Use capitalized `@Multiple` to make the values seperated with _spaces_.
+
+ background: linear-gradient( @rand(360deg), @m(3, ( @pick-n(#60569e, #e6437d, #ebbf4d) calc(@n(-1) \* 100% / 3), @lp calc(@n \* 100% / 3) )) );  :doodle { @size: 8em; } background: linear-gradient( @rand(360deg), @m3( @pick-n(#60569e, #e6437d, #ebbf4d) calc(@n(-1) \* 100% / 3), @lp calc(@n \* 100% / 3) ) ); 
+
+ The number closely after the function name will be regarded as the first parameter of the function, which will make the code more concise.
+
+ background: #60569e; box-shadow: @m5( calc(@n \* 2px) calc(@n \* 2px) 0 0 #e6437d );  :doodle { @size: 8em; } background: #60569e; margin: 20%; box-shadow: @m5( calc(@n() \* 2px) calc(@n \* 2px) 0 0 #e6437d ); 
+
+ Alias: `@m`, `@M` 
+
+#### @n, @nx, @ny, @N
+
+ Used only inside `@repeat` and `@m` function to indicate the current repeating count: `@n`, current column count: `@nx`, current row count: `@ny` and the max count value: `@N`.
+
+ background: radial-gradient( circle at @r(100%) @r(100%), @m20( @p(#60569e, #ebbf4d) calc(@n(-1) \* 100% / @N), @lp calc(@n \* 100% / @N) ) );  :doodle { @size: 8em; } background: radial-gradient( circle at @r(100%) @r(100%), @m20( @p(#60569e, #ebbf4d) calc(@n(-1) \* 100% / @N), @lp calc(@n \* 100% / @N) ) ); 
+
+#### @stripe(color \[size\], ...)
+
+ Make stripe with gradients.
+
+ @grid: 5 / 8em; background: linear-gradient( @rand(360deg), @stripe(#60569e, #e6437d, #ebbf4d) );  @grid: 5 / 8em; background: linear-gradient( @r(360deg), @stripe( #60569e, #e6437d, #ebbf4d ) ); 
+
+ The size for each step is optional.
+
+ background: linear-gradient( 45deg, @stripe( #60569e 50%, #e6437d, #ebbf4d, #60569e ) );  :doodle { @size: 8em; } background: linear-gradient( 45deg, @stripe( #60569e 50%, #e6437d, #ebbf4d, #60569e ) ); 
+
+ border-radius: 50%; background: conic-gradient( @stripe( #60569e 10%, #e6437d 20%, #ebbf4d 30%, #321f35 ) );  :doodle { @size: 8em; } border-radius: 50%; background: conic-gradient( @stripe( #60569e 10%, #e6437d 20%, #ebbf4d 30%, #321f35 ) ); 
+
+ See more about[stripe function in css-doodle](https://observablehq.com/@yuanchuan/stripe-function-in-css-doodle).
+
+#### @svg(svg)
+
+Use SVG directly as background image. 
+
+ @grid: 1 / 8em 14em; background-size: 100%; background-image: @svg( @M50() ); 
+
+You can also write SVG with the syntax of CSS.
+
+ background-image: @svg( viewBox: 0 0 100 175; path\*50 { stroke-width: @r.5; stroke: @p(#60569e, #e6437d); d: M0 0 L@r100 @r175; }; ); 
+
+ See <https://yuanchuan.dev/experimenting-a-new-syntax-to-write-svg>.
+
+#### @svg-filter(filter)
+
+Apply SVG filters.
+
+ filter: @svg-filter( feTurbulence { type: fractalNoise; baseFrequency: .01 .5; } feDisplacementMap { in: SourceGraphic; scale: 50; } ); 
+
+#### @<Math>
+
+ All Math functions and constants are available prefixed with `'@'`.
+
+ \--alpha: calc( @abs(@abs(@row - 3) + @abs(@col - 3) - 5) / 5 ); background: rgba(96, 86, 158, var(--alpha));  :doodle { @size: 8em; } --alpha: calc(@abs(@abs(@row - 3) + @abs(@col - 3) - 5) / 5); background: rgba( 96, 86, 158, var(--alpha) ); will-change: transform; transform: rotate(15deg) scale(var(--alpha)); 
+
+You can also use `π` directly.
+
+ @grid: 1x60 / 8em 15em; @size: 75.8% 1px; justify-self: center; background: #e6437d; opacity: calc(1 - @i / @size); transform: rotate(-15deg) translateX(calc(@sin(@i / 4) \* π \* 10px));  @grid: 1x60 / 8em 15em; @size: 65% 1px; justify-self: center; background: #60569e; opacity: calc(1 - @i / @size()); transform: rotate(-15deg) translateX(calc(@sin(@i / 4) \* π \* 10px)); 
+
+#### @calc(expr)
+
+ Evaluate calculations.
+
+ :after { content: @calc(@i \* @i); }  @grid: 5 / 8em; background: #60569e; :after { content: @calc(@i \* @i); color: #fff; font-size: .5em; } @odd { transform: scale(.75); } 
+
+#### @var(expr)
+
+ Same as native `var()`. Used to prevent the browser from evaluating the value inside nested vars. The example below won't work since the `var(--bg)` has no definition outside.
+
+ Use `@var()` instead.
+
+ :doodle { @grid: 5 / 8em; } --bg: #60569e; background: linear-gradient( @r(360deg), @var(--bg) 50%, #0000 0 ); 
+
+#### @hex(num)
+
+ Transform a number into hex format.
+
+ :after { content: \\@hex(@rand(9632, 9687)); }  :doodle { @size: 8em; gap: 1px } :after { content: \\@hex(@rand(9632, 9687)); color: #60569e; } 
+
+#### @doodle(code)
+
+ Generate `url()` image with css-doodle code.
+
+ @grid: @p(2, 3) / 8em; background-image: @doodle( @grid: @r4 / 100%; background: @doodle( @grid: @r4 / 100%; background: @svg( viewBox: 0 0 1 1; path { d: M 0 0 L 1 0 L 1 1; fill: #60569e; } ); ); );  @grid: @p(2, 3) / 8em; background-image: @doodle( @grid: @r4 / 100%; background: @doodle( @grid: @r4 / 100%; background: @svg( viewBox: 0 0 1 1; path { d: M 0 0 L 1 0 L 1 1; fill: #60569e; } ); ); ); 
+
+ See: <https://yuanchuan.dev/whats-new-in-css-doodle> 
+
+#### @shaders(code)
+
+ Generate `url()` image with GLSL code. Currently only one uniform value is added: `u_resolution`.
+
+ background: @shaders( void main() { vec2 p = gl\_FragCoord.xy / u\_resolution.xy; FragColor = vec4(p.yx, .8, 1.); } );  @grid: 1 / 8em; background: @shaders( void main() { vec2 p = gl\_FragCoord.xy / u\_resolution.xy; FragColor = vec4(p.yx, .8, 1.); } ); 
+
+ The function accepts three parts. If there's no explict `fragment` part, all the code will be treated as fragment shader like the example above.
+
+ background: @shaders( fragment { /\* fragment shader \*/ } vertex { /\* vertex shader \*/ } texture { /\* textures in css-doodle \*/ } ); 
+
+ Multiple texture are accepted if they prefix with `texture` and the texture uniform names will be injected automatically.
+
+ background: @shaders( texture\_0 { @grid: 1 / 100%; background: linear-gradient(45deg, @stripe.@m20.@p( #FFF4E0, #F8B501, #06ACB5, #17191D, #FC3D3C )); } fragment { void main() { /\* ... \*/ vec2 coords = vec2(r \* cos(angle), r \* sin(angle)) + c; FragColor = texture(texture\_0, coords); } } );  @grid: 1 / 8em; background: @shaders( texture1 { @grid: 1 / 100%; background: linear-gradient( 45deg, @stripe.@m20.@p(#FFF4E0, #F8B501, #06ACB5, #17191D, #FC3D3C) ); } fragment { void main() { vec2 p = gl\_FragCoord.xy / u\_resolution.xy; vec2 c = vec2(.5, .5); vec2 uv = p.xy - c; float R = 3.141593; float len = length(uv \* vec2(u\_resolution.x / u\_resolution.y, 1.)); float angle = atan(uv.y, uv.x) + R \* smoothstep(.75, 0., len); float r = length(uv) + .1; vec2 coords = vec2(r \* cos(angle), r \* sin(angle)) + c; FragColor = texture(texture1, coords); } } ); 
+
+ See: <https://yuanchuan.dev/add-shaders> 
+
+#### @shape(commands)
+
+ Generate `polygon()` in string used by `clip-path`. For example, to make a hexagon:
+
+ clip-path: @shape( points: 6; );  @grid: 1 / 8em; background: #60569e; clip-path: @shape( points: 6; scale: .8; ); 
+
+ If the `points` value is big enough it approximately to be a circle.
+
+ clip-path: @shape( points: 100; );  @grid: 1 / 8em; background: #60569e; clip-path: @shape( points: 100; scale: .8; ); 
+
+##### All commands
+
+* `fill-rule` nonzero | evenodd;
+* `frame` number for frame size;
+* `points` number between 3 - 3600;
+* `rotate` number in degree for rotation;
+* `scale` number for scale factor;
+* `move` a pair of value for translating `x, y` coords;
+* `turn` the angle between start/end point, defaults to be 1;
+* `x` x coordinate for cartesian equation;
+* `y` y coordinate for cartesian equation;
+* `r` polar equation;
+
+##### Operations in equations
+
+* Operations available:`+`,`-`,`*`,`/`,`%`,`^`.
+* All JavaScript Math functions and constants are supported. Such as`sin`,`cos`,`tan`,`abs`,`pow`,`PI` or `π` etc.
+
+ clip-path: @shape( points: 300; r: cos(4t); );  @grid: 1 / 8em; background: #60569e; clip-path: @shape( points: 300; r: cos(4t); scale: .8; ); 
+
+ See more examples here: [https://css-doodle.com/shapes](https://css-doodle.com/shapes/).
+
+#### @plot(commands)
+
+ Generate two values in percent and seperated with space. The syntax is the same with [@shape](#function-@shape).
+
+ background: @m50( radial-gradient(#60569e 50%, #0000 0) @plot(r: .8) / 5px 5px no-repeat );  @grid: 1 / 8em; background: @m50( radial-gradient(#60569e 50%, #0000 0) @plot(r: .8) / 5px 5px no-repeat ); 
+
+ @grid: 100x1 / 200px; @size: 5px; border-radius: 50%; border: 1px solid #60569e; @place: @plot( r: sin(-t/2); move: 0 -.3; rotate: 90; );  @grid: 50x1 / 8em; @size: 5px; border-radius: 50%; border: 1px solid #60569e; @place: @plot( r: sin(-t/2); move: 0 -.3; rotate: 90; ); 
+
+ @grid: 20 / 100vmax / #0a0c27; @content: @unicode.r(0x2500, 0x257f); color: hsla(@r360, 70%, 70%, @r.9); font-size: 8vmin; font-family: sans-serif; 
+
+### JS API 
+
+#### grid
+
+Getter/setter for the `grid` attribute on the element. 
+
+ const doodle = document.querySelector('css-doodle'); /\* Note that the grid value inside the :doodle selector has higher priority than the attribute value on the element. So this setter operation may not have an affect on the final grid value. \*/ doodle.grid = "5"; console.log(doodle.grid); /\* { x: 5, y: 5, size: 25 } \*/ 
+
+#### use
+
+Getter/setter for the `use` attribute on the element. 
+
+ const doodle = document.querySelector('css-doodle'); doodle.use = 'var(--my-rule)'; console.log(doodle.use); /\* var(--my-rule) \*/ 
+
+#### seed
+
+Getter/setter for the `seed` attribute on the element. 
+
+ const doodle = document.querySelector('css-doodle'); doodle.seed = 'my random seed'; console.log(doodle.seed); /\* my random seed \*/ 
+
+#### update(\[styles\])
+
+Re-render the component (with given styles).
+
+ const doodle = document.querySelector('css-doodle'); /\* update styles and refresh \*/ doodle.update(\` @grid: 6 / 8em; background: rebeccapurple; margin: .5px; \`); /\* just refresh \*/ doodle.update(); 
+
+#### export(\[options\])
+
+ Export `css-doodle` element as an image. Returns a `Promise` object which holds the information of the exported image.
+
+##### Options
+
+* `scale: Integer` Scale factor of the exported image. Default `1`.
+* `detail: Boolean` Returns detailed information of the image, eg. blob size. Default `false`.
+* `download: Boolean` Download the image or not. Default `false`.
+* `name: String` Saved name for download. Defaults to be the current timestamp.
+
+ button.addEventListener('click', async e => { let result = await doodle.export({ scale: 8, download: true }); /\* open Dev tools to see the result \*/ console.log(result); }); 
+
+ @grid: 7 / 8em; --c: #FFF4E0, #F8B501, #06ACB5, #17191D, #FC3D3C; background: @p(--c); @content: @Svg( viewBox: -5 -5 10 10; circle { r: @r(1, 2); fill: @p(--c); } circle\*4 { r: 6; cx, cy: @pd(-6 -6, 6 6, 6 -6, -6 6); fill: @p(--c); } ); Save to PNG 
+
+我想使用 css-doodle 为 popup app 设计一个合适的 border，你有哪些建议？
+
+---
+
+DO #1
+
+---
+
+想更subtle, 不要太剥夺注意，需要更认真的修改
