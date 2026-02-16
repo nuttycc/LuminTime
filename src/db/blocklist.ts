@@ -98,5 +98,7 @@ export function isHostnameBlocked(hostname: string, blocklist: string[]): boolea
 }
 
 export function notifyBlocklistUpdate(): void {
-  browser.runtime.sendMessage("blocklist-updated").catch(() => {});
+  browser.runtime.sendMessage("blocklist-updated").catch(() => {
+    // Background service worker may not be active yet; safe to ignore.
+  });
 }
