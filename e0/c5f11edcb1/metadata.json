@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "e0c5f11edcb1",
+  "strategy": "manual-commit",
+  "branch": "refactor/code-hygiene-and-dry",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/composables/useMotionVariants.ts",
+    "src/db/blocklist.ts",
+    "src/db/insights.ts",
+    "src/db/service.ts",
+    "src/entrypoints/popup/pages/HistoryView.vue"
+  ],
+  "sessions": [
+    {
+      "metadata": "/e0/c5f11edcb1/0/metadata.json",
+      "transcript": "/e0/c5f11edcb1/0/full.jsonl",
+      "context": "/e0/c5f11edcb1/0/context.md",
+      "content_hash": "/e0/c5f11edcb1/0/content_hash.txt",
+      "prompt": "/e0/c5f11edcb1/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4637,
+    "cache_creation_tokens": 689713,
+    "cache_read_tokens": 8460118,
+    "output_tokens": 16167,
+    "api_call_count": 92
+  }
+}
