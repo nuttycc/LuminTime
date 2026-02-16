@@ -1,0 +1,9 @@
+HOME - TOP SECTION: 改为 bwtween 的layout，并且将 3 个 options 收进一个菜单, BEST UI/UX.
+
+---
+
+ADD motion when opening the menu
+
+---
+
+small width
