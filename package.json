@@ -10,7 +10,7 @@
     "build": "wxt build",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
-    "compile": "vue-tsc --noEmit",
+    "compile": "mkdir -p node_modules/.cache/vue-tsc && vue-tsc --noEmit -p tsconfig.typecheck.json",
     "lint": "oxlint --type-aware .",
     "format": "oxfmt",
     "test": "vitest run",
