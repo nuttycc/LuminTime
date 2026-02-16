@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "1f9811422cef",
+  "session_id": "c7344a85-36a9-4ed1-9273-ab1f3150606f",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-16T07:31:58.135811051Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/components/DoodleBorder.vue",
+    "src/entrypoints/popup/App.vue",
+    "src/entrypoints/popup/style.css",
+    "wxt.config.ts"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "8bd9b287-8ae7-47a8-b5ff-a246730caf83",
+  "token_usage": {
+    "input_tokens": 42,
+    "cache_creation_tokens": 203312,
+    "cache_read_tokens": 1047251,
+    "output_tokens": 340,
+    "api_call_count": 28
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-16T07:31:58.103394675Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 36,
+    "human_removed": 74,
+    "total_committed": 9,
+    "agent_percentage": 0
+  }
+}
