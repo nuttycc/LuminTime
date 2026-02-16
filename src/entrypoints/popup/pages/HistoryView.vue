@@ -1,21 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
-import { motion, AnimatePresence, stagger } from "motion-v";
+import { motion, AnimatePresence } from "motion-v";
 import { useDateRange, type ViewMode } from "@/composables/useDateRange";
 import { getHistoryLogs } from "@/db/service";
 import type { IHistoryLog } from "@/db/types";
+import { contentVariants as contentVariantsFn } from "@/composables/useMotionVariants";
 import DateNavigator from "@/components/DateNavigator.vue";
 import { formatDate, parseDate } from "@/utils/dateUtils";
 
-const contentVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { delayChildren: stagger(0.06, { ease: [0.4, 0, 0.2, 1] }) },
-  },
-};
+const contentVariants = contentVariantsFn(0.06, { ease: [0.4, 0, 0.2, 1] });
 
 const groupVariants = {
   hidden: { opacity: 0, y: 8 },
@@ -39,8 +34,7 @@ const fetchData = async () => {
   }
 };
 
-watch([startDate, endDate, hostname, path], fetchData);
-onMounted(fetchData);
+watch([startDate, endDate, hostname, path], fetchData, { immediate: true });
 
 const title = computed(() => {
   if (path.value) return "Page History";

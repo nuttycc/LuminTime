@@ -37,14 +37,13 @@ export function normalizeBlockInput(input: string): string {
   return value.replace(/^www\./, "");
 }
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
 export async function getBlocklist(): Promise<string[]> {
   const record = await db.meta.get(META_KEY_BLOCKLIST);
-
-  if (Array.isArray(record?.value)) {
-    return record.value as string[];
-  }
-
-  return [];
+  return isStringArray(record?.value) ? record.value : [];
 }
 
 export async function setBlocklist(hostnames: string[]): Promise<void> {
@@ -60,7 +59,7 @@ export async function addToBlocklist(input: string): Promise<boolean> {
 
   return db.transaction("rw", db.meta, async () => {
     const record = await db.meta.get(META_KEY_BLOCKLIST);
-    const current = Array.isArray(record?.value) ? [...(record.value as string[])] : [];
+    const current = isStringArray(record?.value) ? [...record.value] : [];
 
     if (current.includes(normalized)) {
       return false;
@@ -80,7 +79,7 @@ export async function removeFromBlocklist(hostname: string): Promise<boolean> {
 
   return db.transaction("rw", db.meta, async () => {
     const record = await db.meta.get(META_KEY_BLOCKLIST);
-    const current = Array.isArray(record?.value) ? [...(record.value as string[])] : [];
+    const current = isStringArray(record?.value) ? [...record.value] : [];
     const index = current.indexOf(normalized);
 
     if (index === -1) {
@@ -96,4 +95,10 @@ export async function removeFromBlocklist(hostname: string): Promise<boolean> {
 export function isHostnameBlocked(hostname: string, blocklist: string[]): boolean {
   const normalized = normalizeBlockInput(hostname);
   return blocklist.includes(normalized);
+}
+
+export function notifyBlocklistUpdate(): void {
+  browser.runtime.sendMessage("blocklist-updated").catch(() => {
+    // Background service worker may not be active yet; safe to ignore.
+  });
 }

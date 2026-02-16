@@ -1,5 +1,6 @@
 import { db } from "./index";
 import type { ISiteStat } from "./types";
+import { addSiteDuration, buildDailyMap, toSortedTrend } from "./service";
 import { addDays, formatDate, parseDate } from "@/utils/dateUtils";
 
 export interface SiteComparison {
@@ -35,14 +36,7 @@ async function getDailyTrendForRange(
   startDate: string,
   endDate: string,
 ): Promise<{ date: string; duration: number }[]> {
-  const dailyMap = new Map<string, number>();
-  let current = parseDate(startDate);
-  const end = parseDate(endDate);
-
-  while (current <= end) {
-    dailyMap.set(formatDate(current), 0);
-    current = addDays(current, 1);
-  }
+  const dailyMap = buildDailyMap(startDate, endDate);
 
   await db.sites
     .where("date")
@@ -52,9 +46,7 @@ async function getDailyTrendForRange(
       dailyMap.set(record.date, prev + record.duration);
     });
 
-  return Array.from(dailyMap.entries())
-    .map(([date, duration]) => ({ date, duration }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  return toSortedTrend(dailyMap);
 }
 
 async function getHeatmapForWeek(startDate: string, endDate: string): Promise<number[][]> {
@@ -107,16 +99,7 @@ async function getTopSitesForRange(
     .where("date")
     .between(startDate, endDate, true, true)
     .each((record) => {
-      const existing = siteMap.get(record.hostname);
-      if (!existing) {
-        siteMap.set(record.hostname, { ...record });
-      } else {
-        existing.duration += record.duration;
-        if (record.lastVisit > existing.lastVisit) {
-          existing.lastVisit = record.lastVisit;
-          existing.iconUrl = record.iconUrl;
-        }
-      }
+      addSiteDuration(siteMap, record);
     });
 
   // Sort and keep top N (if limit specified)
