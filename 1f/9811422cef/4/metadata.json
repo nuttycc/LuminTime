@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "1f9811422cef",
+  "session_id": "72fe8420-b669-4cea-ba2a-6196ced13326",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-16T07:31:57.772687296Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "src/components/DateNavigator.vue"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "6ea8f36a-8818-4665-9c5c-3ec92e9bd5bd",
+  "token_usage": {
+    "input_tokens": 1468,
+    "cache_creation_tokens": 59439,
+    "cache_read_tokens": 338789,
+    "output_tokens": 2197,
+    "api_call_count": 11
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-16T07:31:57.739971961Z",
+    "agent_lines": 0,
+    "human_added": 10,
+    "human_modified": 44,
+    "human_removed": 0,
+    "total_committed": 54,
+    "agent_percentage": 0
+  }
+}
