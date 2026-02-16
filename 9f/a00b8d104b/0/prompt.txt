@@ -1,0 +1,182 @@
+Implement the following plan:
+
+# LuminTime src/ 代码优化计划
+
+## Context
+
+LuminTime 代码库整体质量良好——所有 Vue 组件统一使用 `<script setup lang="ts">`，Arktype 类型验证一致，DB 事务处理正确。但随着功能迭代，出现了若干 **DRY 违反**、**查询模式不一致**和**代码卫生问题**。本次优化目标是在 **不改变任何现有功能** 的前提下，提升代码可维护性和一致性。
+
+优化原则来源：clean-code（消除重复、函数职责单一）、vue-best-practices（composable 模式、watch immediate）、wxt-browser-extensions（service worker 最佳实践）、code-simplifier（保留功能，简化表达）。
+
+---
+
+## Step 1: 提取共享动画变体 → `composables/useMotionVariants.ts`
+
+**问题**: 4 个页面重复定义几乎相同的 motion-v 动画变体（contentVariants, cardVariant, listContainerVariants, listItemVariants）。
+
+**涉及文件**:
+- `src/entrypoints/popup/pages/HomeView.vue` (lines 14-39)
+- `src/entrypoints/popup/pages/SiteDetailView.vue` (lines 18-43)
+- `src/entrypoints/popup/pages/InsightsView.vue` (lines 12-36)
+- `src/entrypoints/popup/pages/HistoryView.vue` (lines 12-23)
+
+**操作**:
+1. 新建 `src/composables/useMotionVariants.ts`，导出共享变体对象
+2. 将各页面中重复的变体定义替换为 import
+3. 保留各页面独有的变体（如 HomeView 的 `menuItemVariants`、HistoryView 的 `groupVariants`）
+
+**注意**: stagger 值在不同页面略有差异（0.08, 0.04, 0.06），提取时提供参数化选项。
+
+---
+
+## Step 2: 合并两个 LiveQuery composable 为一个函数重载
+
+**问题**: `useDexieLiveQuery()` 和 `useLiveQuery()` 逻辑几乎相同，仅差异在默认值和 onMounted 时机。
+
+**涉及文件**:
+- `src/composables/useDexieLiveQuery.ts` (lines 33-103)
+
+**操作**:
+1. 合并为单个 `useLiveQuery` 函数，使用 TypeScript 函数重载：
+   - `useLiveQuery<T>(querier, deps?)` → 返回 `Ref<T | undefined>`
+   - `useLiveQuery<T>(querier, defaultValue, deps?)` → 返回 `Ref<T>`
+2. 统一内部逻辑，通过判断是否有 defaultValue 来决定行为
+3. 保留 `useDexieLiveQuery` 作为 deprecated re-export（或直接移除，因为只有内部使用）
+4. 更新所有引用处的 import
+
+**调用方**（需更新 import）:
+- 无需修改调用代码，只需确认 import path 正确
+
+---
+
+## Step 3: 删除未使用的 HelloWorld.vue
+
+**问题**: WXT 模板残留组件，未被任何文件引用。
+
+**涉及文件**:
+- `src/components/HelloWorld.vue` — 删除
+
+---
+
+## Step 4: 简化 ArtHeatmap import 别名
+
+**问题**: `import { getCellStyle as _getCellStyle }` 然后再包装为本地 `getCellStyle`，命名绕了一圈。
+
+**涉及文件**:
+- `src/components/ArtHeatmap.vue` (line 5, 39-40)
+
+**操作**: 直接 import `getCellStyle` 改名为 `getBaseCellStyle`（或内部直接使用，传入 `maxVal.value` 作为参数），消除不必要的下划线别名。
+
+---
+
+## Step 5: HistoryView 改用 watch immediate 替代 onMounted + watch
+
+**问题**: HistoryView 手动 `watch + onMounted(fetchData)` 模式，不如其他页面使用 `useLiveQuery` 一致，但由于 HistoryView 有 2000 条 limit 和 hostname/path 过滤，不适合用 liveQuery。可改用 `watch(..., { immediate: true })` 消除 onMounted 重复。
+
+**涉及文件**:
+- `src/entrypoints/popup/pages/HistoryView.vue` (lines 42-43)
+
+**操作**:
+```ts
+// Before
+watch([startDate, endDate, hostname, path], fetchData);
+onMounted(fetchData);
+
+// After
+watch([startDate, endDate, hostname, path], fetchData, { immediate: true });
+```
+
+符合 vue-best-practices 的 `watch-immediate-option` 规则。
+
+---
+
+## Step 6: 提取 `notifyBlocklistUpdate` 为共享工具函数
+
+**问题**: SiteDetailView 和 SettingsView 都有相同的 `browser.runtime.sendMessage("blocklist-updated").catch(...)` 逻辑。
+
+**涉及文件**:
+- `src/entrypoints/popup/pages/SiteDetailView.vue` (lines 150-152)
+- `src/entrypoints/popup/pages/SettingsView.vue` (lines 124-128)
+
+**操作**:
+1. 在 `src/db/blocklist.ts` 中添加 `notifyBlocklistUpdate()` 函数（与 blocklist 逻辑内聚）
+2. 两个 View 改为 import 调用
+
+---
+
+## Step 7: 统一 `getAggregatedPages` 查询模式
+
+**问题**: `getAggregatedSites` 使用单次 `.between()` 查询（高效），但 `getAggregatedPages` 使用按天循环 `.equals()` 产生多次查询（不一致）。
+
+**涉及文件**:
+- `src/db/service.ts` (lines 272-302)
+
+**操作**:
+pages 表的主键是 `[date+hostname+path]`，可以用 `.where("[date+hostname]").between([startDate, hostname], [endDate, hostname], true, true)` 进行范围查询，避免逐天查询。
+
+注意：需确认 Dexie compound index 的 between 行为对 `[date+hostname]` 索引是否支持只对 date 做范围同时固定 hostname。如果不支持，则保持循环但改为 `Promise.all` 并行（当前已经是）。
+
+---
+
+## Step 8: 补充 SettingsView 缺失的错误处理
+
+**问题**: `getRawRetentionDays().then(...)` 没有 `.catch()`，可能导致 unhandled rejection。
+
+**涉及文件**:
+- `src/entrypoints/popup/pages/SettingsView.vue` (lines 154-156)
+
+**操作**: 添加 `.catch()` 处理或统一到 `async onMounted` 中使用 try/catch。
+
+---
+
+## Step 9: 清理 background.ts 中的 debug console.log
+
+**问题**: `getActiveTabUrl()` (line 60) 中有 `console.log("Got active tab:", tab)` 以及 background 入口的 `console.log("Hello background!")` (line 66)，属于开发调试日志。
+
+**涉及文件**:
+- `src/entrypoints/background.ts` (lines 60, 66)
+
+**操作**:
+- 移除 line 60 的 `console.log("Got active tab:", tab)` — 高频调用，影响性能
+- 保留 line 66 的启动日志（或降级为 `console.debug`）
+
+---
+
+## Step 10: 简化 SiteDetailView 确认状态管理
+
+**问题**: 3 个独立的 `ref<boolean>` (confirmingBlock, confirmingUnblock, confirmingDelete) 用于互斥确认状态，用 `resetConfirmations()` 手动重置。
+
+**涉及文件**:
+- `src/entrypoints/popup/pages/SiteDetailView.vue` (lines 45-47, 128-132)
+
+**操作**: 替换为单个 `ref<'block' | 'unblock' | 'delete' | null>(null)`：
+```ts
+const confirmingAction = ref<'block' | 'unblock' | 'delete' | null>(null);
+const resetConfirmations = () => { confirmingAction.value = null; };
+```
+
+模板中 `v-if="!confirmingBlock"` → `v-if="confirmingAction !== 'block'"` 等。
+
+---
+
+## 验证计划
+
+1. **类型检查**: `bun run compile` — 确保无 TypeScript 错误
+2. **Lint**: `bun run lint` — 确保通过 Oxlint 检查
+3. **单元测试**: `bun run test` — 所有 9 个测试文件通过
+4. **手动验证**: `bun run dev` → 加载扩展 → 验证以下功能正常：
+   - 首页加载、站点列表、趋势图
+   - 站点详情页面的 block/unblock/delete 确认流程
+   - 历史记录页面数据加载
+   - Insights 页面热力图和周趋势
+   - 设置页面导入导出、屏蔽列表管理
+   - 后台服务 worker 正常追踪活动
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/lan/.REDACTED.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
+
+---
+
+new a branch and conmit changs

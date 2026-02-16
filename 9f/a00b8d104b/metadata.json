@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "9fa00b8d104b",
+  "strategy": "manual-commit",
+  "branch": "refactor/code-hygiene-and-dry",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/components/ArtHeatmap.vue",
+    "src/components/HelloWorld.vue",
+    "src/composables/useDexieLiveQuery.ts",
+    "src/composables/useMotionVariants.ts",
+    "src/db/blocklist.ts",
+    "src/entrypoints/background.ts",
+    "src/entrypoints/popup/pages/HistoryView.vue",
+    "src/entrypoints/popup/pages/HomeView.vue",
+    "src/entrypoints/popup/pages/InsightsView.vue",
+    "src/entrypoints/popup/pages/SettingsView.vue",
+    "src/entrypoints/popup/pages/SiteDetailView.vue"
+  ],
+  "sessions": [
+    {
+      "metadata": "/9f/a00b8d104b/0/metadata.json",
+      "transcript": "/9f/a00b8d104b/0/full.jsonl",
+      "context": "/9f/a00b8d104b/0/context.md",
+      "content_hash": "/9f/a00b8d104b/0/content_hash.txt",
+      "prompt": "/9f/a00b8d104b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 21828,
+    "cache_creation_tokens": 435018,
+    "cache_read_tokens": 2451316,
+    "output_tokens": 14304,
+    "api_call_count": 36
+  }
+}
