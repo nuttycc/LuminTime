@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
 import { motion, AnimatePresence, stagger } from "motion-v";
@@ -39,8 +39,7 @@ const fetchData = async () => {
   }
 };
 
-watch([startDate, endDate, hostname, path], fetchData);
-onMounted(fetchData);
+watch([startDate, endDate, hostname, path], fetchData, { immediate: true });
 
 const title = computed(() => {
   if (path.value) return "Page History";

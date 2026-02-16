@@ -2,38 +2,21 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
-import { motion, AnimatePresence, stagger } from "motion-v";
+import { motion, AnimatePresence } from "motion-v";
 import { useLiveQuery } from "@/composables/useDexieLiveQuery";
 import { getWeeklyInsights, type WeeklyInsights, type SiteComparison } from "@/db/insights";
 import { formatDate, getStartOfWeek, getEndOfWeek, parseDate } from "@/utils/dateUtils";
+import {
+  contentVariants as contentVariantsFn,
+  cardVariant,
+  listContainerVariants as listContainerVariantsFn,
+  listItemVariants,
+} from "@/composables/useMotionVariants";
 import TrendChart, { type ChartItem } from "@/components/TrendChart.vue";
 import ArtHeatmap from "@/components/ArtHeatmap.vue";
 
-const contentVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { delayChildren: stagger(0.08) },
-  },
-};
-
-const cardVariant = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
-};
-
-const listContainerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { delayChildren: stagger(0.08) },
-  },
-};
-
-const listItemVariants = {
-  hidden: { opacity: 0, x: -12 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.25 } },
-};
+const contentVariants = contentVariantsFn();
+const listContainerVariants = listContainerVariantsFn();
 
 const router = useRouter();
 

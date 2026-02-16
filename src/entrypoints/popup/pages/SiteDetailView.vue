@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
-import { motion, AnimatePresence, stagger } from "motion-v";
+import { motion, AnimatePresence } from "motion-v";
 import { useDateRange, type ViewMode } from "@/composables/useDateRange";
 import { getAggregatedPages, deleteSiteData } from "@/db/service";
 import type { IPageStat } from "@/db/types";
@@ -12,39 +12,25 @@ import {
   removeFromBlocklist,
   getBlocklist,
   isHostnameBlocked,
+  notifyBlocklistUpdate,
 } from "@/db/blocklist";
+import {
+  contentVariants as contentVariantsFn,
+  listContainerVariants as listContainerVariantsFn,
+  listItemVariants,
+} from "@/composables/useMotionVariants";
 import DateNavigator from "@/components/DateNavigator.vue";
 
-const contentVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { delayChildren: stagger(0.08) },
-  },
-};
+const contentVariants = contentVariantsFn();
 
 const cardVariant = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
-const listContainerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { delayChildren: stagger(0.04) },
-  },
-};
+const listContainerVariants = listContainerVariantsFn(0.04);
 
-const listItemVariants = {
-  hidden: { opacity: 0, x: -12 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.25 } },
-  exit: { opacity: 0, x: 12, transition: { duration: 0.15 } },
-};
-
-const confirmingBlock = ref(false);
-const confirmingUnblock = ref(false);
-const confirmingDelete = ref(false);
+const confirmingAction = ref<"block" | "unblock" | "delete" | null>(null);
 const message = ref<{ text: string; type: "success" | "error" } | null>(null);
 
 const route = useRoute();
@@ -126,9 +112,7 @@ const goToPageHistory = (p: string) => {
 };
 
 const resetConfirmations = () => {
-  confirmingBlock.value = false;
-  confirmingUnblock.value = false;
-  confirmingDelete.value = false;
+  confirmingAction.value = null;
 };
 
 const handleDropdownFocusOut = (event: FocusEvent) => {
@@ -145,10 +129,6 @@ const handleDropdownFocusOut = (event: FocusEvent) => {
 const closeDropdown = () => {
   (document.activeElement as HTMLElement)?.blur();
   resetConfirmations();
-};
-
-const notifyBlocklistUpdate = () => {
-  browser.runtime.sendMessage("blocklist-updated").catch(() => {});
 };
 
 const handleBlockSite = async () => {
@@ -261,8 +241,8 @@ const handleDeleteSiteData = async () => {
             </li>
             <hr class="my-1 border-base-content/10" />
             <template v-if="isBlocked">
-              <li v-if="!confirmingUnblock">
-                <a class="text-success" @click.stop="confirmingUnblock = true">
+              <li v-if="confirmingAction !== 'unblock'">
+                <a class="text-success" @click.stop="confirmingAction = 'unblock'">
                   <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       stroke-linecap="round"
@@ -281,8 +261,8 @@ const handleDeleteSiteData = async () => {
               </li>
             </template>
             <template v-else>
-              <li v-if="!confirmingBlock">
-                <a class="text-warning" @click.stop="confirmingBlock = true">
+              <li v-if="confirmingAction !== 'block'">
+                <a class="text-warning" @click.stop="confirmingAction = 'block'">
                   <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       stroke-linecap="round"
@@ -301,8 +281,8 @@ const handleDeleteSiteData = async () => {
               </li>
             </template>
             <hr class="my-1 border-base-content/10" />
-            <li v-if="!confirmingDelete">
-              <a class="text-error" @click.stop="confirmingDelete = true">
+            <li v-if="confirmingAction !== 'delete'">
+              <a class="text-error" @click.stop="confirmingAction = 'delete'">
                 <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     stroke-linecap="round"

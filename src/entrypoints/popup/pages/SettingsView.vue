@@ -5,7 +5,12 @@ import { motion } from "motion-v";
 import { exportAllData, importData, type IExportData } from "@/db/exportImport";
 import { getDatabaseStats, type IDbStats } from "@/db/diagnostics";
 import { getRawRetentionDays, setRawRetentionDays } from "@/db/retention";
-import { getBlocklist, addToBlocklist, removeFromBlocklist } from "@/db/blocklist";
+import {
+  getBlocklist,
+  addToBlocklist,
+  removeFromBlocklist,
+  notifyBlocklistUpdate,
+} from "@/db/blocklist";
 
 const contentVariants = {
   hidden: {},
@@ -121,12 +126,6 @@ const formatBytes = (bytes?: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-const notifyBlocklistUpdate = () => {
-  browser.runtime.sendMessage("blocklist-updated").catch(() => {
-    // Background may not be ready yet, ignore
-  });
-};
-
 const loadBlocklist = async () => {
   blocklist.value = await getBlocklist();
 };
@@ -148,12 +147,14 @@ const handleRemoveBlock = async (hostname: string) => {
   notifyBlocklistUpdate();
 };
 
-onMounted(() => {
+onMounted(async () => {
   void loadStats();
   void loadBlocklist();
-  getRawRetentionDays().then((days) => {
-    retentionDays.value = days;
-  });
+  try {
+    retentionDays.value = await getRawRetentionDays();
+  } catch (e) {
+    console.error("Failed to load retention days", e);
+  }
 });
 </script>
 

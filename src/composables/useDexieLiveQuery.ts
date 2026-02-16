@@ -1,5 +1,5 @@
 import { liveQuery } from "dexie";
-import { onMounted, onScopeDispose, type ComputedRef, type Ref, ref, watch } from "vue";
+import { onScopeDispose, type ComputedRef, type Ref, ref, watch } from "vue";
 import { isClient, toArray } from "@vueuse/shared";
 
 type DexieSubscription = { unsubscribe: () => void };
@@ -30,11 +30,27 @@ function createSubscriptionManager<T>(querier: () => Promise<T>, onNext: (result
   return { subscribe, teardown };
 }
 
-export function useDexieLiveQuery<T>(
+export function useLiveQuery<T>(
   querier: () => Promise<T>,
   deps?: Ref | ComputedRef | unknown[],
-): Ref<T | undefined> {
-  const value = ref<T>();
+): Ref<T | undefined>;
+export function useLiveQuery<T>(
+  querier: () => Promise<T>,
+  defaultValue: T,
+  deps?: Ref | ComputedRef | unknown[],
+): Ref<T>;
+export function useLiveQuery<T>(
+  querier: () => Promise<T>,
+  defaultValueOrDeps?: T | Ref | ComputedRef | unknown[],
+  maybeDeps?: Ref | ComputedRef | unknown[],
+): Ref<T | undefined> | Ref<T> {
+  const hasDefault = maybeDeps !== undefined || !isDepsLike(defaultValueOrDeps);
+  const defaultValue = hasDefault ? (defaultValueOrDeps as T) : undefined;
+  const deps = hasDefault
+    ? maybeDeps
+    : (defaultValueOrDeps as Ref | ComputedRef | unknown[] | undefined);
+
+  const value = ref<T | undefined>(defaultValue) as Ref<T | undefined>;
   const hasIndexedDb = isClient && "indexedDB" in globalThis;
 
   if (!hasIndexedDb) {
@@ -48,46 +64,10 @@ export function useDexieLiveQuery<T>(
 
   let stopWatch: (() => void) | null = null;
 
-  onMounted(() => {
-    subscribe();
+  subscribe();
 
-    if (dependencies.length > 0) {
-      stopWatch = watch(dependencies, subscribe);
-    }
-  });
-
-  onScopeDispose(() => {
-    if (stopWatch) {
-      stopWatch();
-      stopWatch = null;
-    }
-
-    teardown();
-  });
-
-  return value;
-}
-
-export function useLiveQuery<T>(
-  querier: () => Promise<T>,
-  defaultValue: T,
-  deps?: Ref | ComputedRef | unknown[],
-): Ref<T> {
-  const value = ref<T>(defaultValue) as Ref<T>;
-  const hasIndexedDb = isClient && "indexedDB" in globalThis;
-  const dependencies = deps === undefined ? [] : toArray(deps);
-  const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
-    value.value = result;
-  });
-
-  let stopWatch: (() => void) | null = null;
-
-  if (hasIndexedDb) {
-    subscribe();
-
-    if (dependencies.length > 0) {
-      stopWatch = watch(dependencies, subscribe);
-    }
+  if (dependencies.length > 0) {
+    stopWatch = watch(dependencies, subscribe);
   }
 
   onScopeDispose(() => {
@@ -101,3 +81,13 @@ export function useLiveQuery<T>(
 
   return value;
 }
+
+function isDepsLike(val: unknown): val is Ref | ComputedRef | unknown[] {
+  if (val === undefined) return true;
+  if (Array.isArray(val)) return true;
+  if (val !== null && typeof val === "object" && "value" in val) return true;
+  return false;
+}
+
+/** @deprecated Use `useLiveQuery` instead. */
+export const useDexieLiveQuery = useLiveQuery;

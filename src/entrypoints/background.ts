@@ -57,13 +57,12 @@ const getActiveTabUrl = async () => {
     return null;
   }
 
-  console.log("Got active tab:", tab);
   return { url: tab.url, title: tab.title };
 };
 
 // oxlint-disable-next-line max-lines-per-function
 export default defineBackground(() => {
-  console.log("Hello background!", { id: browser.runtime.id });
+  console.debug("Background service worker started", { id: browser.runtime.id });
 
   // --- Blocklist cache ---
   let cachedBlocklist: string[] = [];

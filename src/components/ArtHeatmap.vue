@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import prettyMs from "pretty-ms";
 import { motion, stagger } from "motion-v";
-import { getCellStyle as _getCellStyle } from "./artHeatmap";
+import { getCellStyle as getBaseCellStyle } from "./artHeatmap";
 
 const props = defineProps<{
   data: number[][];
@@ -37,7 +37,7 @@ const maxVal = computed(() => {
 });
 
 const getCellStyle = (val: number, dayIdx: number, hour: number) =>
-  _getCellStyle(val, maxVal.value, dayIdx, hour);
+  getBaseCellStyle(val, maxVal.value, dayIdx, hour);
 
 const formatTooltip = (dayIdx: number, hour: number): string => {
   const value = props.data[dayIdx][hour];

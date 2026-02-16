@@ -97,3 +97,7 @@ export function isHostnameBlocked(hostname: string, blocklist: string[]): boolea
   const normalized = normalizeBlockInput(hostname);
   return blocklist.includes(normalized);
 }
+
+export function notifyBlocklistUpdate(): void {
+  browser.runtime.sendMessage("blocklist-updated").catch(() => {});
+}
