@@ -15,20 +15,20 @@ Use the `browser` namespace from WXT instead of `chrome`. WXT normalizes `chrome
 export default defineBackground(() => {
   async function pingActiveTab() {
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab?.id) {
-        const response = await chrome.tabs.sendMessage(tab.id, { type: 'PING' })
-        return response
+        const response = await chrome.tabs.sendMessage(tab.id, { type: "PING" });
+        return response;
       }
     } catch (error) {
-      console.error('Failed to ping tab:', error)
+      console.error("Failed to ping tab:", error);
     }
   }
 
   chrome.action.onClicked.addListener(() => {
-    pingActiveTab()
-  })
-})
+    pingActiveTab();
+  });
+});
 ```
 
 **Correct (browser namespace):**
@@ -37,23 +37,24 @@ export default defineBackground(() => {
 export default defineBackground(() => {
   async function pingActiveTab() {
     try {
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (tab?.id) {
-        const response = await browser.tabs.sendMessage(tab.id, { type: 'PING' })
-        return response
+        const response = await browser.tabs.sendMessage(tab.id, { type: "PING" });
+        return response;
       }
     } catch (error) {
-      console.error('Failed to ping tab:', error)
+      console.error("Failed to ping tab:", error);
     }
   }
 
   browser.action.onClicked.addListener(() => {
-    pingActiveTab()
-  })
-})
+    pingActiveTab();
+  });
+});
 ```
 
 **Important (WXT v0.20+):** WXT no longer uses `webextension-polyfill`. The `browser` global is a direct re-export of the native `browser` or `chrome` global. This means:
+
 - Promise-based APIs work natively (Chrome 116+)
 - For APIs that may not exist on all browsers, use optional chaining: `browser.runtime.onSuspend?.addListener(() => {})`
 - `browser` is auto-imported by WXT -- no explicit import needed

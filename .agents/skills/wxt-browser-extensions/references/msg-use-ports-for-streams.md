@@ -14,15 +14,15 @@ For long-lived connections or streaming data, use `runtime.connect` ports instea
 ```typescript
 // content.ts - polls for updates
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   main() {
     setInterval(async () => {
       // Creates new connection every 100ms
-      const update = await browser.runtime.sendMessage({ type: 'GET_UPDATE' })
-      applyUpdate(update)
-    }, 100)
-  }
-})
+      const update = await browser.runtime.sendMessage({ type: "GET_UPDATE" });
+      applyUpdate(update);
+    }, 100);
+  },
+});
 ```
 
 **Correct (port for streaming updates):**
@@ -30,50 +30,51 @@ export default defineContentScript({
 ```typescript
 // content.ts - maintains persistent connection
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   main(ctx) {
-    const port = browser.runtime.connect({ name: 'updates' })
+    const port = browser.runtime.connect({ name: "updates" });
 
     port.onMessage.addListener((update) => {
-      applyUpdate(update)
-    })
+      applyUpdate(update);
+    });
 
     port.onDisconnect.addListener(() => {
       if (!ctx.isInvalidated) {
         // Reconnect if not due to extension update
-        setTimeout(() => reconnect(), 1000)
+        setTimeout(() => reconnect(), 1000);
       }
-    })
+    });
 
     // Request to start streaming
-    port.postMessage({ type: 'START_UPDATES' })
-  }
-})
+    port.postMessage({ type: "START_UPDATES" });
+  },
+});
 
 // background.ts
 export default defineBackground(() => {
   browser.runtime.onConnect.addListener((port) => {
-    if (port.name === 'updates') {
-      let intervalId: ReturnType<typeof setInterval>
+    if (port.name === "updates") {
+      let intervalId: ReturnType<typeof setInterval>;
 
       port.onMessage.addListener((message) => {
-        if (message.type === 'START_UPDATES') {
+        if (message.type === "START_UPDATES") {
           intervalId = setInterval(() => {
-            const update = generateUpdate()
-            port.postMessage(update)
-          }, 100)
+            const update = generateUpdate();
+            port.postMessage(update);
+          }, 100);
         }
-      })
+      });
 
       port.onDisconnect.addListener(() => {
-        clearInterval(intervalId)
-      })
+        clearInterval(intervalId);
+      });
     }
-  })
-})
+  });
+});
 ```
 
 **When to use ports:**
+
 - Streaming data (live updates, progress)
 - Bidirectional communication
 - Keep-alive connections for long operations

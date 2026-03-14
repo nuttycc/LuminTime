@@ -13,10 +13,10 @@ Use bundle analysis to identify unexpectedly large dependencies. Many npm packag
 
 ```typescript
 // Unknowingly importing 500KB+ from lodash barrel export
-import { debounce } from 'lodash'
+import { debounce } from "lodash";
 
 // Using a heavy charting library in a popup that only shows a number
-import Chart from 'chart.js/auto'
+import Chart from "chart.js/auto";
 ```
 
 **Correct (analyze with wxt build --analyze):**
@@ -43,16 +43,17 @@ wxt build --analyze-open
 
 ```typescript
 // Instead of lodash (500KB+)
-import debounce from 'lodash.debounce' // 2KB
+import debounce from "lodash.debounce"; // 2KB
 
 // Instead of moment (300KB+)
-import { formatDistance } from 'date-fns' // 15KB tree-shaken
+import { formatDistance } from "date-fns"; // 15KB tree-shaken
 
 // Instead of axios (40KB)
 // Use native fetch with a tiny wrapper
 ```
 
 **Bundle size targets:**
+
 - Background: < 100KB
 - Content script: < 50KB per script
 - Popup/Options: < 200KB

@@ -13,45 +13,45 @@ When injecting UI into web pages from content scripts, use Shadow DOM to isolate
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main() {
-    const container = document.createElement('div')
+    const container = document.createElement("div");
     container.innerHTML = `
       <style>
         .button { background: blue; } /* May conflict with page styles */
       </style>
       <button class="button">Click me</button>
-    `
-    document.body.appendChild(container)
+    `;
+    document.body.appendChild(container);
     // Page CSS for .button overrides extension styles
-  }
-})
+  },
+});
 ```
 
 **Correct (Shadow DOM isolation with WXT helper):**
 
 ```typescript
-import './panel.css'
+import "./panel.css";
 
 export default defineContentScript({
-  matches: ['*://*/*'],
-  cssInjectionMode: 'ui',
+  matches: ["*://*/*"],
+  cssInjectionMode: "ui",
   main(ctx) {
     const ui = createShadowRootUi(ctx, {
-      name: 'my-extension-panel',
-      position: 'inline',
-      anchor: 'body',
+      name: "my-extension-panel",
+      position: "inline",
+      anchor: "body",
       onMount: (container) => {
-        const button = document.createElement('button')
-        button.className = 'button'
-        button.textContent = 'Click me'
-        container.appendChild(button)
-      }
-    })
+        const button = document.createElement("button");
+        button.className = "button";
+        button.textContent = "Click me";
+        container.appendChild(button);
+      },
+    });
 
-    ui.mount()
-  }
-})
+    ui.mount();
+  },
+});
 ```
 
 **With framework (React example):**
@@ -85,10 +85,10 @@ export default defineContentScript({
 
 ```typescript
 createShadowRootUi(ctx, {
-  name: 'my-panel',
-  position: 'overlay',
-  isolateEvents: ['click', 'keydown']
-})
+  name: "my-panel",
+  position: "overlay",
+  isolateEvents: ["click", "keydown"],
+});
 ```
 
 Reference: [WXT Content Script UI](https://wxt.dev/guide/essentials/content-script-ui)

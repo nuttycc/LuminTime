@@ -14,13 +14,13 @@ Service workers terminate after approximately 30 seconds of inactivity. For oper
 ```typescript
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'PROCESS_LARGE_FILE') {
+    if (message.type === "PROCESS_LARGE_FILE") {
       // Service worker may terminate during this 2-minute operation
-      processLargeFile(message.data).then(sendResponse)
-      return true
+      processLargeFile(message.data).then(sendResponse);
+      return true;
     }
-  })
-})
+  });
+});
 ```
 
 **Correct (keep-alive with port connection):**
@@ -29,37 +29,37 @@ export default defineBackground(() => {
 // background.ts - receives keep-alive port
 export default defineBackground(() => {
   browser.runtime.onConnect.addListener((port) => {
-    if (port.name === 'keepAlive') {
+    if (port.name === "keepAlive") {
       // Port connection keeps service worker alive while connected
       port.onDisconnect.addListener(() => {
-        console.log('Keep-alive port disconnected')
-      })
+        console.log("Keep-alive port disconnected");
+      });
     }
-  })
+  });
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'PROCESS_LARGE_FILE') {
-      processLargeFile(message.data).then(sendResponse)
-      return true
+    if (message.type === "PROCESS_LARGE_FILE") {
+      processLargeFile(message.data).then(sendResponse);
+      return true;
     }
-  })
-})
+  });
+});
 ```
 
 ```typescript
 // popup.ts or content.ts - establishes keep-alive port
 async function processWithKeepAlive(data: FileData) {
   // Open port to keep service worker alive during long operation
-  const port = browser.runtime.connect({ name: 'keepAlive' })
+  const port = browser.runtime.connect({ name: "keepAlive" });
 
   try {
     const result = await browser.runtime.sendMessage({
-      type: 'PROCESS_LARGE_FILE',
-      data
-    })
-    return result
+      type: "PROCESS_LARGE_FILE",
+      data,
+    });
+    return result;
   } finally {
-    port.disconnect() // Release keep-alive when done
+    port.disconnect(); // Release keep-alive when done
   }
 }
 ```
@@ -67,27 +67,28 @@ async function processWithKeepAlive(data: FileData) {
 **Alternative (alarm-based keep-alive):**
 
 ```typescript
-const KEEP_ALIVE_ALARM = 'keepAlive'
+const KEEP_ALIVE_ALARM = "keepAlive";
 
 export default defineBackground(() => {
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === KEEP_ALIVE_ALARM) {
       // Alarm callback resets 30s termination timer
     }
-  })
+  });
 
   async function startLongOperation() {
-    await browser.alarms.create(KEEP_ALIVE_ALARM, { periodInMinutes: 0.4 })
+    await browser.alarms.create(KEEP_ALIVE_ALARM, { periodInMinutes: 0.4 });
     try {
-      await processLargeFile()
+      await processLargeFile();
     } finally {
-      await browser.alarms.clear(KEEP_ALIVE_ALARM)
+      await browser.alarms.clear(KEEP_ALIVE_ALARM);
     }
   }
-})
+});
 ```
 
 **When NOT to use this pattern:**
+
 - Operations that complete within 30 seconds
 - Consider using offscreen documents for heavy DOM-dependent work instead
 

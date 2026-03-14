@@ -15,8 +15,8 @@ tags: msg, error-handling, sendMessage, receiver
 // popup.ts
 async function sendToContentScript() {
   // Throws if content script not injected
-  const response = await browser.tabs.sendMessage(tabId, { type: 'GET_DATA' })
-  displayData(response)
+  const response = await browser.tabs.sendMessage(tabId, { type: "GET_DATA" });
+  displayData(response);
 }
 ```
 
@@ -26,29 +26,30 @@ async function sendToContentScript() {
 // popup.ts
 async function sendToContentScript(tabId: number) {
   try {
-    const response = await browser.tabs.sendMessage(tabId, { type: 'GET_DATA' })
-    displayData(response)
+    const response = await browser.tabs.sendMessage(tabId, { type: "GET_DATA" });
+    displayData(response);
   } catch (error) {
     if (isNoReceiverError(error)) {
       // Content script not injected - inject it first
       await browser.scripting.executeScript({
         target: { tabId },
-        files: ['/content-scripts/content.js']
-      })
+        files: ["/content-scripts/content.js"],
+      });
       // Retry after injection
-      const response = await browser.tabs.sendMessage(tabId, { type: 'GET_DATA' })
-      displayData(response)
+      const response = await browser.tabs.sendMessage(tabId, { type: "GET_DATA" });
+      displayData(response);
     } else {
-      throw error
+      throw error;
     }
   }
 }
 
 function isNoReceiverError(error: unknown): boolean {
-  return error instanceof Error && (
-    error.message.includes('Receiving end does not exist') ||
-    error.message.includes('Could not establish connection')
-  )
+  return (
+    error instanceof Error &&
+    (error.message.includes("Receiving end does not exist") ||
+      error.message.includes("Could not establish connection"))
+  );
 }
 ```
 
@@ -56,18 +57,18 @@ function isNoReceiverError(error: unknown): boolean {
 
 ```typescript
 async function sendIfContentScriptReady(tabId: number, message: Message) {
-  const tab = await browser.tabs.get(tabId)
+  const tab = await browser.tabs.get(tabId);
 
   // Check if URL matches content script patterns
-  if (!tab.url?.startsWith('http')) {
-    console.log('Content script cannot run on this page')
-    return null
+  if (!tab.url?.startsWith("http")) {
+    console.log("Content script cannot run on this page");
+    return null;
   }
 
   try {
-    return await browser.tabs.sendMessage(tabId, message)
+    return await browser.tabs.sendMessage(tabId, message);
   } catch {
-    return null
+    return null;
   }
 }
 ```

@@ -13,20 +13,20 @@ Multiple sequential storage operations trigger multiple disk writes. Group relat
 
 ```typescript
 async function saveFormData(form: FormData) {
-  await storage.setItem('local:name', form.name)
-  await storage.setItem('local:email', form.email)
-  await storage.setItem('local:phone', form.phone)
-  await storage.setItem('local:address', form.address)
+  await storage.setItem("local:name", form.name);
+  await storage.setItem("local:email", form.email);
+  await storage.setItem("local:phone", form.phone);
+  await storage.setItem("local:address", form.address);
   // 4 separate disk writes
 }
 
 async function loadFormData(): Promise<FormData> {
-  const name = await storage.getItem('local:name')
-  const email = await storage.getItem('local:email')
-  const phone = await storage.getItem('local:phone')
-  const address = await storage.getItem('local:address')
+  const name = await storage.getItem("local:name");
+  const email = await storage.getItem("local:email");
+  const phone = await storage.getItem("local:phone");
+  const address = await storage.getItem("local:address");
   // 4 separate disk reads
-  return { name, email, phone, address }
+  return { name, email, phone, address };
 }
 ```
 
@@ -34,28 +34,28 @@ async function loadFormData(): Promise<FormData> {
 
 ```typescript
 interface FormData {
-  name: string
-  email: string
-  phone: string
-  address: string
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
 }
 
-const formData = storage.defineItem<FormData>('local:formData', {
-  fallback: { name: '', email: '', phone: '', address: '' }
-})
+const formData = storage.defineItem<FormData>("local:formData", {
+  fallback: { name: "", email: "", phone: "", address: "" },
+});
 
 async function saveFormData(form: FormData) {
-  await formData.setValue(form) // 1 disk write
+  await formData.setValue(form); // 1 disk write
 }
 
 async function loadFormData(): Promise<FormData> {
-  return await formData.getValue() // 1 disk read, never null
+  return await formData.getValue(); // 1 disk read, never null
 }
 
 // Partial updates
 async function updateEmail(email: string) {
-  const current = await formData.getValue()
-  await formData.setValue({ ...current, email })
+  const current = await formData.getValue();
+  await formData.setValue({ ...current, email });
 }
 ```
 
@@ -63,12 +63,12 @@ async function updateEmail(email: string) {
 
 ```typescript
 // Separate items when data has different lifecycles or sync needs
-const userPrefs = storage.defineItem<UserPrefs>('sync:preferences', {
-  fallback: { theme: 'light', language: 'en' }
-})
-const pageCache = storage.defineItem<PageCache>('local:cache', {
-  fallback: {}
-})
+const userPrefs = storage.defineItem<UserPrefs>("sync:preferences", {
+  fallback: { theme: "light", language: "en" },
+});
+const pageCache = storage.defineItem<PageCache>("local:cache", {
+  fallback: {},
+});
 // Preferences sync across devices, cache is local-only
 ```
 

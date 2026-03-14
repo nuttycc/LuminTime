@@ -13,15 +13,15 @@ WXT supports three storage areas with different characteristics. Choose based on
 
 ```typescript
 // Using sync for large data - exceeds quota
-const pageCache = storage.defineItem<Record<string, string>>('sync:pageCache', {
-  fallback: {}
-})
+const pageCache = storage.defineItem<Record<string, string>>("sync:pageCache", {
+  fallback: {},
+});
 // sync has 8KB per-item limit, 100KB total
 
 // Using local for session-only data - wastes disk
-const temporaryState = storage.defineItem<TemporaryState>('local:temp', {
-  fallback: {}
-})
+const temporaryState = storage.defineItem<TemporaryState>("local:temp", {
+  fallback: {},
+});
 // Persists across browser restarts unnecessarily
 ```
 
@@ -30,21 +30,21 @@ const temporaryState = storage.defineItem<TemporaryState>('local:temp', {
 ```typescript
 // Session: ephemeral data, cleared on browser restart
 // Good for: active tab state, temporary flags, in-progress work
-const activeTabData = storage.defineItem<TabData>('session:activeTab', {
-  fallback: null
-})
+const activeTabData = storage.defineItem<TabData>("session:activeTab", {
+  fallback: null,
+});
 
 // Local: persistent data, not synced
 // Good for: caches, large data, device-specific settings
-const pageCache = storage.defineItem<Record<string, CachedPage>>('local:cache', {
-  fallback: {}
-})
+const pageCache = storage.defineItem<Record<string, CachedPage>>("local:cache", {
+  fallback: {},
+});
 
 // Sync: persistent data, synced across devices
 // Good for: user preferences, small settings (8KB limit per item)
-const userPreferences = storage.defineItem<UserPreferences>('sync:preferences', {
-  fallback: { theme: 'light', language: 'en' }
-})
+const userPreferences = storage.defineItem<UserPreferences>("sync:preferences", {
+  fallback: { theme: "light", language: "en" },
+});
 ```
 
 **Storage area reference:**

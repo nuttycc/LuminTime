@@ -15,15 +15,15 @@ WXT imports entrypoint files in a Node.js build environment where browser APIs d
 // entrypoints/content.ts
 browser.runtime.onMessage.addListener((message) => {
   // Error: browser is not defined during build
-  handleMessage(message)
-})
+  handleMessage(message);
+});
 
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   main() {
-    console.log('Content script loaded')
-  }
-})
+    console.log("Content script loaded");
+  },
+});
 ```
 
 **Correct (API usage inside main):**
@@ -31,14 +31,14 @@ export default defineContentScript({
 ```typescript
 // entrypoints/content.ts
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   main() {
     browser.runtime.onMessage.addListener((message) => {
-      handleMessage(message)
-    })
-    console.log('Content script loaded')
-  }
-})
+      handleMessage(message);
+    });
+    console.log("Content script loaded");
+  },
+});
 ```
 
 **Note:** Pure utility functions without browser API usage can remain at module level for sharing between files.

@@ -14,16 +14,16 @@ MV3 service workers cannot access DOM APIs. Use offscreen documents for operatio
 ```typescript
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener(async (message) => {
-    if (message.type === 'COPY_TO_CLIPBOARD') {
+    if (message.type === "COPY_TO_CLIPBOARD") {
       // Error: document is not defined in service worker
-      const textarea = document.createElement('textarea')
-      textarea.value = message.text
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
+      const textarea = document.createElement("textarea");
+      textarea.value = message.text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
     }
-  })
-})
+  });
+});
 ```
 
 **Correct (offscreen document with HTML entrypoint):**
@@ -32,32 +32,32 @@ export default defineBackground(() => {
 // entrypoints/background.ts
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'COPY_TO_CLIPBOARD') {
-      copyToClipboard(message.text).then(sendResponse)
-      return true
+    if (message.type === "COPY_TO_CLIPBOARD") {
+      copyToClipboard(message.text).then(sendResponse);
+      return true;
     }
-  })
-})
+  });
+});
 
 async function copyToClipboard(text: string) {
-  await setupOffscreenDocument()
+  await setupOffscreenDocument();
   await browser.runtime.sendMessage({
-    type: 'OFFSCREEN_COPY',
-    text
-  })
+    type: "OFFSCREEN_COPY",
+    text,
+  });
 }
 
 async function setupOffscreenDocument() {
   const existingContexts = await browser.runtime.getContexts({
-    contextTypes: ['OFFSCREEN_DOCUMENT']
-  })
-  if (existingContexts.length > 0) return
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
+  });
+  if (existingContexts.length > 0) return;
 
   await browser.offscreen.createDocument({
-    url: '/offscreen.html',
-    reasons: ['CLIPBOARD'],
-    justification: 'Copy text to clipboard'
-  })
+    url: "/offscreen.html",
+    reasons: ["CLIPBOARD"],
+    justification: "Copy text to clipboard",
+  });
 }
 ```
 
@@ -74,13 +74,14 @@ async function setupOffscreenDocument() {
 ```typescript
 // entrypoints/offscreen/main.ts
 browser.runtime.onMessage.addListener((message) => {
-  if (message.type === 'OFFSCREEN_COPY') {
-    navigator.clipboard.writeText(message.text)
+  if (message.type === "OFFSCREEN_COPY") {
+    navigator.clipboard.writeText(message.text);
   }
-})
+});
 ```
 
 **When NOT to use this pattern:**
+
 - Operations that don't require DOM APIs
 - Content scripts that already have DOM access
 

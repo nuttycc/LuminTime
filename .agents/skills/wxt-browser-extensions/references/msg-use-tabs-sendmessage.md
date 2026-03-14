@@ -16,9 +16,9 @@ Use `browser.tabs.sendMessage` to send messages from background to specific cont
 export default defineBackground(() => {
   browser.action.onClicked.addListener(async (tab) => {
     // This goes to popup/options, NOT content scripts
-    await browser.runtime.sendMessage({ type: 'TOGGLE_FEATURE' })
-  })
-})
+    await browser.runtime.sendMessage({ type: "TOGGLE_FEATURE" });
+  });
+});
 ```
 
 **Correct (tabs.sendMessage targets content scripts):**
@@ -27,28 +27,28 @@ export default defineBackground(() => {
 // background.ts
 export default defineBackground(() => {
   browser.action.onClicked.addListener(async (tab) => {
-    if (!tab.id) return
+    if (!tab.id) return;
 
     try {
-      await browser.tabs.sendMessage(tab.id, { type: 'TOGGLE_FEATURE' })
+      await browser.tabs.sendMessage(tab.id, { type: "TOGGLE_FEATURE" });
     } catch (error) {
       // Content script not injected on this page
-      console.log('Content script not available on this tab')
+      console.log("Content script not available on this tab");
     }
-  })
-})
+  });
+});
 
 // content.ts
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main() {
     browser.runtime.onMessage.addListener((message) => {
-      if (message.type === 'TOGGLE_FEATURE') {
-        toggleFeature()
+      if (message.type === "TOGGLE_FEATURE") {
+        toggleFeature();
       }
-    })
-  }
-})
+    });
+  },
+});
 ```
 
 **Note:** `tabs.sendMessage` throws if no content script is listening. Always wrap in try-catch or check if the tab URL matches your content script patterns first.

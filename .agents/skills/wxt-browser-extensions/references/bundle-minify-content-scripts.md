@@ -37,35 +37,36 @@ export default defineContentScript({
 ```typescript
 // content.ts - lightweight detection and injection only
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main(ctx) {
     // Only inject UI when needed (~5KB)
     browser.runtime.onMessage.addListener((message) => {
-      if (message.type === 'SHOW_UI') {
-        injectMinimalUI(ctx)
+      if (message.type === "SHOW_UI") {
+        injectMinimalUI(ctx);
       }
-    })
-  }
-})
+    });
+  },
+});
 
 function injectMinimalUI(ctx: ContentScriptContext) {
   // Use WXT's createShadowRootUi for isolated styling
   const ui = createShadowRootUi(ctx, {
-    name: 'my-extension-ui',
-    position: 'inline',
+    name: "my-extension-ui",
+    position: "inline",
     onMount: (container) => {
       // Minimal vanilla JS UI, or lazy-load framework
-      container.innerHTML = `<button id="open-popup">Open</button>`
-      container.querySelector('#open-popup')?.addEventListener('click', () => {
-        browser.runtime.sendMessage({ type: 'OPEN_POPUP' })
-      })
-    }
-  })
-  ui.mount()
+      container.innerHTML = `<button id="open-popup">Open</button>`;
+      container.querySelector("#open-popup")?.addEventListener("click", () => {
+        browser.runtime.sendMessage({ type: "OPEN_POPUP" });
+      });
+    },
+  });
+  ui.mount();
 }
 ```
 
 **Content script size targets:**
+
 - Detection/injection only: < 10KB
 - With minimal UI: < 30KB
 - Maximum recommended: < 50KB

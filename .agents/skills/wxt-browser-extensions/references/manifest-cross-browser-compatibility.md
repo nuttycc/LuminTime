@@ -17,16 +17,16 @@ export default defineConfig({
   manifest: {
     // MV3-only features that Firefox doesn't support
     side_panel: {
-      default_path: 'sidepanel.html'
-    }
-  }
-})
+      default_path: "sidepanel.html",
+    },
+  },
+});
 
 // background.ts
 export default defineBackground(() => {
   // Chrome-only API
-  chrome.sidePanel.open({ windowId: 1 })
-})
+  chrome.sidePanel.open({ windowId: 1 });
+});
 ```
 
 **Correct (cross-browser configuration):**
@@ -36,32 +36,32 @@ export default defineBackground(() => {
 export default defineConfig({
   manifest: ({ browser, manifestVersion }) => ({
     // Shared configuration
-    permissions: ['storage'],
+    permissions: ["storage"],
 
     // Browser-specific sidepanel (Chrome/Edge only)
-    ...(browser === 'chrome' && {
-      side_panel: { default_path: 'sidepanel.html' }
+    ...(browser === "chrome" && {
+      side_panel: { default_path: "sidepanel.html" },
     }),
 
     // Firefox uses sidebar_action instead
-    ...(browser === 'firefox' && {
+    ...(browser === "firefox" && {
       sidebar_action: {
-        default_panel: 'sidebar.html',
-        default_title: 'My Extension'
-      }
-    })
-  })
-})
+        default_panel: "sidebar.html",
+        default_title: "My Extension",
+      },
+    }),
+  }),
+});
 
 // background.ts
 export default defineBackground(() => {
   // Check API availability before use
-  if ('sidePanel' in browser) {
-    browser.sidePanel.open({ windowId: 1 })
-  } else if ('sidebarAction' in browser) {
-    browser.sidebarAction.open()
+  if ("sidePanel" in browser) {
+    browser.sidePanel.open({ windowId: 1 });
+  } else if ("sidebarAction" in browser) {
+    browser.sidebarAction.open();
   }
-})
+});
 ```
 
 **Browser targeting in entrypoints:**
@@ -69,21 +69,21 @@ export default defineBackground(() => {
 ```typescript
 // entrypoints/chrome-only.content.ts
 export default defineContentScript({
-  matches: ['*://*/*'],
-  include: ['chrome'], // Only included in Chrome builds
+  matches: ["*://*/*"],
+  include: ["chrome"], // Only included in Chrome builds
   main() {
     // Chrome-specific functionality
-  }
-})
+  },
+});
 
 // entrypoints/firefox-only.content.ts
 export default defineContentScript({
-  matches: ['*://*/*'],
-  include: ['firefox'], // Only included in Firefox builds
+  matches: ["*://*/*"],
+  include: ["firefox"], // Only included in Firefox builds
   main() {
     // Firefox-specific functionality
-  }
-})
+  },
+});
 ```
 
 Reference: [WXT Browser Targets](https://wxt.dev/guide/essentials/config/browser)

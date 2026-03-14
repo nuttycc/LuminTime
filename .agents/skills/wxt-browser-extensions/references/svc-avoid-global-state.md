@@ -12,33 +12,30 @@ Service workers can terminate after 30 seconds of inactivity. Any in-memory stat
 **Incorrect (state lost on termination):**
 
 ```typescript
-let tabCounts: Record<number, number> = {}
+let tabCounts: Record<number, number> = {};
 
 export default defineBackground(() => {
   browser.tabs.onUpdated.addListener((tabId) => {
-    tabCounts[tabId] = (tabCounts[tabId] || 0) + 1
+    tabCounts[tabId] = (tabCounts[tabId] || 0) + 1;
     // State lost when service worker terminates
-  })
-})
+  });
+});
 ```
 
 **Correct (state persisted to storage):**
 
 ```typescript
-const tabCounts = storage.defineItem<Record<number, number>>(
-  'session:tabCounts',
-  { fallback: {} }
-)
+const tabCounts = storage.defineItem<Record<number, number>>("session:tabCounts", { fallback: {} });
 
 export default defineBackground(() => {
   browser.tabs.onUpdated.addListener(async (tabId) => {
-    const counts = await tabCounts.getValue()
+    const counts = await tabCounts.getValue();
     await tabCounts.setValue({
       ...counts,
-      [tabId]: (counts[tabId] || 0) + 1
-    })
-  })
-})
+      [tabId]: (counts[tabId] || 0) + 1,
+    });
+  });
+});
 ```
 
 **Note:** Use `session:` storage area for ephemeral state that should clear on browser restart, `local:` for persistent state.

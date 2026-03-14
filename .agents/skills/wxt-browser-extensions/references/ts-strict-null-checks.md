@@ -58,6 +58,7 @@ export default defineBackground(() => {
 ```
 
 **Common extension API null cases to handle:**
+
 - `browser.tabs.query()` returns empty array
 - `tab.id` is undefined for some special tabs
 - `tab.url` is undefined without tabs permission

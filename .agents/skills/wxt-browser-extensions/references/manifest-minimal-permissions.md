@@ -16,20 +16,20 @@ Request only the permissions your extension actually needs. Excessive permission
 export default defineConfig({
   manifest: {
     permissions: [
-      'tabs',
-      'storage',
-      'activeTab',
-      'scripting',
-      'webRequest',
-      'webNavigation',
-      'cookies',
-      'history',
-      'bookmarks', // Never used
-      'downloads', // Never used
-      '<all_urls>' // Too broad
-    ]
-  }
-})
+      "tabs",
+      "storage",
+      "activeTab",
+      "scripting",
+      "webRequest",
+      "webNavigation",
+      "cookies",
+      "history",
+      "bookmarks", // Never used
+      "downloads", // Never used
+      "<all_urls>", // Too broad
+    ],
+  },
+});
 ```
 
 **Correct (minimal permissions):**
@@ -39,21 +39,21 @@ export default defineConfig({
 export default defineConfig({
   manifest: {
     permissions: [
-      'storage', // For user preferences
-      'activeTab' // For current tab access on user action
+      "storage", // For user preferences
+      "activeTab", // For current tab access on user action
     ],
     optional_permissions: [
-      'tabs', // Request when user needs tab listing feature
-      'bookmarks' // Request when user enables bookmark feature
+      "tabs", // Request when user needs tab listing feature
+      "bookmarks", // Request when user enables bookmark feature
     ],
     host_permissions: [
-      'https://api.example.com/*' // Only your API domain
+      "https://api.example.com/*", // Only your API domain
     ],
     optional_host_permissions: [
-      'https://*/*' // Request broad access only when needed
-    ]
-  }
-})
+      "https://*/*", // Request broad access only when needed
+    ],
+  },
+});
 ```
 
 **Permission alternatives:**

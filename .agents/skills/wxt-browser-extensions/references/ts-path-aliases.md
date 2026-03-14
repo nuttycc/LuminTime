@@ -13,10 +13,10 @@ Configure path aliases to avoid deep relative imports. This improves readability
 
 ```typescript
 // entrypoints/popup/components/Settings.tsx
-import { storage } from '../../../utils/storage'
-import { formatDate } from '../../../utils/dates'
-import type { Settings } from '../../../types/settings'
-import { useSettings } from '../../../hooks/useSettings'
+import { storage } from "../../../utils/storage";
+import { formatDate } from "../../../utils/dates";
+import type { Settings } from "../../../types/settings";
+import { useSettings } from "../../../hooks/useSettings";
 // Hard to read, breaks when files move
 ```
 
@@ -59,7 +59,7 @@ import { useSettings } from '@/hooks/useSettings'
 
 ```typescript
 // WXT provides '@' alias by default pointing to project root
-import { settings } from '@/utils/storage'
+import { settings } from "@/utils/storage";
 ```
 
 Reference: [WXT Configuration - Alias](https://wxt.dev/guide/essentials/config/build#alias)

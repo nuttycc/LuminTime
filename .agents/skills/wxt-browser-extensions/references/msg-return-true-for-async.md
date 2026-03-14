@@ -16,12 +16,12 @@ When handling messages asynchronously with the raw `browser.runtime.onMessage` A
 ```typescript
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener(async (message) => {
-    if (message.type === 'FETCH_DATA') {
-      const data = await fetchData(message.url)
-      return data // Never reaches sender - channel already closed
+    if (message.type === "FETCH_DATA") {
+      const data = await fetchData(message.url);
+      return data; // Never reaches sender - channel already closed
     }
-  })
-})
+  });
+});
 ```
 
 **Correct (keep channel open with return true):**
@@ -29,14 +29,14 @@ export default defineBackground(() => {
 ```typescript
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'FETCH_DATA') {
+    if (message.type === "FETCH_DATA") {
       fetchData(message.url).then((data) => {
-        sendResponse(data)
-      })
-      return true // Keep message channel open
+        sendResponse(data);
+      });
+      return true; // Keep message channel open
     }
-  })
-})
+  });
+});
 ```
 
 **Alternative (wrap in promise handler):**
@@ -44,18 +44,18 @@ export default defineBackground(() => {
 ```typescript
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'FETCH_DATA') {
+    if (message.type === "FETCH_DATA") {
       handleFetchMessage(message)
         .then(sendResponse)
-        .catch((error) => sendResponse({ error: error.message }))
-      return true
+        .catch((error) => sendResponse({ error: error.message }));
+      return true;
     }
-  })
-})
+  });
+});
 
 async function handleFetchMessage(message: FetchMessage): Promise<FetchResponse> {
-  const data = await fetchData(message.url)
-  return { success: true, data }
+  const data = await fetchData(message.url);
+  return { success: true, data };
 }
 ```
 

@@ -13,15 +13,15 @@ By default, content scripts only run in the top frame. Set `allFrames: true` whe
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   // Default: allFrames: false
   main() {
     // Only finds elements in top frame
-    const videos = document.querySelectorAll('video')
-    videos.forEach(addControls)
+    const videos = document.querySelectorAll("video");
+    videos.forEach(addControls);
     // Misses videos embedded in iframes
-  }
-})
+  },
+});
 ```
 
 **Correct (explicit frame handling):**
@@ -29,28 +29,28 @@ export default defineContentScript({
 ```typescript
 // When you need to process iframes
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   allFrames: true,
   main() {
-    const videos = document.querySelectorAll('video')
-    videos.forEach(addControls)
+    const videos = document.querySelectorAll("video");
+    videos.forEach(addControls);
     // Now runs in every frame
-  }
-})
+  },
+});
 
 // When you only want top frame (explicit for clarity)
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   allFrames: false,
   main() {
     // Communicate with iframes via postMessage if needed
-    window.addEventListener('message', (event) => {
-      if (event.data.type === 'VIDEO_FOUND') {
-        handleVideoInIframe(event.source, event.data)
+    window.addEventListener("message", (event) => {
+      if (event.data.type === "VIDEO_FOUND") {
+        handleVideoInIframe(event.source, event.data);
       }
-    })
-  }
-})
+    });
+  },
+});
 ```
 
 **Performance note:** With `allFrames: true`, your content script executes once per frame. For pages with many iframes (ads, embeds), this multiplies resource usage.

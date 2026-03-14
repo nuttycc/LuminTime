@@ -15,40 +15,40 @@ The `runtime.onInstalled` event fires on first install, extension update, and br
 export default defineBackground(() => {
   // Assumes storage is already initialized
   browser.action.onClicked.addListener(async () => {
-    const settings = await storage.getItem('local:settings')
+    const settings = await storage.getItem("local:settings");
     // Crashes on first install when settings is null
-    applyTheme(settings.theme)
-  })
-})
+    applyTheme(settings.theme);
+  });
+});
 ```
 
 **Correct (proper lifecycle handling):**
 
 ```typescript
-const settings = storage.defineItem('local:settings', {
-  fallback: { theme: 'light', notifications: true }
-})
+const settings = storage.defineItem("local:settings", {
+  fallback: { theme: "light", notifications: true },
+});
 
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(async (details) => {
-    if (details.reason === 'install') {
+    if (details.reason === "install") {
       // First install - initialize defaults
-      await settings.setValue({ theme: 'light', notifications: true })
-      await browser.tabs.create({ url: 'https://example.com/welcome' })
-    } else if (details.reason === 'update') {
+      await settings.setValue({ theme: "light", notifications: true });
+      await browser.tabs.create({ url: "https://example.com/welcome" });
+    } else if (details.reason === "update") {
       // Extension updated - run migrations
-      const currentSettings = await settings.getValue()
-      if (!('notifications' in currentSettings)) {
-        await settings.setValue({ ...currentSettings, notifications: true })
+      const currentSettings = await settings.getValue();
+      if (!("notifications" in currentSettings)) {
+        await settings.setValue({ ...currentSettings, notifications: true });
       }
     }
-  })
+  });
 
   browser.action.onClicked.addListener(async () => {
-    const currentSettings = await settings.getValue()
-    applyTheme(currentSettings.theme)
-  })
-})
+    const currentSettings = await settings.getValue();
+    applyTheme(currentSettings.theme);
+  });
+});
 ```
 
 **Note:** Always use `storage.defineItem` with `fallback` to handle cases where storage hasn't been initialized.

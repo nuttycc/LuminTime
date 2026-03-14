@@ -13,69 +13,70 @@ Reading layout properties then writing causes forced synchronous reflows. Batch 
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main() {
-    const elements = document.querySelectorAll('.product-card')
+    const elements = document.querySelectorAll(".product-card");
 
     elements.forEach((el) => {
       // Read triggers layout
-      const height = el.offsetHeight
+      const height = el.offsetHeight;
 
       // Write invalidates layout
-      el.style.minHeight = `${height + 20}px`
+      el.style.minHeight = `${height + 20}px`;
 
       // Next iteration: read triggers layout again
       // N elements = N forced reflows
-    })
-  }
-})
+    });
+  },
+});
 ```
 
 **Correct (batched reads then writes):**
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main() {
-    const elements = document.querySelectorAll('.product-card')
+    const elements = document.querySelectorAll(".product-card");
 
     // Batch all reads first
-    const heights = Array.from(elements).map((el) => el.offsetHeight)
+    const heights = Array.from(elements).map((el) => el.offsetHeight);
 
     // Then batch all writes
     elements.forEach((el, i) => {
-      el.style.minHeight = `${heights[i] + 20}px`
-    })
+      el.style.minHeight = `${heights[i] + 20}px`;
+    });
     // Only 1 reflow total
-  }
-})
+  },
+});
 ```
 
 **Alternative (requestAnimationFrame for complex updates):**
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main() {
-    const elements = document.querySelectorAll('.product-card')
+    const elements = document.querySelectorAll(".product-card");
 
     // Read phase in current frame
-    const updates: Array<{ el: Element; height: number }> = []
+    const updates: Array<{ el: Element; height: number }> = [];
     elements.forEach((el) => {
-      updates.push({ el, height: el.offsetHeight })
-    })
+      updates.push({ el, height: el.offsetHeight });
+    });
 
     // Write phase in next frame
     requestAnimationFrame(() => {
       updates.forEach(({ el, height }) => {
-        (el as HTMLElement).style.minHeight = `${height + 20}px`
-      })
-    })
-  }
-})
+        (el as HTMLElement).style.minHeight = `${height + 20}px`;
+      });
+    });
+  },
+});
 ```
 
 **Layout-triggering properties to batch:**
+
 - `offsetWidth`, `offsetHeight`, `offsetTop`, `offsetLeft`
 - `clientWidth`, `clientHeight`
 - `scrollWidth`, `scrollHeight`, `scrollTop`, `scrollLeft`

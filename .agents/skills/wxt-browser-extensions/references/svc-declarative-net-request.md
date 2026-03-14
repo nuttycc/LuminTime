@@ -15,14 +15,14 @@ Declarative Net Request rules execute in the browser's network stack, not in Jav
 export default defineBackground(() => {
   browser.webRequest.onBeforeRequest.addListener(
     (details) => {
-      if (details.url.includes('tracking.js')) {
-        return { cancel: true }
+      if (details.url.includes("tracking.js")) {
+        return { cancel: true };
       }
     },
-    { urls: ['<all_urls>'] },
-    ['blocking'] // Not available in MV3
-  )
-})
+    { urls: ["<all_urls>"] },
+    ["blocking"], // Not available in MV3
+  );
+});
 ```
 
 **Correct (declarative net request rules):**
@@ -31,16 +31,18 @@ export default defineBackground(() => {
 // wxt.config.ts
 export default defineConfig({
   manifest: {
-    permissions: ['declarativeNetRequest'],
+    permissions: ["declarativeNetRequest"],
     declarative_net_request: {
-      rule_resources: [{
-        id: 'blocking_rules',
-        enabled: true,
-        path: 'rules/blocking.json'
-      }]
-    }
-  }
-})
+      rule_resources: [
+        {
+          id: "blocking_rules",
+          enabled: true,
+          path: "rules/blocking.json",
+        },
+      ],
+    },
+  },
+});
 ```
 
 ```json
@@ -65,18 +67,20 @@ export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(async () => {
     await browser.declarativeNetRequest.updateDynamicRules({
       removeRuleIds: [1],
-      addRules: [{
-        id: 1,
-        priority: 1,
-        action: { type: 'block' },
-        condition: {
-          urlFilter: 'tracking.js',
-          resourceTypes: ['script']
-        }
-      }]
-    })
-  })
-})
+      addRules: [
+        {
+          id: 1,
+          priority: 1,
+          action: { type: "block" },
+          condition: {
+            urlFilter: "tracking.js",
+            resourceTypes: ["script"],
+          },
+        },
+      ],
+    });
+  });
+});
 ```
 
 Reference: [Chrome Declarative Net Request](https://developer.chrome.com/docs/extensions/reference/api/declarativeNetRequest)

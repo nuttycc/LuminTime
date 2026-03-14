@@ -15,10 +15,10 @@ Use optional permissions to reduce install-time warnings. Request additional per
 // wxt.config.ts
 export default defineConfig({
   manifest: {
-    permissions: ['tabs', 'history', 'bookmarks', 'downloads'],
-    host_permissions: ['<all_urls>']
-  }
-})
+    permissions: ["tabs", "history", "bookmarks", "downloads"],
+    host_permissions: ["<all_urls>"],
+  },
+});
 // User sees scary warnings at install, may abandon
 ```
 
@@ -28,38 +28,38 @@ export default defineConfig({
 // wxt.config.ts
 export default defineConfig({
   manifest: {
-    permissions: ['storage'],
-    optional_permissions: ['tabs', 'history', 'bookmarks', 'downloads'],
-    optional_host_permissions: ['<all_urls>']
-  }
-})
+    permissions: ["storage"],
+    optional_permissions: ["tabs", "history", "bookmarks", "downloads"],
+    optional_host_permissions: ["<all_urls>"],
+  },
+});
 
 // options.ts - request when user enables feature
 async function enableBookmarkSync() {
   const granted = await browser.permissions.request({
-    permissions: ['bookmarks']
-  })
+    permissions: ["bookmarks"],
+  });
 
   if (granted) {
-    await settings.setValue({ ...currentSettings, bookmarkSync: true })
-    startBookmarkSync()
+    await settings.setValue({ ...currentSettings, bookmarkSync: true });
+    startBookmarkSync();
   } else {
-    showPermissionDeniedMessage()
+    showPermissionDeniedMessage();
   }
 }
 
 // Check permission before using feature
 async function getBookmarks() {
   const hasPermission = await browser.permissions.contains({
-    permissions: ['bookmarks']
-  })
+    permissions: ["bookmarks"],
+  });
 
   if (!hasPermission) {
-    showEnableBookmarkSyncPrompt()
-    return []
+    showEnableBookmarkSyncPrompt();
+    return [];
   }
 
-  return browser.bookmarks.getTree()
+  return browser.bookmarks.getTree();
 }
 ```
 

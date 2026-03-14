@@ -14,13 +14,13 @@ Content scripts can run in ISOLATED (default) or MAIN world. ISOLATED has extens
 ```typescript
 // Trying to access page variables from ISOLATED world
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   main() {
     // undefined - page variables not visible in ISOLATED world
-    const pageData = window.appState
-    browser.runtime.sendMessage({ data: pageData })
-  }
-})
+    const pageData = window.appState;
+    browser.runtime.sendMessage({ data: pageData });
+  },
+});
 ```
 
 **Correct (use MAIN world for page access):**
@@ -28,27 +28,28 @@ export default defineContentScript({
 ```typescript
 // entrypoints/page-reader.content.ts - ISOLATED world parent
 export default defineContentScript({
-  matches: ['*://*.example.com/*'],
+  matches: ["*://*.example.com/*"],
   async main() {
     // Inject into MAIN world to access page variables
-    await injectScript('/page-reader-main.js', { keepInDom: true })
+    await injectScript("/page-reader-main.js", { keepInDom: true });
 
     // Receive data via custom events
-    window.addEventListener('PAGE_DATA', ((event: CustomEvent) => {
-      browser.runtime.sendMessage({ data: event.detail })
-    }) as EventListener)
-  }
-})
+    window.addEventListener("PAGE_DATA", ((event: CustomEvent) => {
+      browser.runtime.sendMessage({ data: event.detail });
+    }) as EventListener);
+  },
+});
 
 // entrypoints/page-reader-main.ts - MAIN world script
 export default defineUnlistedScript(() => {
   // Can access page variables
-  const pageData = (window as any).appState
-  window.dispatchEvent(new CustomEvent('PAGE_DATA', { detail: pageData }))
-})
+  const pageData = (window as any).appState;
+  window.dispatchEvent(new CustomEvent("PAGE_DATA", { detail: pageData }));
+});
 ```
 
 **When to use each world:**
+
 - ISOLATED: DOM manipulation, extension API access, secure operations
 - MAIN: Reading page JavaScript variables, intercepting XHR/fetch, modifying prototypes
 

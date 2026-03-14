@@ -13,50 +13,50 @@ Content scripts don't re-execute on SPA (Single Page Application) navigation bec
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*.youtube.com/watch*'],
+  matches: ["*://*.youtube.com/watch*"],
   main(ctx) {
     // Only runs once on initial page load
     // Breaks when user navigates between videos via SPA
-    const videoId = new URL(location.href).searchParams.get('v')
-    injectOverlay(videoId)
-  }
-})
+    const videoId = new URL(location.href).searchParams.get("v");
+    injectOverlay(videoId);
+  },
+});
 ```
 
 **Correct (react to SPA navigation):**
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*.youtube.com/*'],
+  matches: ["*://*.youtube.com/*"],
   main(ctx) {
-    const watchPattern = new MatchPattern('*://*.youtube.com/watch*')
+    const watchPattern = new MatchPattern("*://*.youtube.com/watch*");
 
     // Run on initial load if URL matches
     if (watchPattern.includes(location.href)) {
-      mountVideoOverlay(ctx)
+      mountVideoOverlay(ctx);
     }
 
     // React to SPA navigation
-    ctx.addEventListener(window, 'wxt:locationchange', ({ newUrl }) => {
+    ctx.addEventListener(window, "wxt:locationchange", ({ newUrl }) => {
       if (watchPattern.includes(newUrl)) {
-        mountVideoOverlay(ctx)
+        mountVideoOverlay(ctx);
       }
-    })
-  }
-})
+    });
+  },
+});
 
 function mountVideoOverlay(ctx: ContentScriptContext) {
-  const videoId = new URL(location.href).searchParams.get('v')
-  if (!videoId) return
+  const videoId = new URL(location.href).searchParams.get("v");
+  if (!videoId) return;
 
   const ui = createIntegratedUi(ctx, {
-    position: 'inline',
-    anchor: '#movie_player',
+    position: "inline",
+    anchor: "#movie_player",
     onMount: (container) => {
-      container.textContent = `Overlay for ${videoId}`
-    }
-  })
-  ui.mount()
+      container.textContent = `Overlay for ${videoId}`;
+    },
+  });
+  ui.mount();
 }
 ```
 
@@ -64,23 +64,24 @@ function mountVideoOverlay(ctx: ContentScriptContext) {
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main(ctx) {
     const ui = createIntegratedUi(ctx, {
-      position: 'inline',
-      anchor: '#dynamic-target',
+      position: "inline",
+      anchor: "#dynamic-target",
       onMount: (container) => {
-        container.textContent = 'Mounted!'
-      }
-    })
+        container.textContent = "Mounted!";
+      },
+    });
 
     // Automatically mount/unmount as anchor appears/disappears
-    ui.autoMount()
-  }
-})
+    ui.autoMount();
+  },
+});
 ```
 
 **Key points:**
+
 - Use broad `matches` pattern, then filter with `MatchPattern` inside the handler
 - `wxt:locationchange` fires on both pushState and replaceState navigation
 - `autoMount()` uses MutationObserver internally to handle dynamic DOM elements

@@ -10,6 +10,7 @@ Comprehensive performance optimization guide for WXT browser extension developme
 ## When to Apply
 
 Reference these guidelines when:
+
 - Writing new WXT browser extension code
 - Implementing service worker background scripts
 - Injecting content scripts into web pages
@@ -18,16 +19,16 @@ Reference these guidelines when:
 
 ## Rule Categories by Priority
 
-| Priority | Category | Impact | Prefix |
-|----------|----------|--------|--------|
-| 1 | Service Worker Lifecycle | CRITICAL | `svc-` |
-| 2 | Content Script Injection | CRITICAL | `inject-` |
-| 3 | Messaging Architecture | HIGH | `msg-` |
-| 4 | Storage Patterns | HIGH | `store-` |
-| 5 | Bundle Optimization | MEDIUM-HIGH | `bundle-` |
-| 6 | Manifest Configuration | MEDIUM | `manifest-` |
-| 7 | UI Performance | MEDIUM | `ui-` |
-| 8 | TypeScript Patterns | LOW-MEDIUM | `ts-` |
+| Priority | Category                 | Impact      | Prefix      |
+| -------- | ------------------------ | ----------- | ----------- |
+| 1        | Service Worker Lifecycle | CRITICAL    | `svc-`      |
+| 2        | Content Script Injection | CRITICAL    | `inject-`   |
+| 3        | Messaging Architecture   | HIGH        | `msg-`      |
+| 4        | Storage Patterns         | HIGH        | `store-`    |
+| 5        | Bundle Optimization      | MEDIUM-HIGH | `bundle-`   |
+| 6        | Manifest Configuration   | MEDIUM      | `manifest-` |
+| 7        | UI Performance           | MEDIUM      | `ui-`       |
+| 8        | TypeScript Patterns      | LOW-MEDIUM  | `ts-`       |
 
 ## Quick Reference
 
@@ -113,8 +114,8 @@ Read individual reference files for detailed explanations and code examples:
 
 ## Reference Files
 
-| File | Description |
-|------|-------------|
-| [references/_sections.md](references/_sections.md) | Category definitions and ordering |
-| [assets/templates/_template.md](assets/templates/_template.md) | Template for new rules |
-| [metadata.json](metadata.json) | Version and reference information |
+| File                                                            | Description                       |
+| --------------------------------------------------------------- | --------------------------------- |
+| [references/\_sections.md](references/_sections.md)             | Category definitions and ordering |
+| [assets/templates/\_template.md](assets/templates/_template.md) | Template for new rules            |
+| [metadata.json](metadata.json)                                  | Version and reference information |

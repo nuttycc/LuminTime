@@ -37,41 +37,42 @@ export default defineContentScript({
 ```typescript
 // entrypoints/content.ts - lightweight injector
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main(ctx) {
     const ui = createIframeUi(ctx, {
-      page: '/dashboard.html', // Full page in extension context
-      position: 'inline',
-      anchor: 'body',
+      page: "/dashboard.html", // Full page in extension context
+      position: "inline",
+      anchor: "body",
       onMount: (wrapper, iframe) => {
         // Style the iframe container
         Object.assign(iframe.style, {
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          width: '400px',
-          height: '500px',
-          border: 'none',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          zIndex: '2147483647'
-        })
-      }
-    })
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          width: "400px",
+          height: "500px",
+          border: "none",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          zIndex: "2147483647",
+        });
+      },
+    });
 
     browser.runtime.onMessage.addListener((message) => {
-      if (message.type === 'TOGGLE_DASHBOARD') {
-        ui.mounted ? ui.remove() : ui.mount()
+      if (message.type === "TOGGLE_DASHBOARD") {
+        ui.mounted ? ui.remove() : ui.mount();
       }
-    })
-  }
-})
+    });
+  },
+});
 
 // entrypoints/dashboard.html - full app runs in iframe
 // Can use any framework, isolated from page
 ```
 
 **Benefits of iframe approach:**
+
 - Complete CSS isolation (no Shadow DOM complexity)
 - Content script stays tiny (just injection logic)
 - Full extension API access in iframe

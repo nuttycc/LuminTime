@@ -13,20 +13,20 @@ Use `watch()` to react to storage changes instead of polling or manual refresh. 
 
 ```typescript
 // popup.ts - polls for settings changes
-let currentSettings: Settings
+let currentSettings: Settings;
 
 async function init() {
-  currentSettings = await settings.getValue()
-  renderUI(currentSettings)
+  currentSettings = await settings.getValue();
+  renderUI(currentSettings);
 
   // Wasteful polling every second
   setInterval(async () => {
-    const newSettings = await settings.getValue()
+    const newSettings = await settings.getValue();
     if (JSON.stringify(newSettings) !== JSON.stringify(currentSettings)) {
-      currentSettings = newSettings
-      renderUI(currentSettings)
+      currentSettings = newSettings;
+      renderUI(currentSettings);
     }
-  }, 1000)
+  }, 1000);
 }
 ```
 
@@ -35,13 +35,13 @@ async function init() {
 ```typescript
 // popup.ts - reacts to changes
 async function init() {
-  const currentSettings = await settings.getValue()
-  renderUI(currentSettings)
+  const currentSettings = await settings.getValue();
+  renderUI(currentSettings);
 
   // Automatically updates when storage changes
   settings.watch((newSettings) => {
-    renderUI(newSettings)
-  })
+    renderUI(newSettings);
+  });
 }
 ```
 
@@ -49,18 +49,18 @@ async function init() {
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main(ctx) {
     const unwatch = settings.watch((newSettings) => {
-      applySettingsToPage(newSettings)
-    })
+      applySettingsToPage(newSettings);
+    });
 
     // Clean up when content script invalidated
     ctx.onInvalidated(() => {
-      unwatch()
-    })
-  }
-})
+      unwatch();
+    });
+  },
+});
 ```
 
 **Note:** `watch()` uses `browser.storage.onChanged` internally, which fires across all extension contexts automatically.

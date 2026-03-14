@@ -13,65 +13,65 @@ Content script UIs must clean up event listeners, observers, and timers when rem
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main(ctx) {
     const ui = createShadowRootUi(ctx, {
-      name: 'my-panel',
-      position: 'inline',
-      anchor: 'body',
+      name: "my-panel",
+      position: "inline",
+      anchor: "body",
       onMount: (container) => {
         // Event listener never removed
-        window.addEventListener('resize', handleResize)
+        window.addEventListener("resize", handleResize);
 
         // Interval never cleared
-        setInterval(updateTime, 1000)
+        setInterval(updateTime, 1000);
 
         // MutationObserver never disconnected
-        const observer = new MutationObserver(handleMutation)
-        observer.observe(document.body, { childList: true })
-      }
-    })
-    ui.mount()
-  }
-})
+        const observer = new MutationObserver(handleMutation);
+        observer.observe(document.body, { childList: true });
+      },
+    });
+    ui.mount();
+  },
+});
 ```
 
 **Correct (cleanup via onRemove and ctx helpers):**
 
 ```typescript
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main(ctx) {
     const ui = createShadowRootUi(ctx, {
-      name: 'my-panel',
-      position: 'inline',
-      anchor: 'body',
+      name: "my-panel",
+      position: "inline",
+      anchor: "body",
       onMount: (container) => {
         // ctx.addEventListener auto-removes on context invalidation
-        ctx.addEventListener(window, 'resize', handleResize)
+        ctx.addEventListener(window, "resize", handleResize);
 
-        const intervalId = ctx.setInterval(updateTime, 1000)
+        const intervalId = ctx.setInterval(updateTime, 1000);
 
-        const observer = new MutationObserver(handleMutation)
-        observer.observe(document.body, { childList: true })
+        const observer = new MutationObserver(handleMutation);
+        observer.observe(document.body, { childList: true });
 
         // Return resources that onRemove needs to clean up
-        return { observer }
+        return { observer };
       },
       onRemove: (mounted) => {
         // mounted is the return value from onMount
-        mounted?.observer.disconnect()
-      }
-    })
+        mounted?.observer.disconnect();
+      },
+    });
 
-    ui.mount()
+    ui.mount();
 
     // Clean up UI when extension context invalidated (e.g., on update)
     ctx.onInvalidated(() => {
-      ui.remove()
-    })
-  }
-})
+      ui.remove();
+    });
+  },
+});
 ```
 
 **With React (framework handles component cleanup):**

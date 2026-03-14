@@ -16,11 +16,11 @@ MV3 enforces strict CSP for extension pages. Configure CSP to allow necessary fu
 export default defineConfig({
   manifest: {
     content_security_policy: {
-      extension_pages: "script-src 'self' 'unsafe-inline' 'unsafe-eval';"
+      extension_pages: "script-src 'self' 'unsafe-inline' 'unsafe-eval';",
       // Error: MV3 blocks unsafe-inline and unsafe-eval
-    }
-  }
-})
+    },
+  },
+});
 ```
 
 **Correct (MV3-compliant CSP):**
@@ -30,10 +30,10 @@ export default defineConfig({
 export default defineConfig({
   manifest: {
     content_security_policy: {
-      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
-    }
-  }
-})
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
+    },
+  },
+});
 ```
 
 **For WASM support:**
@@ -44,10 +44,10 @@ export default defineConfig({
   manifest: {
     content_security_policy: {
       // Allow WASM compilation
-      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
-    }
-  }
-})
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
+    },
+  },
+});
 ```
 
 **For sandbox pages (less restricted):**
@@ -57,14 +57,14 @@ export default defineConfig({
 export default defineConfig({
   manifest: {
     sandbox: {
-      pages: ['sandbox.html']
+      pages: ["sandbox.html"],
     },
     content_security_policy: {
       // Sandbox pages can have eval for templating engines
-      sandbox: "sandbox allow-scripts; script-src 'self' 'unsafe-eval'"
-    }
-  }
-})
+      sandbox: "sandbox allow-scripts; script-src 'self' 'unsafe-eval'",
+    },
+  },
+});
 ```
 
 **Note:** Sandbox pages cannot use extension APIs but can run less-restricted JavaScript. Use postMessage to communicate between sandbox and extension pages.

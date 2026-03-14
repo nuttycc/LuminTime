@@ -14,51 +14,51 @@ Use `@webext-core/messaging` for type-safe messaging between extension contexts.
 ```typescript
 // background.ts
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'GET_USER') {
+  if (message.type === "GET_USER") {
     // No type safety - easy to typo 'user' vs 'userId'
-    getUser(message.userId).then(sendResponse)
-    return true
+    getUser(message.userId).then(sendResponse);
+    return true;
   }
-})
+});
 
 // content.ts
 // Typo: 'user' instead of 'userId' - fails silently
-browser.runtime.sendMessage({ type: 'GET_USER', user: 123 })
+browser.runtime.sendMessage({ type: "GET_USER", user: 123 });
 ```
 
 **Correct (@webext-core/messaging with ProtocolMap):**
 
 ```typescript
 // utils/messaging.ts
-import { defineExtensionMessaging } from '@webext-core/messaging'
+import { defineExtensionMessaging } from "@webext-core/messaging";
 
 interface ProtocolMap {
-  getUser(data: { userId: number }): User | null
-  updateSettings(data: { settings: Settings }): { success: boolean }
-  ping(): 'pong'
+  getUser(data: { userId: number }): User | null;
+  updateSettings(data: { settings: Settings }): { success: boolean };
+  ping(): "pong";
 }
 
-export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>()
+export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>();
 ```
 
 ```typescript
 // background.ts
 export default defineBackground(() => {
-  onMessage('getUser', ({ data }) => {
-    return getUser(data.userId) // TypeScript knows userId exists
-  })
+  onMessage("getUser", ({ data }) => {
+    return getUser(data.userId); // TypeScript knows userId exists
+  });
 
-  onMessage('updateSettings', ({ data }) => {
-    return updateSettings(data.settings) // Return type checked
-  })
+  onMessage("updateSettings", ({ data }) => {
+    return updateSettings(data.settings); // Return type checked
+  });
 
-  onMessage('ping', () => 'pong')
-})
+  onMessage("ping", () => "pong");
+});
 ```
 
 ```typescript
 // content.ts or popup.ts
-const user = await sendMessage('getUser', { userId: 123 })
+const user = await sendMessage("getUser", { userId: 123 });
 // TypeScript error if you typo: sendMessage('getUser', { user: 123 })
 // TypeScript knows user is User | null
 ```
@@ -68,17 +68,17 @@ const user = await sendMessage('getUser', { userId: 123 })
 ```typescript
 // types/messages.ts
 export type Message =
-  | { type: 'GET_USER'; userId: number }
-  | { type: 'UPDATE_SETTINGS'; settings: Settings }
+  | { type: "GET_USER"; userId: number }
+  | { type: "UPDATE_SETTINGS"; settings: Settings };
 
 // background.ts - must manually return true for async
 browser.runtime.onMessage.addListener((message: Message, sender, sendResponse) => {
   switch (message.type) {
-    case 'GET_USER':
-      getUser(message.userId).then(sendResponse)
-      return true
+    case "GET_USER":
+      getUser(message.userId).then(sendResponse);
+      return true;
   }
-})
+});
 ```
 
 **Install:** `npm install @webext-core/messaging`

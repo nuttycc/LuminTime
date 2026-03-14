@@ -12,36 +12,36 @@ WXT v0.20+ provides `#imports` as a unified virtual module for all WXT APIs. Thi
 **Incorrect (scattered old import paths):**
 
 ```typescript
-import { storage } from 'wxt/storage'
-import { defineContentScript } from 'wxt/sandbox'
-import { ContentScriptContext } from 'wxt/client'
-import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root'
+import { storage } from "wxt/storage";
+import { defineContentScript } from "wxt/sandbox";
+import { ContentScriptContext } from "wxt/client";
+import { createShadowRootUi } from "wxt/utils/content-script-ui/shadow-root";
 
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main(ctx: ContentScriptContext) {
-    const settings = await storage.getItem('local:settings')
-  }
-})
+    const settings = await storage.getItem("local:settings");
+  },
+});
 ```
 
 **Correct (unified #imports or auto-imports):**
 
 ```typescript
 // Option 1: Explicit imports from #imports
-import { storage, createShadowRootUi } from '#imports'
+import { storage, createShadowRootUi } from "#imports";
 
 // Option 2: Auto-imports (preferred) - no import needed
 // WXT auto-imports: defineBackground, defineContentScript, browser, storage,
 // createShadowRootUi, createIntegratedUi, createIframeUi, etc.
 
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main(ctx) {
     // storage, browser, and ctx type are all auto-imported
-    const settings = await storage.getItem('local:settings')
-  }
-})
+    const settings = await storage.getItem("local:settings");
+  },
+});
 ```
 
 **Setup: Run `wxt prepare` to generate type declarations:**
@@ -60,10 +60,10 @@ wxt prepare
 
 ```typescript
 // Incorrect
-vi.mock('#imports', () => ({ storage: mockStorage }))
+vi.mock("#imports", () => ({ storage: mockStorage }));
 
 // Correct - mock the actual module path
-vi.mock('wxt/storage', () => ({ storage: mockStorage }))
+vi.mock("wxt/storage", () => ({ storage: mockStorage }));
 ```
 
 **Note:** Auto-imports extend to files in `components/`, `composables/`, `hooks/`, and `utils/` directories. Configure via `imports` in `wxt.config.ts`. Set `imports: false` to disable.

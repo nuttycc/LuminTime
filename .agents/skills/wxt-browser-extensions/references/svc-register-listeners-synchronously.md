@@ -13,14 +13,14 @@ Service workers can terminate at any time and restart when events occur. Event l
 
 ```typescript
 export default defineBackground(async () => {
-  const config = await loadConfig()
+  const config = await loadConfig();
 
   // Listener registered after async operation - may miss events
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    handleMessage(message, config).then(sendResponse)
-    return true
-  })
-})
+    handleMessage(message, config).then(sendResponse);
+    return true;
+  });
+});
 ```
 
 **Correct (synchronous registration, async handling):**
@@ -30,14 +30,15 @@ export default defineBackground(() => {
   // Listener registered synchronously - catches all events
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     loadConfig().then((config) => {
-      handleMessage(message, config).then(sendResponse)
-    })
-    return true
-  })
-})
+      handleMessage(message, config).then(sendResponse);
+    });
+    return true;
+  });
+});
 ```
 
 **When NOT to use this pattern:**
+
 - Event listeners that are intentionally conditional based on user settings
 - Listeners that should only be active after explicit user action
 

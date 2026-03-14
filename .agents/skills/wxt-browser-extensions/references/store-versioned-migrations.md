@@ -13,17 +13,17 @@ Production extensions evolve over time. Use `version` and `migrations` in `stora
 
 ```typescript
 async function getIgnoredSites() {
-  const sites = await storage.getItem<string[] | IgnoredSite[]>('local:ignoredSites')
-  if (!sites) return []
+  const sites = await storage.getItem<string[] | IgnoredSite[]>("local:ignoredSites");
+  if (!sites) return [];
 
   // Check if migration needed by inspecting shape
-  if (typeof sites[0] === 'string') {
+  if (typeof sites[0] === "string") {
     // Old format - migrate in place
-    const migrated = (sites as string[]).map((url) => ({ id: crypto.randomUUID(), url }))
-    await storage.setItem('local:ignoredSites', migrated)
-    return migrated
+    const migrated = (sites as string[]).map((url) => ({ id: crypto.randomUUID(), url }));
+    await storage.setItem("local:ignoredSites", migrated);
+    return migrated;
   }
-  return sites as IgnoredSite[]
+  return sites as IgnoredSite[];
 }
 ```
 
@@ -31,12 +31,12 @@ async function getIgnoredSites() {
 
 ```typescript
 interface IgnoredSiteV2 {
-  id: string
-  url: string
+  id: string;
+  url: string;
 }
 
 // V1 was string[] (unversioned)
-const ignoredSites = storage.defineItem<IgnoredSiteV2[]>('local:ignoredSites', {
+const ignoredSites = storage.defineItem<IgnoredSiteV2[]>("local:ignoredSites", {
   fallback: [],
   version: 2,
   migrations: {
@@ -44,39 +44,39 @@ const ignoredSites = storage.defineItem<IgnoredSiteV2[]>('local:ignoredSites', {
     2: (oldSites: string[]): IgnoredSiteV2[] => {
       return oldSites.map((url) => ({
         id: crypto.randomUUID(),
-        url
-      }))
-    }
-  }
-})
+        url,
+      }));
+    },
+  },
+});
 
 // Usage - migrations run transparently on first access
-const sites = await ignoredSites.getValue() // Always IgnoredSiteV2[]
+const sites = await ignoredSites.getValue(); // Always IgnoredSiteV2[]
 ```
 
 **Multi-version migration chain:**
 
 ```typescript
 interface IgnoredSiteV3 {
-  id: string
-  url: string
-  addedAt: number
-  reason?: string
+  id: string;
+  url: string;
+  addedAt: number;
+  reason?: string;
 }
 
-const ignoredSites = storage.defineItem<IgnoredSiteV3[]>('local:ignoredSites', {
+const ignoredSites = storage.defineItem<IgnoredSiteV3[]>("local:ignoredSites", {
   fallback: [],
   version: 3,
   migrations: {
-    2: (v1: string[]): IgnoredSiteV2[] =>
-      v1.map((url) => ({ id: crypto.randomUUID(), url })),
+    2: (v1: string[]): IgnoredSiteV2[] => v1.map((url) => ({ id: crypto.randomUUID(), url })),
     3: (v2: IgnoredSiteV2[]): IgnoredSiteV3[] =>
-      v2.map((site) => ({ ...site, addedAt: Date.now() }))
-  }
-})
+      v2.map((site) => ({ ...site, addedAt: Date.now() })),
+  },
+});
 ```
 
 **Key concepts:**
+
 - Migrations run automatically on first `getValue()` call
 - Migrations execute sequentially: v1 -> v2 -> v3
 - Metadata is stored at `key + "$"` with the current version
