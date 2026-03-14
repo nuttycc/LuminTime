@@ -1,10 +1,10 @@
 # Agent Guidelines
 
-## Project Overview (WHY)
+## Project Overview
 
 LuminTime is a privacy-first browser extension that automatically tracks your online activity and labels it intelligently. All data stays locally (IndexedDB), no cloud or account required.
 
-## Tech Stack (WHAT)
+## Tech Stack
 
 - **Framework**: WXT (Web Extension Toolkit) with Vue 3
 - **Storage**: IndexedDB via Dexie.js
@@ -13,7 +13,21 @@ LuminTime is a privacy-first browser extension that automatically tracks your on
 - **Testing**: Vitest
 - **Utilities**: VueUse and Es-Toolkit
 
-## Project Structure (WHAT)
+## Commands
+
+```bash
+bun install           # Install deps (runs wxt prepare postinstall)
+bun run dev           # Dev server with HMR → load .output/chrome-mv3/ in chrome://extensions/
+bun run build         # Production build
+bun run zip           # Chrome extension ZIP
+bun run zip:firefox   # Firefox extension ZIP
+bun run compile       # Type check (vue-tsc --noEmit)
+bun run lint          # Oxlint static analysis
+bun run format        # Code formatting (oxfmt)
+bun run test          # Vitest unit tests
+```
+
+## Project Structure
 
 - `src/entrypoints/` – Extension entry points (background, popup)
 - `src/components/` – Vue components
@@ -21,22 +35,3 @@ LuminTime is a privacy-first browser extension that automatically tracks your on
 - `src/composables/` – Vue composables
 - `src/utils/` – Utility functions
 - `tests/` – Unit tests (Vitest)
-
-## Development Commands (HOW)
-
-- **Install Dependencies**: `bun install`
-- **Development Server**: `bun run dev` (WXT dev server)
-- **Type Check**: `bun run compile` (vue-tsc --noEmit)
-- **Lint**: `bun run lint` (oxlint --type-aware)
-- **Format**: `bun run format` (oxfmt)
-- **Tests**: `bun run test` (vitest run)
-
-## Progressive Disclosure
-
-For detailed context on specific topics, refer to the following documents in `agent_docs/` (read only when relevant):
-
-- `code_conventions.md` – High-level coding patterns (not linting rules)
-- `testing.md` – Test patterns and setup
-- `architecture.md` – Key architectural decisions
-
-**Note**: Formatting and linting are handled automatically by Oxlint/Oxfmt. Use `bun run lint` and `bun run format` to check/fix code style.
