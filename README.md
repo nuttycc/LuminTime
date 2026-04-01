@@ -44,13 +44,13 @@ A privacy-first browser extension that automatically tracks your online activity
 2. Install dependencies:
 
    ```bash
-   bun install
+   pnpm install
    ```
 
 3. Start the development server:
 
    ```bash
-   bun run dev
+   pnpm run dev
    ```
 
 4. Load the extension in your browser:
@@ -67,7 +67,6 @@ src/
 ├── composables/     # Vue composables (hooks)
 ├── db/             # Database layer (Dexie models, services)
 ├── utils/          # Utility functions
-└── styles/         # Global styles
 ```
 
 ## Tech Stack
@@ -82,7 +81,6 @@ src/
 ### Data & Storage
 
 - **[Dexie.js](https://dexie.dev/)** – Wrapper library for IndexedDB
-- **[Arktype](https://arktype.io/)** – Runtime type validation
 
 ### Development & Testing
 
@@ -101,7 +99,3 @@ src/
 ## License
 
 MIT License
-
-## Support
-
-For issues, feature requests, or questions, please open an issue on [GitHub](https://github.com/nuttycc/LuminTime/issues).
