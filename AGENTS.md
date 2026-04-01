@@ -6,25 +6,28 @@ LuminTime is a privacy-first browser extension that automatically tracks your on
 
 ## Tech Stack
 
-- **Framework**: WXT (Web Extension Toolkit) with Vue 3
-- **Storage**: IndexedDB via Dexie.js
-- **Validation**: Arktype for runtime type validation
-- **Styling**: Tailwind CSS 4 with DaisyUI 5
-- **Testing**: Vitest
-- **Utilities**: VueUse and Es-Toolkit
+- Framework: WXT (Web Extension Toolkit) with Vue 3
+- Storage: IndexedDB via Dexie.js
+- Styling: Tailwind CSS 4 with DaisyUI 5
+- Testing: Vitest
+- Utilities: VueUse and Es-Toolkit
 
 ## Commands
 
+VITE+ - The Unified Toolchain for the Web
+
+use `vp run xx`
+
 ```bash
-bun install           # Install deps (runs wxt prepare postinstall)
-bun run dev           # Dev server with HMR → load .output/chrome-mv3/ in chrome://extensions/
-bun run build         # Production build
-bun run zip           # Chrome extension ZIP
-bun run zip:firefox   # Firefox extension ZIP
-bun run compile       # Type check (vue-tsc --noEmit)
-bun run lint          # Oxlint static analysis
-bun run format        # Code formatting (oxfmt)
-bun run test          # Vitest unit tests
+vp install           # Install deps (runs wxt prepare postinstall)
+vp run dev           # Dev server with HMR → load .output/chrome-mv3/ in chrome://extensions/
+vp run build         # Production build
+vp run zip           # Chrome extension ZIP
+vp run zip:firefox   # Firefox extension ZIP
+vp run compile       # Type check (vue-tsc --noEmit)
+vp run lint          # Oxlint static analysis
+vp run format        # Code formatting (oxfmt)
+vp run test          # Vitest unit tests
 ```
 
 ## Project Structure
