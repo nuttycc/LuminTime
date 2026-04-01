@@ -21,37 +21,37 @@
     "@tanstack/pacer": "^0.19.0",
     "@vueuse/core": "^14.2.1",
     "arktype": "^2.2.0",
-    "dexie": "^4.3.0",
+    "dexie": "^4.4.2",
     "es-toolkit": "^1.45.1",
-    "motion-v": "^2.0.0",
+    "motion-v": "^2.2.0",
     "pretty-ms": "^9.3.0",
-    "tldts": "^7.0.25",
-    "vue": "^3.5.30",
-    "vue-router": "^5.0.3"
+    "tldts": "^7.0.27",
+    "vue": "^3.5.31",
+    "vue-router": "^5.0.4"
   },
   "devDependencies": {
     "@iconify/vue": "^5.0.0",
-    "@tailwindcss/vite": "^4.2.1",
+    "@tailwindcss/vite": "^4.2.2",
     "@wxt-dev/auto-icons": "^1.1.1",
     "@wxt-dev/module-vue": "^1.0.3",
     "daisyui": "^5.5.19",
-    "tailwindcss": "^4.2.1",
+    "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "vite-plus": "latest",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@latest",
-    "vue-tsc": "^3.2.5",
-    "wxt": "^0.20.18"
+    "vitest": "npm:@voidzero-dev/vite-plus-test@^0.1.15",
+    "vue-tsc": "^3.2.6",
+    "wxt": "^0.20.20"
   },
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "overrides": {
       "vite": "npm:@voidzero-dev/vite-plus-core@latest",
       "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
-    }
-  },
-  "trustedDependencies": [
-    "esbuild",
-    "sharp",
-    "spawn-sync"
-  ]
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "spawn-sync"
+    ]
+  }
 }
