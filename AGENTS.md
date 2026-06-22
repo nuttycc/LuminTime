@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-LuminTime is a privacy-first browser extension that automatically tracks your online activity and labels it intelligently. All data stays locally (IndexedDB), no cloud or account required.
+LuminTime is a privacy-first browser extension that automatically tracks your online activity and labels it intelligently. All data stays locally, no cloud or account required.
 
 ## Tech Stack
 
