@@ -164,7 +164,7 @@ onMounted(async () => {
         <div
           class="flex items-center justify-between border-b border-base-300 bg-base-200 px-3 py-2"
         >
-          <h2 class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
             Data Management
           </h2>
           <span class="font-mono text-[10px] leading-3 text-outline">Last export: today</span>
@@ -214,7 +214,7 @@ onMounted(async () => {
 
       <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
         <div class="border-b border-base-300 bg-base-200 px-3 py-2">
-          <h2 class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
             Retention
           </h2>
         </div>
@@ -237,7 +237,7 @@ onMounted(async () => {
 
       <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
         <div class="border-b border-base-300 bg-base-200 px-3 py-2">
-          <h2 class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
             Blocked Sites
           </h2>
         </div>
@@ -285,7 +285,7 @@ onMounted(async () => {
 
       <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
         <div class="border-b border-base-300 bg-base-200 px-3 py-2">
-          <h2 class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
             Database Stats
           </h2>
         </div>
@@ -300,7 +300,7 @@ onMounted(async () => {
         </div>
         <div v-else-if="dbStats" class="grid grid-cols-2 gap-px bg-base-300 p-px">
           <div class="bg-surface-low p-2 text-center">
-            <div class="text-[10px] font-bold tracking-[0.05em] text-outline uppercase">
+            <div class="text-[10px] font-bold tracking-wider text-outline uppercase">
               History rows
             </div>
             <div class="mt-1 font-mono text-[13px] leading-4 text-primary">
@@ -308,25 +308,19 @@ onMounted(async () => {
             </div>
           </div>
           <div class="bg-surface-low p-2 text-center">
-            <div class="text-[10px] font-bold tracking-[0.05em] text-outline uppercase">
-              Site rows
-            </div>
+            <div class="text-[10px] font-bold tracking-wider text-outline uppercase">Site rows</div>
             <div class="mt-1 font-mono text-[13px] leading-4 text-primary">
               {{ dbStats.sitesCount.toLocaleString() }}
             </div>
           </div>
           <div class="bg-surface-low p-2 text-center">
-            <div class="text-[10px] font-bold tracking-[0.05em] text-outline uppercase">
-              Page rows
-            </div>
+            <div class="text-[10px] font-bold tracking-wider text-outline uppercase">Page rows</div>
             <div class="mt-1 font-mono text-[13px] leading-4 text-primary">
               {{ dbStats.pagesCount.toLocaleString() }}
             </div>
           </div>
           <div class="bg-surface-low p-2 text-center">
-            <div class="text-[10px] font-bold tracking-[0.05em] text-outline uppercase">
-              Storage
-            </div>
+            <div class="text-[10px] font-bold tracking-wider text-outline uppercase">Storage</div>
             <div class="mt-1 font-mono text-[13px] leading-4 text-primary">
               {{ formatBytes(dbStats.storageUsage) }}
             </div>

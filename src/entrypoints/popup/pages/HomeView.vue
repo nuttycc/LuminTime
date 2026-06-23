@@ -137,7 +137,7 @@ const updateView = (v: ViewMode) => {
 
       <div class="flex items-center gap-1">
         <div
-          class="hidden items-center gap-1 rounded border border-primary/50 bg-primary/10 px-1.5 py-1 text-[10px] font-bold leading-3 tracking-[0.05em] text-primary uppercase min-[340px]:flex"
+          class="hidden items-center gap-1 rounded border border-primary/50 bg-primary/10 px-1.5 py-1 text-[10px] font-bold leading-3 tracking-wider text-primary uppercase min-[340px]:flex"
         >
           <span class="size-1.5 rounded-full bg-primary"></span>
           Local
@@ -208,7 +208,7 @@ const updateView = (v: ViewMode) => {
         class="rounded border border-base-300 bg-[#111827] p-3"
         aria-label="Activity summary"
       >
-        <div class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+        <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
           Total Active Time
         </div>
 
@@ -229,7 +229,7 @@ const updateView = (v: ViewMode) => {
       </section>
 
       <section class="space-y-2" aria-label="Activity trend">
-        <div class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+        <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
           Activity trend
         </div>
         <div class="rounded border border-base-300 bg-base-100 px-1 pb-5 pt-1">
@@ -239,7 +239,7 @@ const updateView = (v: ViewMode) => {
 
       <section class="space-y-2" aria-label="Top sites">
         <div class="flex items-center justify-between">
-          <div class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+          <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
             Top Sites
           </div>
           <button

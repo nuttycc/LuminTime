@@ -54,10 +54,10 @@ const shouldShowLabel = (index: number) => {
       :aria-label="item.ariaLabel || item.tooltip"
     >
       <div
-        class="absolute bottom-full z-10 mb-1 hidden w-max max-w-[150px] group-hover:block group-focus-within:block"
+        class="absolute bottom-full z-10 mb-1 hidden w-max max-w-37.5 group-hover:block group-focus-within:block"
       >
         <div
-          class="rounded bg-neutral px-2 py-1 text-center text-xs break-words text-neutral-content shadow"
+          class="rounded bg-neutral px-2 py-1 text-center text-xs wrap-break-word text-neutral-content shadow"
         >
           {{ item.tooltip }}
         </div>

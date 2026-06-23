@@ -201,7 +201,7 @@ const handleDeleteSiteData = async () => {
               :name="isBlocked ? 'block' : 'check-circle'"
               size="mx-auto mb-0.5 size-3.5 text-primary"
             />
-            <div class="text-[9px] font-bold tracking-[0.05em] text-base-content uppercase">
+            <div class="text-[9px] font-bold tracking-wider text-base-content uppercase">
               {{ isBlocked ? "Blocked" : "Tracked" }}
             </div>
           </div>
@@ -209,17 +209,17 @@ const handleDeleteSiteData = async () => {
             <div class="font-mono text-[11px] leading-4 text-base-content">
               {{ totalDurationLabel }}
             </div>
-            <div class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">Total</div>
+            <div class="text-[9px] font-bold tracking-wider text-outline uppercase">Total</div>
           </div>
           <div class="bg-surface-low p-1.5 text-center">
             <div class="font-mono text-[11px] leading-4 text-base-content">
               {{ pages.length }}
             </div>
-            <div class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">Pages</div>
+            <div class="text-[9px] font-bold tracking-wider text-outline uppercase">Pages</div>
           </div>
           <div class="bg-surface-low p-1.5 text-center">
             <InspectorIcon name="database" size="mx-auto mb-0.5 size-3.5 text-outline" />
-            <div class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">Local</div>
+            <div class="text-[9px] font-bold tracking-wider text-outline uppercase">Local</div>
           </div>
         </div>
       </section>
@@ -228,9 +228,9 @@ const handleDeleteSiteData = async () => {
         <div
           class="grid grid-cols-[1.5fr_1fr_48px] border-b border-base-300 bg-base-200 px-3 py-1.5"
         >
-          <span class="text-[10px] font-bold tracking-[0.05em] text-outline uppercase">Page</span>
-          <span class="text-[10px] font-bold tracking-[0.05em] text-outline uppercase">Path</span>
-          <span class="text-right text-[10px] font-bold tracking-[0.05em] text-outline uppercase">
+          <span class="text-[10px] font-bold tracking-wider text-outline uppercase">Page</span>
+          <span class="text-[10px] font-bold tracking-wider text-outline uppercase">Path</span>
+          <span class="text-right text-[10px] font-bold tracking-wider text-outline uppercase">
             Time
           </span>
         </div>
@@ -292,7 +292,7 @@ const handleDeleteSiteData = async () => {
         aria-label="Selected page detail"
       >
         <div class="rounded border border-base-300 bg-base-100 p-2">
-          <div class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">Full path</div>
+          <div class="text-[9px] font-bold tracking-wider text-outline uppercase">Full path</div>
           <div class="mt-1 break-all font-mono text-[11px] leading-4 text-base-content">
             {{ selectedPage.fullPath || selectedPage.path }}
           </div>
@@ -312,7 +312,7 @@ const handleDeleteSiteData = async () => {
       </section>
 
       <section class="space-y-2 p-3" aria-label="Danger zone">
-        <div class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+        <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
           Danger Zone
         </div>
 
