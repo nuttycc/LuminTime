@@ -1,8 +1,8 @@
 {
   "name": "lumin-time",
-  "version": "0.1.18",
+  "version": "2026.623.1832",
   "private": true,
-  "description": "A privacy-first browser extension that automatically tracks your online activity.",
+  "description": "A local-first browser extension that automatically tracks your online activity.",
   "homepage": "https://github.com/nuttycc/LuminTime",
   "type": "module",
   "scripts": {
