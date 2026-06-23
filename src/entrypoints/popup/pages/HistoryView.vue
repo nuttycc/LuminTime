@@ -45,7 +45,8 @@ const goBack = () => {
 };
 
 const clearHistoryScope = () => {
-  router.push("/history");
+  const { hostname: _hostname, ...query } = route.query;
+  router.push({ path: "/history", query });
 };
 
 const formatTime = (ts: number) => {
@@ -76,7 +77,27 @@ const visibleGroups = computed(() =>
   })),
 );
 
-const selectedLog = computed(() => logs.value[0] ?? null);
+const selectedLogKey = ref<number | string | null>(null);
+
+const getLogKey = (log: IHistoryLog) => log.id ?? log.startTime;
+
+watch(
+  logs,
+  (items) => {
+    if (items.length === 0) {
+      selectedLogKey.value = null;
+      return;
+    }
+
+    const stillVisible = items.some((log) => getLogKey(log) === selectedLogKey.value);
+    if (!stillVisible) selectedLogKey.value = getLogKey(items[0]);
+  },
+  { immediate: true },
+);
+
+const selectedLog = computed(
+  () => logs.value.find((log) => getLogKey(log) === selectedLogKey.value) ?? null,
+);
 
 const formatDateLabel = (d: string) => {
   const dateObj = parseDate(d);
@@ -188,8 +209,13 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
           <article
             v-for="log in group.logs"
             :key="log.id || log.startTime"
-            class="group relative -ml-12 grid grid-cols-[40px_1fr] gap-3 rounded border border-transparent px-1 py-1.5 transition-colors hover:border-base-300 hover:bg-base-200"
+            class="group relative -ml-12 grid cursor-pointer grid-cols-[40px_1fr] gap-3 rounded border border-transparent px-1 py-1.5 transition-colors hover:border-base-300 hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             :class="{ 'border-base-300 bg-surface-low': selectedLog?.startTime === log.startTime }"
+            role="button"
+            tabindex="0"
+            @click="selectedLogKey = getLogKey(log)"
+            @keydown.enter="selectedLogKey = getLogKey(log)"
+            @keydown.space.prevent="selectedLogKey = getLogKey(log)"
           >
             <div class="pt-0.5 text-right font-mono text-[11px] leading-4 text-outline">
               {{ formatTime(log.startTime) }}

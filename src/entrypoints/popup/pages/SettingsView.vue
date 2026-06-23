@@ -83,15 +83,12 @@ const handleFileChange = async (event: Event) => {
     await importData(data);
     message.value = { text: "Import successful!", type: "success" };
 
-    // Refresh stats after import
     await loadStats();
-
-    // Clear input to allow re-selecting same file if needed
-    target.value = "";
   } catch (e) {
     console.error("Import failed", e);
     message.value = { text: "Import failed: " + (e as Error).message, type: "error" };
   } finally {
+    target.value = "";
     importing.value = false;
   }
 };
@@ -164,7 +161,6 @@ onMounted(async () => {
           <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
             Data Management
           </h2>
-          <span class="font-mono text-[10px] leading-3 text-outline">Last export: today</span>
         </div>
 
         <div class="divide-y divide-base-300 p-2">

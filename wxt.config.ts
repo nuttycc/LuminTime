@@ -13,7 +13,8 @@ export default defineConfig({
     homepage_url: "https://github.com/nuttycc/LuminTime",
     permissions: ["tabs", "storage", "webNavigation", "idle", "alarms"],
   },
-  vite: (): WxtViteConfig => ({
-    plugins: tailwindcss() as unknown as WxtViteConfig["plugins"],
-  }),
+  vite: () =>
+    ({
+      plugins: tailwindcss(),
+    }) as WxtViteConfig,
 });

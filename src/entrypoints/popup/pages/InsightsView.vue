@@ -177,7 +177,7 @@ const weekStatusLabel = computed(() => (isCurrentWeek.value ? "This week" : "Pas
 
         <div class="flex gap-2">
           <div class="flex flex-col justify-between pt-5 pb-1 font-mono text-[11px] text-outline">
-            <span v-for="day in dayLabels" :key="day">{{ day }}</span>
+            <span v-for="(day, dayIndex) in dayLabels" :key="`day-${dayIndex}`">{{ day }}</span>
           </div>
           <div class="min-w-0 flex-1">
             <div class="mb-1 grid grid-cols-6 px-1 font-mono text-[11px] text-outline">
