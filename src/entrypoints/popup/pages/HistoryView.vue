@@ -176,11 +176,11 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
       </div>
 
       <div v-else class="relative pl-12">
-        <div class="absolute top-0 bottom-0 left-[43px] w-px bg-base-300"></div>
+        <div class="absolute top-0 bottom-0 left-10.75 w-px bg-base-300"></div>
 
         <section v-for="group in visibleGroups" :key="group.date" class="relative mb-3 last:mb-0">
           <div
-            class="sticky top-0 z-10 -mx-3 mb-2 border-y border-base-300 bg-base-100/95 px-3 py-1 text-[10px] font-bold tracking-[0.05em] text-outline uppercase"
+            class="sticky top-0 z-10 -mx-3 mb-2 border-y border-base-300 bg-base-100/95 px-3 py-1 text-[10px] font-bold tracking-wider text-outline uppercase"
           >
             {{ formatDateLabel(group.date) }}
           </div>
@@ -197,7 +197,7 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
 
             <div class="relative min-w-0 pl-4">
               <span
-                class="absolute top-1.5 left-[-4px] flex size-2 items-center justify-center rounded-full border border-base-100"
+                class="absolute top-1.5 -left-1 flex size-2 items-center justify-center rounded-full border border-base-100"
                 :class="selectedLog?.startTime === log.startTime ? 'bg-primary' : 'bg-outline'"
               ></span>
 
@@ -237,7 +237,7 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
                 class="mt-2 rounded border border-base-300 bg-base-100 p-2"
               >
                 <div class="mb-1 flex items-center justify-between border-b border-base-300 pb-1">
-                  <span class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">
+                  <span class="text-[9px] font-bold tracking-wider text-outline uppercase">
                     Details
                   </span>
                   <span class="font-mono text-[10px] leading-3 text-base-content">

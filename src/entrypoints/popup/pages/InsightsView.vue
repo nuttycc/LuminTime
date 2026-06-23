@@ -162,7 +162,7 @@ const weekStatusLabel = computed(() => (isCurrentWeek.value ? "This week" : "Pas
     <main class="custom-scrollbar flex-1 overflow-y-auto overflow-x-hidden pb-10">
       <section class="border-b border-base-300 px-3 py-4">
         <div class="mb-3 flex items-center justify-between">
-          <span class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+          <span class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
             Active hours
           </span>
           <div class="flex items-center gap-1 text-[10px] leading-3 text-outline">
@@ -200,7 +200,7 @@ const weekStatusLabel = computed(() => (isCurrentWeek.value ? "This week" : "Pas
       </section>
 
       <section class="border-b border-base-300 px-3 py-4">
-        <div class="mb-2 text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+        <div class="mb-2 text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
           Observations
         </div>
         <div class="border-y border-base-300">
@@ -230,7 +230,7 @@ const weekStatusLabel = computed(() => (isCurrentWeek.value ? "This week" : "Pas
 
       <section class="px-3 py-4">
         <div class="mb-3 flex items-end justify-between">
-          <span class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+          <span class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
             Site movement
           </span>
           <div class="flex h-6 items-end gap-1">
