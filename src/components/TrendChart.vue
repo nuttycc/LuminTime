@@ -41,7 +41,7 @@ const shouldShowLabel = (index: number) => {
 
 <template>
   <div
-    class="flex h-24 w-full items-end justify-between gap-1 px-2 pt-3 pb-3"
+    class="flex h-24 w-full items-end justify-between gap-1 px-1 pt-3 pb-3"
     role="list"
     aria-label="Activity trend chart"
   >
@@ -64,11 +64,11 @@ const shouldShowLabel = (index: number) => {
       </div>
 
       <div
-        class="min-w-1 w-full rounded-t transition-[height,opacity] duration-200 ease-out motion-reduce:transition-none"
+        class="min-w-1 w-full rounded-sm border transition-[height,opacity] duration-200 ease-out motion-reduce:transition-none"
         :class="[
-          item.value > 0 ? 'bg-primary' : 'bg-base-300',
+          item.value > 0 ? 'border-primary/30 bg-primary/35' : 'border-base-300 bg-base-300/60',
           item.active
-            ? 'opacity-100 ring-2 ring-primary ring-offset-1 ring-offset-base-100'
+            ? 'bg-primary opacity-100 ring-1 ring-primary ring-offset-1 ring-offset-base-100'
             : 'opacity-80 hover:opacity-100',
         ]"
         :style="{ height: getHeight(item.value) }"
