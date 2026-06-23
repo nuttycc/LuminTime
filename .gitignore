@@ -47,3 +47,5 @@ web-ext.config.ts
 .impeccable/
 DESIGN.md
 PRODUCT.md
+
+.chrome-lumintime-profile/
