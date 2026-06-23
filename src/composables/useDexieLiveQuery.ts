@@ -1,6 +1,6 @@
 import { liveQuery } from "dexie";
 import { onScopeDispose, type ComputedRef, type Ref, ref, watch } from "vue";
-import { isClient, toArray } from "@vueuse/shared";
+import { isClient, toArray } from "@vueuse/core";
 
 type DexieSubscription = { unsubscribe: () => void };
 
