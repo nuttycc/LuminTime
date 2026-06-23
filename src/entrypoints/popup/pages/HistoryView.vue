@@ -2,7 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
-import { useDateRange, type ViewMode } from "@/composables/useDateRange";
+import { useDateRange } from "@/composables/useDateRange";
 import { getHistoryLogs } from "@/db/service";
 import type { IHistoryLog } from "@/db/types";
 import { formatDate, parseDate } from "@/utils/dateUtils";
@@ -10,36 +10,32 @@ import InspectorFooter from "@/components/popup/InspectorFooter.vue";
 import InspectorHeader from "@/components/popup/InspectorHeader.vue";
 import InspectorIcon from "@/components/popup/InspectorIcon.vue";
 import InspectorIconButton from "@/components/popup/InspectorIconButton.vue";
-import InspectorPeriodStrip from "@/components/popup/InspectorPeriodStrip.vue";
 import type { InspectorIconName } from "@/components/popup/iconNames";
 
 const route = useRoute();
 const router = useRouter();
-const { view, startDate, endDate, label, next, prev, goToday, isToday, canNext } = useDateRange();
+const { startDate, endDate } = useDateRange();
 
 const hostname = computed(() => route.query.hostname as string | undefined);
-const path = computed(() => route.query.path as string | undefined);
 
 const logs = ref<IHistoryLog[]>([]);
 
 const fetchData = async () => {
   try {
-    logs.value = await getHistoryLogs(startDate.value, endDate.value, hostname.value, path.value);
+    logs.value = await getHistoryLogs(startDate.value, endDate.value, hostname.value);
   } catch (e) {
     console.error("Failed to fetch history", e);
   }
 };
 
-watch([startDate, endDate, hostname, path], fetchData, { immediate: true });
+watch([startDate, endDate, hostname], fetchData, { immediate: true });
 
 const title = computed(() => {
-  if (path.value) return "Page History";
   if (hostname.value) return "Site History";
   return "History";
 });
 
 const subtitle = computed(() => {
-  if (path.value) return path.value;
   if (hostname.value) return hostname.value;
   return "All Activity";
 });
@@ -50,10 +46,6 @@ const goBack = () => {
 
 const clearHistoryScope = () => {
   router.push("/history");
-};
-
-const updateView = (v: ViewMode) => {
-  view.value = v;
 };
 
 const formatTime = (ts: number) => {
@@ -85,13 +77,6 @@ const visibleGroups = computed(() =>
 );
 
 const selectedLog = computed(() => logs.value[0] ?? null);
-
-const rangeLabel = computed(() => {
-  const start = parseDate(startDate.value);
-  const end = parseDate(endDate.value);
-  const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  return view.value === "day" ? label.value : `${fmt(start)} - ${fmt(end)}`;
-});
 
 const formatDateLabel = (d: string) => {
   const dateObj = parseDate(d);
@@ -143,7 +128,12 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
   <div class="flex h-full min-h-0 flex-col bg-base-100 text-base-content">
     <InspectorHeader :title="title" :subtitle="subtitle" @back="goBack">
       <template #actions>
-        <InspectorIconButton icon="filter-off" label="Clear filters" />
+        <InspectorIconButton
+          v-if="hostname"
+          icon="filter-off"
+          label="Clear filters"
+          @click="clearHistoryScope"
+        />
       </template>
     </InspectorHeader>
 
@@ -157,13 +147,6 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
           <span class="truncate">{{ hostname }}</span>
         </div>
         <div
-          v-if="path"
-          class="flex min-w-0 items-center gap-1 rounded border border-base-300 bg-surface-low px-2 py-0.5 font-mono text-[11px] leading-4"
-        >
-          <span class="text-outline">path:</span>
-          <span class="truncate">{{ path }}</span>
-        </div>
-        <div
           class="rounded border border-base-300 bg-surface-low px-2 py-0.5 font-mono text-[11px] leading-4"
         >
           <span class="text-outline">source:</span> all
@@ -175,24 +158,13 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
         </div>
       </div>
       <button
-        v-if="hostname || path"
+        v-if="hostname"
         class="mt-2 rounded px-1 py-0.5 text-[11px] leading-4 text-primary transition-colors hover:bg-primary/10"
         @click="clearHistoryScope"
       >
         Switch to all activity
       </button>
     </section>
-
-    <InspectorPeriodStrip
-      :view="view"
-      :label="rangeLabel"
-      :can-next="canNext"
-      :is-today="isToday"
-      @update:view="updateView"
-      @prev="prev"
-      @next="next"
-      @today="goToday"
-    />
 
     <main class="custom-scrollbar relative flex-1 overflow-y-auto overflow-x-hidden p-3">
       <div v-if="logs.length === 0" class="px-3 py-10 text-center">

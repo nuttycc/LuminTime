@@ -136,12 +136,6 @@ const updateView = (v: ViewMode) => {
       </div>
 
       <div class="flex items-center gap-1">
-        <div
-          class="hidden items-center gap-1 rounded border border-primary/50 bg-primary/10 px-1.5 py-1 text-[10px] font-bold leading-3 tracking-wider text-primary uppercase min-[340px]:flex"
-        >
-          <span class="size-1.5 rounded-full bg-primary"></span>
-          Local
-        </div>
         <InspectorIconButton
           icon="bar-chart"
           label="Open insights"
@@ -238,16 +232,8 @@ const updateView = (v: ViewMode) => {
       </section>
 
       <section class="space-y-2" aria-label="Top sites">
-        <div class="flex items-center justify-between">
-          <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
-            Top Sites
-          </div>
-          <button
-            class="rounded border border-transparent px-1.5 py-1 text-[11px] leading-3 text-base-content/55 transition-colors hover:border-base-300 hover:bg-base-200 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            @click="goToHistory"
-          >
-            History
-          </button>
+        <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+          Top Sites
         </div>
 
         <div

@@ -2,6 +2,7 @@ import {
   IconArrowLeft,
   IconArrowRight,
   IconBan,
+  IconBrandGithub,
   IconChartBar,
   IconChevronLeft,
   IconChevronRight,
@@ -12,6 +13,7 @@ import {
   IconDeviceFloppy,
   IconDotsVertical,
   IconDownload,
+  IconExternalLink,
   IconFilter,
   IconFilterOff,
   IconGlobe,
@@ -42,8 +44,10 @@ export type InspectorIconName =
   | "code"
   | "database"
   | "download"
+  | "external-link"
   | "filter"
   | "filter-off"
+  | "github"
   | "globe"
   | "help"
   | "history"
@@ -71,8 +75,10 @@ export const inspectorIconMap = {
   code: IconCode,
   database: IconDatabase,
   download: IconDownload,
+  "external-link": IconExternalLink,
   filter: IconFilter,
   "filter-off": IconFilterOff,
+  github: IconBrandGithub,
   globe: IconGlobe,
   help: IconHelpCircle,
   history: IconHistory,

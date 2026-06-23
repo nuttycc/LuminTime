@@ -13,7 +13,6 @@ import {
 import InspectorFooter from "@/components/popup/InspectorFooter.vue";
 import InspectorHeader from "@/components/popup/InspectorHeader.vue";
 import InspectorIcon from "@/components/popup/InspectorIcon.vue";
-import InspectorIconButton from "@/components/popup/InspectorIconButton.vue";
 
 const router = useRouter();
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -26,6 +25,8 @@ const statsError = ref<string | null>(null);
 
 const retentionDays = ref(7);
 const retentionOptions = [7, 14, 30, 90];
+const projectUrl = "https://github.com/nuttycc/LuminTime";
+const projectDisplayUrl = "github.com/nuttycc/LuminTime";
 
 // --- Blocklist ---
 const blocklist = ref<string[]>([]);
@@ -153,11 +154,7 @@ onMounted(async () => {
 
 <template>
   <div class="flex h-full min-h-0 flex-col bg-base-100 text-base-content">
-    <InspectorHeader title="Settings" subtitle="Local data controls" @back="goBack">
-      <template #actions>
-        <InspectorIconButton icon="info" label="Settings info" />
-      </template>
-    </InspectorHeader>
+    <InspectorHeader title="Settings" subtitle="Local data controls" @back="goBack" />
 
     <main class="custom-scrollbar flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-3 pb-4">
       <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
@@ -327,6 +324,32 @@ onMounted(async () => {
           </div>
         </div>
         <div v-else class="px-3 py-2 text-xs text-outline">No stats available.</div>
+      </section>
+
+      <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
+        <div class="border-b border-base-300 bg-base-200 px-3 py-2">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+            About
+          </h2>
+        </div>
+
+        <a
+          :href="projectUrl"
+          target="_blank"
+          rel="noreferrer"
+          class="flex items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <span class="flex min-w-0 items-center gap-2">
+            <InspectorIcon name="github" size="size-4 shrink-0 text-base-content/70" />
+            <span class="min-w-0">
+              <span class="block text-sm leading-5">GitHub</span>
+              <span class="block truncate font-mono text-[11px] leading-4 text-base-content/55">
+                {{ projectDisplayUrl }}
+              </span>
+            </span>
+          </span>
+          <InspectorIcon name="external-link" size="size-3.5 shrink-0 text-outline" />
+        </a>
       </section>
     </main>
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
 import { useLiveQuery } from "@/composables/useDexieLiveQuery";
 import { getWeeklyInsights, type WeeklyInsights, type SiteComparison } from "@/db/insights";
-import { formatDate, getStartOfWeek, getEndOfWeek, parseDate } from "@/utils/dateUtils";
+import { addDays, formatDate, getStartOfWeek, getEndOfWeek, parseDate } from "@/utils/dateUtils";
 import InspectorFooter from "@/components/popup/InspectorFooter.vue";
 import InspectorHeader from "@/components/popup/InspectorHeader.vue";
 import InspectorIcon from "@/components/popup/InspectorIcon.vue";
@@ -13,10 +13,15 @@ import InspectorIconButton from "@/components/popup/InspectorIconButton.vue";
 const router = useRouter();
 
 const today = new Date();
-const weekStart = getStartOfWeek(today);
-const weekEnd = getEndOfWeek(today);
-const startStr = formatDate(weekStart);
-const endStr = formatDate(weekEnd);
+const currentWeekStart = formatDate(getStartOfWeek(today));
+const selectedWeekStart = ref(currentWeekStart);
+
+const weekStart = computed(() => parseDate(selectedWeekStart.value));
+const weekEnd = computed(() => getEndOfWeek(weekStart.value));
+const startStr = computed(() => formatDate(weekStart.value));
+const endStr = computed(() => formatDate(weekEnd.value));
+const isCurrentWeek = computed(() => selectedWeekStart.value === currentWeekStart);
+const canGoNextWeek = computed(() => selectedWeekStart.value < currentWeekStart);
 
 const defaultInsights: WeeklyInsights = {
   thisWeekTotal: 0,
@@ -28,9 +33,9 @@ const defaultInsights: WeeklyInsights = {
 };
 
 const insights = useLiveQuery<WeeklyInsights>(
-  () => getWeeklyInsights(startStr, endStr),
+  () => getWeeklyInsights(startStr.value, endStr.value),
   defaultInsights,
-  [],
+  [startStr, endStr],
 );
 
 const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
@@ -109,34 +114,47 @@ const goBack = () => {
   router.back();
 };
 
+const goToPreviousWeek = () => {
+  selectedWeekStart.value = formatDate(addDays(weekStart.value, -7));
+};
+
+const goToNextWeek = () => {
+  if (!canGoNextWeek.value) return;
+
+  selectedWeekStart.value = formatDate(addDays(weekStart.value, 7));
+};
+
 // Week label for header
 const weekLabel = computed(() => {
-  const start = parseDate(startStr);
-  const end = parseDate(endStr);
+  const start = parseDate(startStr.value);
+  const end = parseDate(endStr.value);
   const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return `${fmt(start)} – ${fmt(end)}`;
 });
+
+const weekStatusLabel = computed(() => (isCurrentWeek.value ? "This week" : "Past week"));
 </script>
 
 <template>
   <div class="flex h-full min-h-0 flex-col bg-base-100 text-base-content">
-    <InspectorHeader title="Insights" subtitle="Pattern review" @back="goBack">
-      <template #actions>
-        <InspectorIconButton icon="more" label="More options" />
-      </template>
-    </InspectorHeader>
+    <InspectorHeader title="Insights" subtitle="Pattern review" @back="goBack" />
 
     <section
       class="flex shrink-0 items-center justify-between border-b border-base-300 bg-surface-lowest px-3 py-2"
     >
       <div class="flex items-center gap-1">
-        <InspectorIconButton icon="chevron-left" label="Previous week" />
-        <InspectorIconButton icon="chevron-right" label="Next week" />
+        <InspectorIconButton icon="chevron-left" label="Previous week" @click="goToPreviousWeek" />
+        <InspectorIconButton
+          icon="chevron-right"
+          label="Next week"
+          :disabled="!canGoNextWeek"
+          @click="goToNextWeek"
+        />
       </div>
       <div class="flex items-center gap-2">
         <span class="font-mono text-[13px] leading-4">{{ weekLabel }}</span>
         <span class="rounded border border-base-300 bg-surface-low px-2 py-0.5 text-[11px]">
-          This week
+          {{ weekStatusLabel }}
         </span>
       </div>
     </section>
