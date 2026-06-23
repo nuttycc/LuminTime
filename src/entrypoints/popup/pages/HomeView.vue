@@ -164,14 +164,7 @@ const updateView = (v: ViewMode) => {
             aria-label="Previous period"
             @click="prev"
           >
-            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <InspectorIcon name="chevron-left" size="size-4" />
           </button>
           <button
             class="min-w-0 truncate rounded px-1.5 py-1 text-sm font-semibold leading-5 transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -187,14 +180,7 @@ const updateView = (v: ViewMode) => {
             :disabled="canNext === false"
             @click="next"
           >
-            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <InspectorIcon name="chevron-right" size="size-4" />
           </button>
         </div>
 
@@ -304,19 +290,10 @@ const updateView = (v: ViewMode) => {
               </div>
             </div>
 
-            <svg
-              class="size-4 shrink-0 text-outline opacity-0 transition-opacity group-hover:opacity-100"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <InspectorIcon
+              name="chevron-right"
+              size="size-4 shrink-0 text-outline opacity-0 transition-opacity group-hover:opacity-100"
+            />
           </button>
         </div>
       </section>

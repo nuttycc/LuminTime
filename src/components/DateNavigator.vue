@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { type ViewMode } from "@/composables/useDateRange";
+import InspectorIcon from "@/components/popup/InspectorIcon.vue";
 
 const props = defineProps<{
   view: ViewMode;
@@ -35,14 +36,7 @@ const nextTip = computed(() => {
   >
     <div class="flex min-w-0 flex-1 items-center gap-1">
       <button class="btn btn-ghost btn-square btn-xs" :aria-label="prevTip" @click="emit('prev')">
-        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
+        <InspectorIcon name="chevron-left" size="size-4" />
       </button>
 
       <div class="flex min-w-0 flex-1 items-center gap-1.5 px-1">
@@ -64,9 +58,7 @@ const nextTip = computed(() => {
         :disabled="canNext === false"
         @click="emit('next')"
       >
-        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
+        <InspectorIcon name="chevron-right" size="size-4" />
       </button>
     </div>
 
