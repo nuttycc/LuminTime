@@ -7,6 +7,9 @@ import { getAggregatedSites, getHourlyTrend, getRangeStats } from "@/db/service"
 import type { ISiteStat } from "@/db/types";
 import { useLiveQuery } from "@/composables/useDexieLiveQuery";
 import TrendChart, { type ChartItem } from "@/components/TrendChart.vue";
+import InspectorFooter from "@/components/popup/InspectorFooter.vue";
+import InspectorIcon from "@/components/popup/InspectorIcon.vue";
+import InspectorIconButton from "@/components/popup/InspectorIconButton.vue";
 
 const router = useRouter();
 const { view, date, startDate, endDate, label, next, prev, goToday, isToday, canNext } =
@@ -133,59 +136,23 @@ const updateView = (v: ViewMode) => {
       </div>
 
       <div class="flex items-center gap-1">
-        <button
-          class="flex size-7 items-center justify-center rounded border border-transparent text-base-content/70 transition-colors hover:border-base-300 hover:bg-base-200 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label="Open insights"
-          title="Insights"
+        <div
+          class="hidden items-center gap-1 rounded border border-primary/50 bg-primary/10 px-1.5 py-1 text-[10px] font-bold leading-3 tracking-[0.05em] text-primary uppercase min-[340px]:flex"
+        >
+          <span class="size-1.5 rounded-full bg-primary"></span>
+          Local
+        </div>
+        <InspectorIconButton
+          icon="bar-chart"
+          label="Open insights"
           @click="navigateTo('/insights')"
-        >
-          <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 19V5m0 14h16M8 15v-4m4 4V8m4 7v-6"
-            />
-          </svg>
-        </button>
-
-        <button
-          class="flex size-7 items-center justify-center rounded border border-transparent text-base-content/70 transition-colors hover:border-base-300 hover:bg-base-200 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label="Open history"
-          title="History"
-          @click="goToHistory"
-        >
-          <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </button>
-
-        <button
-          class="flex size-7 items-center justify-center rounded border border-transparent text-base-content/70 transition-colors hover:border-base-300 hover:bg-base-200 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label="Open settings"
-          title="Settings"
+        />
+        <InspectorIconButton icon="history" label="Open history" @click="goToHistory" />
+        <InspectorIconButton
+          icon="settings"
+          label="Open settings"
           @click="navigateTo('/settings')"
-        >
-          <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-            />
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
-        </button>
+        />
       </div>
     </header>
 
@@ -259,37 +226,17 @@ const updateView = (v: ViewMode) => {
           Total Active Time
         </div>
 
-        <div class="mt-2 font-mono text-lg font-semibold leading-6 text-primary">
+        <div class="mt-2 font-mono text-[32px] leading-none text-primary">
           {{ activeTimeLabel }}
         </div>
 
         <div class="mt-3 flex items-center gap-3 border-t border-base-300/70 pt-2">
           <div class="flex items-center gap-1 text-xs leading-4 text-base-content/65">
-            <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 3a9 9 0 100 18 9 9 0 000-18z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3.6 9h16.8M3.6 15h16.8M12 3c2 2.4 3 5.4 3 9s-1 6.6-3 9M12 3c-2 2.4-3 5.4-3 9s1 6.6 3 9"
-              />
-            </svg>
+            <InspectorIcon name="globe" size="size-3.5" />
             <span>{{ trackedSiteCount }} {{ trackedSiteCount === 1 ? "site" : "sites" }}</span>
           </div>
           <div class="flex items-center gap-1 text-xs leading-4 text-base-content/65">
-            <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 10V7a5 5 0 00-10 0v3M5 10h14v10H5z"
-              />
-            </svg>
+            <InspectorIcon name="save" size="size-3.5" />
             <span>stored in browser</span>
           </div>
         </div>
@@ -375,10 +322,6 @@ const updateView = (v: ViewMode) => {
       </section>
     </main>
 
-    <footer
-      class="flex h-8 shrink-0 items-center justify-center border-t border-base-300 bg-surface-lowest px-3 text-center font-mono text-xs text-outline"
-    >
-      <span>Tracking locally - No sync</span>
-    </footer>
+    <InspectorFooter text="Tracking locally - No sync" />
   </div>
 </template>

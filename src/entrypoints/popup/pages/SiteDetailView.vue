@@ -2,7 +2,6 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
-import { motion, AnimatePresence } from "motion-v";
 import { useDateRange, type ViewMode } from "@/composables/useDateRange";
 import { getAggregatedPages, deleteSiteData } from "@/db/service";
 import type { IPageStat } from "@/db/types";
@@ -14,21 +13,11 @@ import {
   isHostnameBlocked,
   notifyBlocklistUpdate,
 } from "@/db/blocklist";
-import {
-  contentVariants as contentVariantsFn,
-  listContainerVariants as listContainerVariantsFn,
-  listItemVariants,
-} from "@/composables/useMotionVariants";
-import DateNavigator from "@/components/DateNavigator.vue";
-
-const contentVariants = contentVariantsFn();
-
-const cardVariant = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-};
-
-const listContainerVariants = listContainerVariantsFn(0.04);
+import InspectorFooter from "@/components/popup/InspectorFooter.vue";
+import InspectorHeader from "@/components/popup/InspectorHeader.vue";
+import InspectorIcon from "@/components/popup/InspectorIcon.vue";
+import InspectorIconButton from "@/components/popup/InspectorIconButton.vue";
+import InspectorPeriodStrip from "@/components/popup/InspectorPeriodStrip.vue";
 
 const confirmingAction = ref<"block" | "unblock" | "delete" | null>(null);
 const message = ref<{ text: string; type: "success" | "error" } | null>(null);
@@ -74,9 +63,19 @@ const totalDuration = computed(() => {
   return pages.value.reduce((sum, p) => sum + p.duration, 0);
 });
 
+const visiblePages = computed(() => pages.value.slice(0, 6));
+
+const selectedPage = computed(() => {
+  return pages.value.find((page) => isActivePage(page)) ?? pages.value[0] ?? null;
+});
+
+const totalDurationLabel = computed(() =>
+  totalDuration.value > 0 ? prettyMs(totalDuration.value, { secondsDecimalDigits: 0 }) : "0s",
+);
+
 const pagePercentage = (duration: number): number => {
   if (totalDuration.value === 0) return 0;
-  return Math.round((duration / totalDuration.value) * 100);
+  return Math.max(6, Math.round((duration / totalDuration.value) * 100));
 };
 
 const getPageLabel = (page: IPageStat): string => {
@@ -115,34 +114,16 @@ const resetConfirmations = () => {
   confirmingAction.value = null;
 };
 
-const handleDropdownFocusOut = (event: FocusEvent) => {
-  const dropdown = event.currentTarget as HTMLElement | null;
-  const nextFocused = event.relatedTarget as Node | null;
-
-  if (!dropdown) return;
-
-  if (!nextFocused || !dropdown.contains(nextFocused)) {
-    resetConfirmations();
-  }
-};
-
-const closeDropdown = () => {
-  (document.activeElement as HTMLElement)?.blur();
-  resetConfirmations();
-};
-
 const handleBlockSite = async () => {
   const added = await addToBlocklist(hostname.value);
   if (added) notifyBlocklistUpdate();
   resetConfirmations();
-  closeDropdown();
 };
 
 const handleUnblockSite = async () => {
   const removed = await removeFromBlocklist(hostname.value);
   if (removed) notifyBlocklistUpdate();
   resetConfirmations();
-  closeDropdown();
 };
 
 const handleDeleteSiteData = async () => {
@@ -158,7 +139,7 @@ const handleDeleteSiteData = async () => {
     const errorMessage = e instanceof Error ? e.message : "Unknown error";
     message.value = { text: `Delete failed: ${errorMessage}`, type: "error" };
   } finally {
-    closeDropdown();
+    resetConfirmations();
   }
 
   if (deleted) {
@@ -168,144 +149,15 @@ const handleDeleteSiteData = async () => {
 </script>
 
 <template>
-  <div class="flex flex-col min-h-0 bg-base-100">
-    <!-- Custom Header -->
-    <div class="navbar bg-base-100 sticky top-0 z-30 border-b border-base-200 min-h-12 px-2">
-      <div class="navbar-start w-1/4">
-        <div class="tooltip tooltip-right" data-tip="Back to Dashboard">
-          <button
-            class="btn btn-ghost btn-circle btn-sm"
-            aria-label="Back to Dashboard"
-            @click="goBack"
-          >
-            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="navbar-center w-2/4 justify-center flex-col gap-0.5">
-        <h1 class="text-sm font-bold truncate w-fit flex items-center gap-1">
-          {{ hostname }}
-          <span v-if="isBlocked" class="badge badge-error badge-xs text-[9px] font-bold shrink-0"
-            >BLOCKED</span
-          >
-        </h1>
-        <div class="text-[10px] text-base-content/60 font-mono">
-          {{ prettyMs(totalDuration, { secondsDecimalDigits: 0 }) }}
-        </div>
-      </div>
-      <div class="navbar-end w-1/4">
-        <div class="dropdown dropdown-end" @focusout="handleDropdownFocusOut">
-          <div
-            tabindex="0"
-            role="button"
-            class="btn btn-ghost btn-circle btn-sm"
-            aria-label="More actions"
-          >
-            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-              />
-            </svg>
-          </div>
-          <ul
-            tabindex="-1"
-            class="dropdown-content menu bg-base-200 rounded-box z-50 mt-2 w-44 p-2 shadow-md"
-          >
-            <li>
-              <a
-                @click="
-                  goToSiteHistory();
-                  closeDropdown();
-                "
-              >
-                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Site History
-              </a>
-            </li>
-            <hr class="my-1 border-base-content/10" />
-            <template v-if="isBlocked">
-              <li v-if="confirmingAction !== 'unblock'">
-                <a class="text-success" @click.stop="confirmingAction = 'unblock'">
-                  <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  Unblock Site
-                </a>
-              </li>
-              <li v-else>
-                <a class="bg-success/15 text-success font-bold" @click="handleUnblockSite()">
-                  Confirm Unblock?
-                </a>
-              </li>
-            </template>
-            <template v-else>
-              <li v-if="confirmingAction !== 'block'">
-                <a class="text-warning" @click.stop="confirmingAction = 'block'">
-                  <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                    />
-                  </svg>
-                  Block Site
-                </a>
-              </li>
-              <li v-else>
-                <a class="bg-warning/15 text-warning font-bold" @click="handleBlockSite()">
-                  Confirm Block?
-                </a>
-              </li>
-            </template>
-            <hr class="my-1 border-base-content/10" />
-            <li v-if="confirmingAction !== 'delete'">
-              <a class="text-error" @click.stop="confirmingAction = 'delete'">
-                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-                Delete Data
-              </a>
-            </li>
-            <li v-else>
-              <a class="bg-error/15 text-error font-bold" @click="handleDeleteSiteData()">
-                Confirm Delete?
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+  <div class="flex h-full min-h-0 flex-col bg-base-100 text-base-content">
+    <InspectorHeader :title="hostname" subtitle="Site detail" @back="goBack">
+      <template #actions>
+        <InspectorIconButton icon="history" label="Open site history" @click="goToSiteHistory" />
+        <InspectorIconButton icon="more" label="More actions" />
+      </template>
+    </InspectorHeader>
 
-    <!-- Date Navigator (Reused) -->
-    <DateNavigator
+    <InspectorPeriodStrip
       :view="view"
       :label="label"
       :can-next="canNext"
@@ -316,93 +168,210 @@ const handleDeleteSiteData = async () => {
       @today="goToday"
     />
 
-    <!-- Main Content -->
-    <motion.div class="flex-1 p-4" :variants="contentVariants" initial="hidden" animate="show">
-      <motion.div
-        v-if="message"
-        :variants="cardVariant"
-        :class="[
-          'alert text-sm py-2 mb-3',
-          message.type === 'success' ? 'alert-success' : 'alert-error',
-        ]"
-      >
-        <span>{{ message.text }}</span>
-      </motion.div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          v-if="pages.length === 0"
-          key="empty"
-          :initial="{ opacity: 0 }"
-          :animate="{ opacity: 0.6 }"
-          :exit="{ opacity: 0 }"
-          class="flex flex-col items-center justify-center py-10 gap-2"
-        >
-          <svg
-            class="size-12 text-base-content/30"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          <div class="text-sm font-medium">No pages visited</div>
-          <div class="text-xs">
-            No specific pages recorded for this domain in the selected period.
+    <main class="custom-scrollbar flex-1 overflow-y-auto overflow-x-hidden">
+      <section class="border-b border-base-300 bg-surface-lowest p-3">
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span
+              class="size-1.5 rounded-full"
+              :class="isBlocked ? 'bg-error' : 'bg-primary'"
+            ></span>
+            <span class="text-xs leading-4 text-base-content">
+              {{ isBlocked ? "Tracking paused" : "Track this site" }}
+            </span>
           </div>
-        </motion.div>
+          <button
+            class="rounded border border-base-300 px-2 py-1 text-[11px] leading-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :class="
+              isBlocked
+                ? 'text-primary hover:bg-primary/10'
+                : 'text-base-content/70 hover:bg-base-200'
+            "
+            @click="confirmingAction = isBlocked ? 'unblock' : 'block'"
+          >
+            {{ isBlocked ? "Unblock" : "Block" }}
+          </button>
+        </div>
 
-        <motion.ul
-          v-else
-          key="list"
-          class="flex flex-col gap-2"
-          :variants="listContainerVariants"
-          initial="hidden"
-          animate="show"
+        <div
+          class="grid grid-cols-4 gap-px overflow-hidden rounded border border-base-300 bg-base-300"
         >
-          <motion.li
-            v-for="page in pages"
+          <div class="bg-surface-low p-1.5 text-center">
+            <InspectorIcon
+              :name="isBlocked ? 'block' : 'check-circle'"
+              size="mx-auto mb-0.5 size-3.5 text-primary"
+            />
+            <div class="text-[9px] font-bold tracking-[0.05em] text-base-content uppercase">
+              {{ isBlocked ? "Blocked" : "Tracked" }}
+            </div>
+          </div>
+          <div class="bg-surface-low p-1.5 text-center">
+            <div class="font-mono text-[11px] leading-4 text-base-content">
+              {{ totalDurationLabel }}
+            </div>
+            <div class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">Total</div>
+          </div>
+          <div class="bg-surface-low p-1.5 text-center">
+            <div class="font-mono text-[11px] leading-4 text-base-content">
+              {{ pages.length }}
+            </div>
+            <div class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">Pages</div>
+          </div>
+          <div class="bg-surface-low p-1.5 text-center">
+            <InspectorIcon name="database" size="mx-auto mb-0.5 size-3.5 text-outline" />
+            <div class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">Local</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="border-b border-base-300">
+        <div
+          class="grid grid-cols-[1.5fr_1fr_48px] border-b border-base-300 bg-base-200 px-3 py-1.5"
+        >
+          <span class="text-[10px] font-bold tracking-[0.05em] text-outline uppercase">Page</span>
+          <span class="text-[10px] font-bold tracking-[0.05em] text-outline uppercase">Path</span>
+          <span class="text-right text-[10px] font-bold tracking-[0.05em] text-outline uppercase">
+            Time
+          </span>
+        </div>
+
+        <div v-if="pages.length === 0" class="px-3 py-8 text-center">
+          <div class="text-sm font-medium">No pages visited</div>
+          <div class="mt-1 text-xs leading-5 text-base-content/60">
+            No specific pages were recorded for this domain in the selected period.
+          </div>
+        </div>
+
+        <template v-else>
+          <button
+            v-for="page in visiblePages"
             :key="page.path"
-            layout
-            :variants="listItemVariants"
-            class="flex flex-col gap-1 p-3 hover:bg-base-200/50 rounded-box transition-colors border border-base-100 hover:border-base-200 cursor-pointer focus-visible:ring-2 focus-visible:outline-none"
-            :class="{ 'bg-primary/10 border-primary/20': isActivePage(page) }"
-            role="button"
-            tabindex="0"
+            class="group relative grid w-full grid-cols-[1.5fr_1fr_48px] items-center gap-2 border-b border-base-300 px-3 py-2 text-left last:border-b-0 transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :class="{ 'bg-surface-low': selectedPage?.path === page.path }"
             :aria-label="getPageLabel(page)"
             @click="goToPageHistory(page.path)"
-            @keydown.enter="goToPageHistory(page.path)"
-            @keydown.space.prevent="goToPageHistory(page.path)"
           >
-            <div class="flex justify-between gap-2">
-              <div class="flex flex-col min-w-0 flex-1">
-                <div class="font-medium text-sm truncate" :title="page.title || 'Untitled'">
+            <div
+              v-if="selectedPage?.path === page.path"
+              class="absolute top-0 bottom-0 left-0 w-0.5 bg-primary"
+            ></div>
+            <div class="min-w-0 pr-1">
+              <div class="flex min-w-0 items-center gap-2">
+                <span
+                  v-if="isActivePage(page)"
+                  class="size-1.5 shrink-0 rounded-full bg-primary"
+                  aria-label="Current tab"
+                ></span>
+                <span
+                  class="truncate text-xs leading-4"
+                  :class="isActivePage(page) && 'text-primary'"
+                >
                   {{ page.title || "Untitled" }}
-                </div>
-                <div class="text-xs text-base-content/50 truncate font-mono" :title="page.fullPath">
-                  {{ page.path }}
-                </div>
+                </span>
               </div>
-              <div class="font-mono text-xs font-bold self-start mt-0.5">
-                {{ prettyMs(page.duration, { secondsDecimalDigits: 0 }) }}
+              <div class="mt-1 h-0.5 overflow-hidden rounded-sm bg-base-300">
+                <div
+                  class="h-full bg-primary"
+                  :style="{ width: `${pagePercentage(page.duration)}%` }"
+                ></div>
               </div>
             </div>
+            <div class="min-w-0 font-mono text-[11px] leading-4 text-outline">
+              <span class="block truncate" :title="page.path">{{ page.path }}</span>
+            </div>
+            <div class="text-right font-mono text-[11px] leading-4 text-base-content">
+              {{ prettyMs(page.duration, { secondsDecimalDigits: 0 }) }}
+            </div>
+          </button>
+        </template>
+      </section>
 
-            <!-- Mini Progress -->
-            <div class="w-full bg-base-200 rounded-full h-1 mt-1 overflow-hidden">
-              <div
-                class="bg-secondary h-full rounded-full"
-                :style="{ width: `${pagePercentage(page.duration)}%` }"
-              ></div>
-            </div>
-          </motion.li>
-        </motion.ul>
-      </AnimatePresence>
-    </motion.div>
+      <section
+        v-if="selectedPage"
+        class="border-b border-base-300 bg-surface-low p-3"
+        aria-label="Selected page detail"
+      >
+        <div class="rounded border border-base-300 bg-base-100 p-2">
+          <div class="text-[9px] font-bold tracking-[0.05em] text-outline uppercase">Full path</div>
+          <div class="mt-1 break-all font-mono text-[11px] leading-4 text-base-content">
+            {{ selectedPage.fullPath || selectedPage.path }}
+          </div>
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] leading-3 text-outline"
+              >Last active: current range</span
+            >
+            <button
+              class="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              @click="goToPageHistory(selectedPage.path)"
+            >
+              View page history
+              <InspectorIcon name="arrow-right" size="size-3.5" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-2 p-3" aria-label="Danger zone">
+        <div class="text-[10px] font-bold leading-3 tracking-[0.05em] text-outline uppercase">
+          Danger Zone
+        </div>
+
+        <div
+          v-if="message"
+          class="rounded border px-2 py-1.5 text-xs"
+          :class="
+            message.type === 'success'
+              ? 'border-primary/40 text-primary'
+              : 'border-error/40 text-error'
+          "
+        >
+          {{ message.text }}
+        </div>
+
+        <button
+          v-if="confirmingAction === 'block'"
+          class="flex w-full items-center gap-2 rounded border border-warning/50 px-3 py-2 text-left text-warning transition-colors hover:bg-warning/10"
+          @click="handleBlockSite"
+        >
+          <InspectorIcon name="block" />
+          <span class="flex-1 text-xs">Confirm block domain</span>
+        </button>
+        <button
+          v-else-if="confirmingAction === 'unblock'"
+          class="flex w-full items-center gap-2 rounded border border-primary/50 px-3 py-2 text-left text-primary transition-colors hover:bg-primary/10"
+          @click="handleUnblockSite"
+        >
+          <InspectorIcon name="check-circle" />
+          <span class="flex-1 text-xs">Confirm unblock domain</span>
+        </button>
+        <button
+          v-else
+          class="flex w-full items-center gap-2 rounded border border-base-300 px-3 py-2 text-left text-base-content transition-colors hover:border-warning/50 hover:bg-warning/10 hover:text-warning"
+          @click="confirmingAction = isBlocked ? 'unblock' : 'block'"
+        >
+          <InspectorIcon :name="isBlocked ? 'check-circle' : 'block'" />
+          <span class="flex-1 text-xs">{{ isBlocked ? "Unblock domain" : "Block domain" }}</span>
+        </button>
+
+        <button
+          v-if="confirmingAction === 'delete'"
+          class="flex w-full items-center gap-2 rounded border border-error/60 px-3 py-2 text-left text-error transition-colors hover:bg-error/10"
+          @click="handleDeleteSiteData"
+        >
+          <InspectorIcon name="trash" />
+          <span class="flex-1 text-xs">Confirm delete domain data</span>
+        </button>
+        <button
+          v-else
+          class="flex w-full items-center gap-2 rounded border border-error/40 px-3 py-2 text-left text-error transition-colors hover:bg-error/10"
+          @click="confirmingAction = 'delete'"
+        >
+          <InspectorIcon name="trash" />
+          <span class="flex-1 text-xs">Delete domain data</span>
+        </button>
+      </section>
+    </main>
+
+    <InspectorFooter text="Local browser storage active" icon="check-circle" />
   </div>
 </template>
