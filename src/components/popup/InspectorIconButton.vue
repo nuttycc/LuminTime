@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import InspectorIcon from "./InspectorIcon.vue";
-import type { InspectorIconName } from "./iconNames";
+import InspectorIcon from "@/components/popup/InspectorIcon.vue";
+import type { InspectorIconName } from "@/components/popup/iconNames";
 
 withDefaults(
   defineProps<{

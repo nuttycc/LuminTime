@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InspectorIconButton from "./InspectorIconButton.vue";
+import InspectorIconButton from "@/components/popup/InspectorIconButton.vue";
 
 withDefaults(
   defineProps<{

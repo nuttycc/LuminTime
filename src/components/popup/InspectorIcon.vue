@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { inspectorIconMap, type InspectorIconName } from "./iconNames";
+import { inspectorIconMap, type InspectorIconName } from "@/components/popup/iconNames";
 
 const props = withDefaults(
   defineProps<{
