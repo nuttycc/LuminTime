@@ -1,6 +1,5 @@
 import { liveQuery } from "dexie";
 import { onScopeDispose, type ComputedRef, type Ref, ref, watch } from "vue";
-import { isClient, toArray } from "@vueuse/core";
 
 type DexieSubscription = { unsubscribe: () => void };
 
@@ -51,13 +50,14 @@ export function useLiveQuery<T>(
     : (defaultValueOrDeps as Ref | ComputedRef | unknown[] | undefined);
 
   const value = ref<T | undefined>(defaultValue) as Ref<T | undefined>;
-  const hasIndexedDb = isClient && "indexedDB" in globalThis;
+  const hasIndexedDb =
+    typeof window !== "undefined" && typeof document !== "undefined" && "indexedDB" in globalThis;
 
   if (!hasIndexedDb) {
     return value;
   }
 
-  const dependencies = deps === undefined ? [] : toArray(deps);
+  const dependencies = deps === undefined ? [] : Array.isArray(deps) ? deps : [deps];
   const { subscribe, teardown } = createSubscriptionManager(querier, (result) => {
     value.value = result;
   });
