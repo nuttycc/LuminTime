@@ -95,9 +95,6 @@ watch(
   { immediate: true },
 );
 
-const selectedLog = computed(
-  () => logs.value.find((log) => getLogKey(log) === selectedLogKey.value) ?? null,
-);
 
 const formatDateLabel = (d: string) => {
   const dateObj = parseDate(d);
@@ -126,21 +123,14 @@ const eventSourceConfig: Record<
   alarm: { icon: "save", label: "Periodic save", status: "saved" },
 };
 
-const getEventSource = (source?: string) => {
-  return source ? eventSourceConfig[source] : undefined;
-};
+const getEventIcon = (source?: string): InspectorIconName =>
+  (source && eventSourceConfig[source]?.icon) || "clock";
 
-const getEventIcon = (source?: string): InspectorIconName => {
-  return getEventSource(source)?.icon ?? "clock";
-};
+const getEventStatus = (source?: string): string =>
+  (source && eventSourceConfig[source]?.status) || "tracked";
 
-const getEventStatus = (source?: string): string => {
-  return getEventSource(source)?.status ?? "tracked";
-};
-
-const getEventLabel = (source?: string): string => {
-  return getEventSource(source)?.label ?? "Activity";
-};
+const getEventLabel = (source?: string): string =>
+  (source && eventSourceConfig[source]?.label) || "Activity";
 
 const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.duration);
 </script>
@@ -210,7 +200,7 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
             v-for="log in group.logs"
             :key="log.id || log.startTime"
             class="group relative -ml-12 grid cursor-pointer grid-cols-[40px_1fr] gap-3 rounded border border-transparent px-1 py-1.5 transition-colors hover:border-base-300 hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            :class="{ 'border-base-300 bg-surface-low': selectedLog?.startTime === log.startTime }"
+            :class="{ 'border-base-300 bg-surface-low': selectedLogKey === getLogKey(log) }"
             role="button"
             tabindex="0"
             @click="selectedLogKey = getLogKey(log)"
@@ -224,7 +214,7 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
             <div class="relative min-w-0 pl-4">
               <span
                 class="absolute top-1.5 -left-1 flex size-2 items-center justify-center rounded-full border border-base-100"
-                :class="selectedLog?.startTime === log.startTime ? 'bg-primary' : 'bg-outline'"
+                :class="selectedLogKey === getLogKey(log) ? 'bg-primary' : 'bg-outline'"
               ></span>
 
               <div class="flex min-w-0 items-center gap-1.5">
@@ -259,7 +249,7 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
               </div>
 
               <div
-                v-if="selectedLog?.startTime === log.startTime"
+                v-if="selectedLogKey === getLogKey(log)"
                 class="mt-2 rounded border border-base-300 bg-base-100 p-2"
               >
                 <div class="mb-1 flex items-center justify-between border-b border-base-300 pb-1">
