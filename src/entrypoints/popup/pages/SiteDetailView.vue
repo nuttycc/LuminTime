@@ -47,39 +47,45 @@ const blockActionLabel = computed(() => (isBlocked.value ? "Unblock domain" : "B
 const blockActionTone = computed<"default" | "primary" | "danger">(() => {
   return isBlocked.value ? "primary" : "default";
 });
-const confirmTitle = computed(() => {
-  if (confirmingAction.value === "delete") return "Delete domain data?";
-  if (confirmingAction.value === "unblock") return "Unblock domain?";
-  if (confirmingAction.value === "block") return "Block domain?";
-  return "Confirm action";
-});
-const confirmDescription = computed(() => {
-  if (confirmingAction.value === "delete") {
-    return "This removes locally stored history for this domain. This cannot be undone.";
+const confirmConfig = computed(() => {
+  switch (confirmingAction.value) {
+    case "delete":
+      return {
+        title: "Delete domain data?",
+        description: "This removes locally stored history for this domain. This cannot be undone.",
+        buttonLabel: "Delete data",
+        buttonClass: "btn-error",
+        icon: "trash" as const,
+        iconClass: "text-error",
+      };
+    case "unblock":
+      return {
+        title: "Unblock domain?",
+        description: "Tracking will resume for this domain when you visit it again.",
+        buttonLabel: "Unblock",
+        buttonClass: "btn-primary",
+        icon: "check-circle" as const,
+        iconClass: "text-primary",
+      };
+    case "block":
+      return {
+        title: "Block domain?",
+        description: "LuminTime will stop tracking new activity for this domain.",
+        buttonLabel: "Block",
+        buttonClass: "btn-error",
+        icon: "block" as const,
+        iconClass: "text-error",
+      };
+    default:
+      return {
+        title: "Confirm action",
+        description: "",
+        buttonLabel: "Confirm",
+        buttonClass: "btn-error",
+        icon: "info" as const,
+        iconClass: "text-error",
+      };
   }
-  if (confirmingAction.value === "unblock") {
-    return "Tracking will resume for this domain when you visit it again.";
-  }
-  if (confirmingAction.value === "block") {
-    return "LuminTime will stop tracking new activity for this domain.";
-  }
-  return "";
-});
-const confirmButtonLabel = computed(() => {
-  if (confirmingAction.value === "delete") return "Delete data";
-  if (confirmingAction.value === "unblock") return "Unblock";
-  if (confirmingAction.value === "block") return "Block";
-  return "Confirm";
-});
-const confirmButtonClass = computed(() => {
-  if (confirmingAction.value === "unblock") return "btn-primary";
-  return "btn-error";
-});
-const confirmIcon = computed(() => {
-  if (confirmingAction.value === "delete") return "trash";
-  if (confirmingAction.value === "unblock") return "check-circle";
-  if (confirmingAction.value === "block") return "block";
-  return "info";
 });
 
 const currentUrl = ref("");
@@ -237,15 +243,15 @@ const handleConfirmAction = async () => {
       >
         <div class="flex items-center gap-2 border-b border-base-300 px-3 py-2">
           <InspectorIcon
-            :name="confirmIcon"
+            :name="confirmConfig.icon"
             size="size-4 shrink-0"
-            :class="confirmingAction === 'unblock' ? 'text-primary' : 'text-error'"
+            :class="confirmConfig.iconClass"
           />
-          <h2 class="truncate text-sm font-semibold leading-5">{{ confirmTitle }}</h2>
+          <h2 class="truncate text-sm font-semibold leading-5">{{ confirmConfig.title }}</h2>
         </div>
 
         <div class="space-y-2 px-3 py-3">
-          <p class="text-xs leading-5 text-base-content/75">{{ confirmDescription }}</p>
+          <p class="text-xs leading-5 text-base-content/75">{{ confirmConfig.description }}</p>
           <div
             class="truncate rounded border border-base-300 bg-surface-low px-2 py-1 font-mono text-[11px] leading-4 text-outline"
           >
@@ -259,10 +265,10 @@ const handleConfirmAction = async () => {
           </form>
           <button
             class="btn btn-sm rounded"
-            :class="confirmButtonClass"
+            :class="confirmConfig.buttonClass"
             @click="handleConfirmAction"
           >
-            {{ confirmButtonLabel }}
+            {{ confirmConfig.buttonLabel }}
           </button>
         </div>
       </div>

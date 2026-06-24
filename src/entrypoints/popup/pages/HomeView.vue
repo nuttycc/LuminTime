@@ -121,9 +121,6 @@ const goToHistory = () => {
   navigateTo("/history", { view: view.value, date: date.value });
 };
 
-const updateView = (v: ViewMode) => {
-  view.value = v;
-};
 </script>
 
 <template>
@@ -189,7 +186,7 @@ const updateView = (v: ViewMode) => {
                 : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'
             "
             :aria-pressed="view === option.value"
-            @click="updateView(option.value)"
+            @click="view = option.value"
           >
             {{ option.label }}
           </button>

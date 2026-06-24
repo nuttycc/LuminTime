@@ -47,13 +47,7 @@ const heatmapBlocks = computed(() =>
   ),
 );
 
-const maxHeatmapBlock = computed(() => {
-  let max = 0;
-  for (const day of heatmapBlocks.value) {
-    for (const value of day) max = Math.max(max, value);
-  }
-  return max;
-});
+const maxHeatmapBlock = computed(() => Math.max(0, ...heatmapBlocks.value.flat()));
 
 const getHeatmapStyle = (value: number) => {
   if (value <= 0 || maxHeatmapBlock.value === 0) {
