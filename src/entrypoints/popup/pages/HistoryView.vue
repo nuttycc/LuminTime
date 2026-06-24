@@ -95,7 +95,6 @@ watch(
   { immediate: true },
 );
 
-
 const formatDateLabel = (d: string) => {
   const dateObj = parseDate(d);
   const today = new Date();
@@ -123,14 +122,13 @@ const eventSourceConfig: Record<
   alarm: { icon: "save", label: "Periodic save", status: "saved" },
 };
 
-const getEventIcon = (source?: string): InspectorIconName =>
-  (source && eventSourceConfig[source]?.icon) || "clock";
+const defaultEventMeta: { icon: InspectorIconName; label: string; status: string } = {
+  icon: "clock",
+  label: "Activity",
+  status: "tracked",
+};
 
-const getEventStatus = (source?: string): string =>
-  (source && eventSourceConfig[source]?.status) || "tracked";
-
-const getEventLabel = (source?: string): string =>
-  (source && eventSourceConfig[source]?.label) || "Activity";
+const getEventMeta = (source?: string) => (source && eventSourceConfig[source]) || defaultEventMeta;
 
 const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.duration);
 </script>
@@ -198,7 +196,7 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
 
           <article
             v-for="log in group.logs"
-            :key="log.id || log.startTime"
+            :key="getLogKey(log)"
             class="group relative -ml-12 grid cursor-pointer grid-cols-[40px_1fr] gap-3 rounded border border-transparent px-1 py-1.5 transition-colors hover:border-base-300 hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             :class="{ 'border-base-300 bg-surface-low': selectedLogKey === getLogKey(log) }"
             role="button"
@@ -219,7 +217,7 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
 
               <div class="flex min-w-0 items-center gap-1.5">
                 <InspectorIcon
-                  :name="getEventIcon(log.eventSource)"
+                  :name="getEventMeta(log.eventSource).icon"
                   size="size-3.5 shrink-0 text-primary"
                 />
                 <span class="truncate text-xs font-semibold leading-4">
@@ -239,12 +237,12 @@ const formatEndTime = (log: IHistoryLog) => formatTime(log.startTime + log.durat
                 <span
                   class="rounded bg-surface-high px-1 font-mono text-[9px] leading-3 text-outline"
                 >
-                  {{ getEventLabel(log.eventSource) }}
+                  {{ getEventMeta(log.eventSource).label }}
                 </span>
                 <span
                   class="rounded border border-primary/30 px-1 font-mono text-[9px] leading-3 text-primary"
                 >
-                  {{ getEventStatus(log.eventSource) }}
+                  {{ getEventMeta(log.eventSource).status }}
                 </span>
               </div>
 
