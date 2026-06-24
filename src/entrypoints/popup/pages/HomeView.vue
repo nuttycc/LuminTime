@@ -1,43 +1,21 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
-import { motion, AnimatePresence, stagger } from "motion-v";
-import { onClickOutside } from "@vueuse/core";
 import { useDateRange, type ViewMode } from "@/composables/useDateRange";
 import { getAggregatedSites, getHourlyTrend, getRangeStats } from "@/db/service";
 import type { ISiteStat } from "@/db/types";
 import { useLiveQuery } from "@/composables/useDexieLiveQuery";
-import {
-  contentVariants as contentVariantsFn,
-  cardVariant,
-  listContainerVariants as listContainerVariantsFn,
-  listItemVariants,
-} from "@/composables/useMotionVariants";
-import DateNavigator from "@/components/DateNavigator.vue";
 import TrendChart, { type ChartItem } from "@/components/TrendChart.vue";
-
-const contentVariants = contentVariantsFn();
-const listContainerVariants = listContainerVariantsFn();
+import InspectorFooter from "@/components/popup/InspectorFooter.vue";
+import InspectorIcon from "@/components/popup/InspectorIcon.vue";
+import InspectorIconButton from "@/components/popup/InspectorIconButton.vue";
 
 const router = useRouter();
 const { view, date, startDate, endDate, label, next, prev, goToday, isToday, canNext } =
   useDateRange();
 
-const menuOpen = ref(false);
-const menuRef = ref<HTMLElement | null>(null);
-onClickOutside(menuRef, () => {
-  menuOpen.value = false;
-});
-
-const menuItemVariants = {
-  hidden: { opacity: 0, x: 8 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.2 } },
-  exit: { opacity: 0, x: 8, transition: { duration: 0.1 } },
-};
-
 const navigateTo = (path: string, query?: Record<string, string>) => {
-  menuOpen.value = false;
   router.push(query ? { path, query } : path);
 };
 
@@ -57,7 +35,7 @@ const homeData = useLiveQuery<HomeData>(
       ]);
       return { sites: sitesData, trend };
     }
-    // Optimization: Fetch sites and trend in one DB pass for range views
+
     const result = await getRangeStats(startDate.value, endDate.value, 20);
     return { sites: result.sites, trend: result.trend };
   },
@@ -67,6 +45,14 @@ const homeData = useLiveQuery<HomeData>(
 
 const sites = computed(() => homeData.value.sites);
 const trendData = computed(() => homeData.value.trend);
+const visibleSites = computed(() => sites.value.slice(0, 5));
+const trackedSiteCount = computed(() => sites.value.length);
+
+const viewOptions: { label: string; value: ViewMode }[] = [
+  { label: "Day", value: "day" },
+  { label: "Week", value: "week" },
+  { label: "Month", value: "month" },
+];
 
 const mapHourlyToChartItem = (item: { hour: string; duration: number }): ChartItem => {
   const h = parseInt(item.hour, 10);
@@ -83,12 +69,10 @@ const mapHourlyToChartItem = (item: { hour: string; duration: number }): ChartIt
 
 const mapDailyToChartItem = (item: { date: string; duration: number }): ChartItem => {
   const d = new Date(item.date + "T00:00:00");
-  let label = "";
-  if (trendData.value.length > 10) {
-    label = d.getDate().toString();
-  } else {
-    label = d.toLocaleDateString(undefined, { weekday: "narrow" });
-  }
+  const label =
+    trendData.value.length > 10
+      ? d.getDate().toString()
+      : d.toLocaleDateString(undefined, { weekday: "narrow" });
 
   return {
     key: item.date,
@@ -112,9 +96,13 @@ const totalDuration = computed(() => {
   return sites.value.reduce((sum, site) => sum + site.duration, 0);
 });
 
+const activeTimeLabel = computed(() =>
+  totalDuration.value > 0 ? prettyMs(totalDuration.value, { secondsDecimalDigits: 0 }) : "0s",
+);
+
 const sitePercentage = (duration: number): number => {
   if (totalDuration.value === 0) return 0;
-  return Math.round((duration / totalDuration.value) * 100);
+  return Math.max(4, Math.round((duration / totalDuration.value) * 100));
 };
 
 const getSiteLabel = (site: ISiteStat, index: number): string => {
@@ -133,221 +121,167 @@ const goToHistory = () => {
   navigateTo("/history", { view: view.value, date: date.value });
 };
 
-const updateView = (v: ViewMode) => {
-  view.value = v;
-};
 </script>
 
 <template>
-  <div class="flex flex-col min-h-0 bg-base-100">
-    <!-- App Title -->
-    <div class="flex items-center justify-between bg-base-100 h-12 border-b border-base-200 px-4">
-      <div class="font-bold text-lg">LuminTime</div>
-      <div ref="menuRef" class="relative">
-        <button
-          class="btn btn-ghost btn-circle btn-sm"
-          aria-label="Menu"
-          @click="menuOpen = !menuOpen"
-        >
-          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 5v.01M12 12v.01M12 19v.01"
-            />
-          </svg>
-        </button>
-        <AnimatePresence>
-          <motion.ul
-            v-if="menuOpen"
-            key="menu"
-            :initial="{ opacity: 0, scale: 0.9, y: -4 }"
-            :animate="{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-              transition: { duration: 0.2, delayChildren: stagger(0.05) },
-            }"
-            :exit="{ opacity: 0, scale: 0.9, y: -4, transition: { duration: 0.15 } }"
-            class="absolute right-0 top-full mt-1 menu bg-base-200 rounded-box z-30 w-36 p-1.5 shadow-lg border border-base-300 origin-top-right"
-          >
-            <motion.li :variants="menuItemVariants">
-              <button @click="navigateTo('/insights')">
-                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
-                </svg>
-                Insights
-              </button>
-            </motion.li>
-            <motion.li :variants="menuItemVariants">
-              <button @click="goToHistory">
-                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                History
-              </button>
-            </motion.li>
-            <motion.li :variants="menuItemVariants">
-              <button @click="navigateTo('/settings')">
-                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                Settings
-              </button>
-            </motion.li>
-          </motion.ul>
-        </AnimatePresence>
-      </div>
-    </div>
-
-    <!-- Header with Date Navigator -->
-    <DateNavigator
-      :view="view"
-      :label="label"
-      :can-next="canNext"
-      :is-today="isToday"
-      @update:view="updateView"
-      @prev="prev"
-      @next="next"
-      @today="goToday"
-    />
-
-    <!-- Main Content -->
-    <motion.div
-      class="flex-1 p-4 space-y-4"
-      :variants="contentVariants"
-      initial="hidden"
-      animate="show"
+  <div class="flex h-full min-h-0 flex-col bg-base-100 text-base-content">
+    <header
+      class="flex h-10 shrink-0 items-center justify-between border-b border-base-300 bg-base-100 px-3"
     >
-      <!-- Summary Card -->
-      <motion.div :variants="cardVariant" class="card bg-base-200 shadow-sm border border-base-300">
-        <div class="card-body p-4 items-center text-center">
-          <div class="text-base-content/60 text-xs font-bold uppercase tracking-widest">
-            Total Active Time
+      <div class="flex min-w-0 items-center gap-2">
+        <div class="truncate text-lg font-semibold leading-6 text-primary">LuminTime</div>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <InspectorIconButton
+          icon="bar-chart"
+          label="Open insights"
+          @click="navigateTo('/insights')"
+        />
+        <InspectorIconButton icon="history" label="Open history" @click="goToHistory" />
+        <InspectorIconButton
+          icon="settings"
+          label="Open settings"
+          @click="navigateTo('/settings')"
+        />
+      </div>
+    </header>
+
+    <section class="shrink-0 border-b border-base-300 px-3 py-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex min-w-0 items-center gap-1">
+          <button
+            class="flex size-7 items-center justify-center rounded text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Previous period"
+            @click="prev"
+          >
+            <InspectorIcon name="chevron-left" size="size-4" />
+          </button>
+          <button
+            class="min-w-0 truncate rounded px-1.5 py-1 text-sm font-semibold leading-5 transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :class="{ 'text-primary': !isToday }"
+            :aria-label="isToday ? label : 'Go to today'"
+            @click="!isToday && goToday()"
+          >
+            {{ label }}
+          </button>
+          <button
+            class="flex size-7 items-center justify-center rounded text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-30"
+            aria-label="Next period"
+            :disabled="canNext === false"
+            @click="next"
+          >
+            <InspectorIcon name="chevron-right" size="size-4" />
+          </button>
+        </div>
+
+        <div class="flex shrink-0 rounded border border-base-300 bg-surface-low p-0.5">
+          <button
+            v-for="option in viewOptions"
+            :key="option.value"
+            class="rounded px-2.5 py-1 text-xs leading-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :class="
+              view === option.value
+                ? 'bg-base-300 text-primary'
+                : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'
+            "
+            :aria-pressed="view === option.value"
+            @click="view = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <main class="custom-scrollbar flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-3 pb-4">
+      <section
+        class="rounded border border-base-300 bg-[#111827] p-3"
+        aria-label="Activity summary"
+      >
+        <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+          Total Active Time
+        </div>
+
+        <div class="mt-2 font-mono text-[32px] leading-none text-primary">
+          {{ activeTimeLabel }}
+        </div>
+
+        <div class="mt-3 flex items-center gap-3 border-t border-base-300/70 pt-2">
+          <div class="flex items-center gap-1 text-xs leading-4 text-base-content/65">
+            <InspectorIcon name="globe" size="size-3.5" />
+            <span>{{ trackedSiteCount }} {{ trackedSiteCount === 1 ? "site" : "sites" }}</span>
           </div>
-          <div class="text-3xl font-black text-primary font-mono">
-            {{ totalDuration > 0 ? prettyMs(totalDuration, { secondsDecimalDigits: 0 }) : "0s" }}
+          <div class="flex items-center gap-1 text-xs leading-4 text-base-content/65">
+            <InspectorIcon name="save" size="size-3.5" />
+            <span>stored in browser</span>
           </div>
         </div>
-      </motion.div>
+      </section>
 
-      <!-- Trend Chart -->
-      <motion.div :variants="cardVariant" class="card bg-base-100 shadow-sm border border-base-200">
-        <div class="card-body p-2">
+      <section class="space-y-2" aria-label="Activity trend">
+        <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+          Activity trend
+        </div>
+        <div class="rounded border border-base-300 bg-base-100 px-1 pb-5 pt-1">
           <TrendChart :key="chartRenderKey" :items="chartItems" />
         </div>
-      </motion.div>
+      </section>
 
-      <!-- Sites List -->
-      <motion.div :variants="cardVariant" class="flex flex-col gap-2">
-        <div class="text-xs font-bold text-base-content/40 uppercase px-2">Top Sites</div>
+      <section class="space-y-2" aria-label="Top sites">
+        <div class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+          Top Sites
+        </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            v-if="sites.length === 0"
-            key="empty"
-            :initial="{ opacity: 0 }"
-            :animate="{ opacity: 0.6 }"
-            :exit="{ opacity: 0 }"
-            class="flex flex-col items-center justify-center py-4 gap-2"
+        <div
+          v-if="sites.length === 0"
+          class="rounded border border-dashed border-base-300 bg-base-200/30 px-3 py-4"
+        >
+          <div class="text-sm font-medium leading-5">No activity recorded yet</div>
+          <div class="mt-1 text-xs leading-5 text-base-content/60">
+            Browse normally. Local activity will appear here when LuminTime records it.
+          </div>
+        </div>
+
+        <div v-else class="border-y border-base-300">
+          <button
+            v-for="(site, index) in visibleSites"
+            :key="site.hostname"
+            class="group flex w-full items-center gap-3 border-b border-base-300/70 px-1 py-2 text-left last:border-b-0 transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :aria-label="getSiteLabel(site, index)"
+            @click="goToDetail(site.hostname)"
           >
-            <svg
-              class="size-12 text-base-content/30"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <div class="text-sm font-medium">No activity recorded</div>
-            <div class="text-xs">Browse some sites to see data here.</div>
-          </motion.div>
+            <div class="w-5 shrink-0 text-right font-mono text-xs leading-4 text-outline">
+              {{ index + 1 }}
+            </div>
 
-          <motion.div
-            v-else
-            key="list"
-            class="flex flex-col gap-1"
-            :variants="listContainerVariants"
-            initial="hidden"
-            animate="show"
-          >
-            <motion.button
-              v-for="(site, index) in sites"
-              :key="site.hostname"
-              layout
-              :variants="listItemVariants"
-              class="flex items-center gap-3 p-3 hover:bg-base-200/50 rounded-box transition-colors text-left"
-              :aria-label="getSiteLabel(site, index)"
-              @click="goToDetail(site.hostname)"
-            >
-              <!-- Rank number -->
-              <div
-                class="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0"
-              >
-                {{ index + 1 }}
+            <div class="min-w-0 flex-1">
+              <div class="flex items-baseline justify-between gap-2">
+                <span class="truncate text-xs leading-4 text-base-content">{{
+                  site.hostname
+                }}</span>
+                <span class="shrink-0 font-mono text-xs leading-4 text-primary">
+                  {{ prettyMs(site.duration, { secondsDecimalDigits: 0 }) }}
+                </span>
               </div>
 
-              <div class="flex flex-col flex-1 min-w-0 gap-1">
-                <div class="flex justify-between items-baseline gap-2">
-                  <span class="font-medium truncate text-sm">{{ site.hostname }}</span>
-                  <span class="font-mono text-xs font-bold shrink-0">{{
-                    prettyMs(site.duration, { secondsDecimalDigits: 0 })
-                  }}</span>
-                </div>
-
-                <!-- Progress bar -->
-                <div class="w-full bg-base-300 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    class="bg-primary h-full rounded-full"
-                    :style="{ width: `${sitePercentage(site.duration)}%` }"
-                  ></div>
-                </div>
+              <div class="mt-1 h-1 w-full overflow-hidden rounded-sm bg-base-300">
+                <div
+                  class="h-full rounded-sm bg-primary"
+                  :style="{ width: `${sitePercentage(site.duration)}%` }"
+                ></div>
               </div>
+            </div>
 
-              <svg
-                class="size-4 text-base-content/30"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </motion.button>
-          </motion.div>
-        </AnimatePresence>
-      </motion.div>
-    </motion.div>
+            <InspectorIcon
+              name="chevron-right"
+              size="size-4 shrink-0 text-outline opacity-0 transition-opacity group-hover:opacity-100"
+            />
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <InspectorFooter text="Tracking locally - No sync" />
   </div>
 </template>

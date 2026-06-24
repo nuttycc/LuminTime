@@ -1,30 +1,27 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import prettyMs from "pretty-ms";
-import { motion, AnimatePresence } from "motion-v";
 import { useLiveQuery } from "@/composables/useDexieLiveQuery";
 import { getWeeklyInsights, type WeeklyInsights, type SiteComparison } from "@/db/insights";
-import { formatDate, getStartOfWeek, getEndOfWeek, parseDate } from "@/utils/dateUtils";
-import {
-  contentVariants as contentVariantsFn,
-  cardVariant,
-  listContainerVariants as listContainerVariantsFn,
-  listItemVariants,
-} from "@/composables/useMotionVariants";
-import TrendChart, { type ChartItem } from "@/components/TrendChart.vue";
-import ArtHeatmap from "@/components/ArtHeatmap.vue";
-
-const contentVariants = contentVariantsFn();
-const listContainerVariants = listContainerVariantsFn();
+import { addDays, formatDate, getStartOfWeek, getEndOfWeek, parseDate } from "@/utils/dateUtils";
+import InspectorFooter from "@/components/popup/InspectorFooter.vue";
+import InspectorHeader from "@/components/popup/InspectorHeader.vue";
+import InspectorIcon from "@/components/popup/InspectorIcon.vue";
+import InspectorIconButton from "@/components/popup/InspectorIconButton.vue";
 
 const router = useRouter();
 
 const today = new Date();
-const weekStart = getStartOfWeek(today);
-const weekEnd = getEndOfWeek(today);
-const startStr = formatDate(weekStart);
-const endStr = formatDate(weekEnd);
+const currentWeekStart = formatDate(getStartOfWeek(today));
+const selectedWeekStart = ref(currentWeekStart);
+
+const weekStart = computed(() => parseDate(selectedWeekStart.value));
+const weekEnd = computed(() => getEndOfWeek(weekStart.value));
+const startStr = computed(() => formatDate(weekStart.value));
+const endStr = computed(() => formatDate(weekEnd.value));
+const isCurrentWeek = computed(() => selectedWeekStart.value === currentWeekStart);
+const canGoNextWeek = computed(() => selectedWeekStart.value < currentWeekStart);
 
 const defaultInsights: WeeklyInsights = {
   thisWeekTotal: 0,
@@ -36,29 +33,30 @@ const defaultInsights: WeeklyInsights = {
 };
 
 const insights = useLiveQuery<WeeklyInsights>(
-  () => getWeeklyInsights(startStr, endStr),
+  () => getWeeklyInsights(startStr.value, endStr.value),
   defaultInsights,
-  [],
+  [startStr, endStr],
 );
 
-// Daily trend chart items
-const chartItems = computed<ChartItem[]>(() => {
-  return insights.value.dailyTrend.map((item) => {
-    const d = parseDate(item.date);
-    const label = d.toLocaleDateString(undefined, { weekday: "narrow" });
-    return {
-      key: item.date,
-      value: item.duration,
-      label,
-      tooltip: `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}: ${prettyMs(item.duration, { compact: true })}`,
-      ariaLabel: `${d.toLocaleDateString(undefined, { weekday: "long" })}: ${prettyMs(item.duration, { verbose: true })}`,
-    };
-  });
-});
-
-// Heatmap
-const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
 const hourLabels = [0, 4, 8, 12, 16, 20];
+
+const heatmapBlocks = computed(() =>
+  insights.value.heatmap.map((day) =>
+    hourLabels.map((hour) => day.slice(hour, hour + 4).reduce((sum, value) => sum + value, 0)),
+  ),
+);
+
+const maxHeatmapBlock = computed(() => Math.max(0, ...heatmapBlocks.value.flat()));
+
+const getHeatmapStyle = (value: number) => {
+  if (value <= 0 || maxHeatmapBlock.value === 0) {
+    return { backgroundColor: "#1d2021" };
+  }
+
+  const alpha = Math.max(0.18, Math.min(1, value / maxHeatmapBlock.value));
+  return { backgroundColor: `rgba(45, 212, 191, ${alpha})` };
+};
 
 // Site comparison helpers
 const getSiteChangeText = (site: SiteComparison): string => {
@@ -67,164 +65,209 @@ const getSiteChangeText = (site: SiteComparison): string => {
   return site.changePercent >= 0 ? `↑${pct}%` : `↓${pct}%`;
 };
 
-const getSiteChangeBadgeClass = (site: SiteComparison): string => {
-  if (site.lastWeek === 0) return "badge-info";
-  return site.changePercent >= 0 ? "badge-error" : "badge-success";
+const siteMovement = computed(() => insights.value.topSitesComparison.slice(0, 4));
+
+const maxDailyDuration = computed(() => {
+  if (insights.value.dailyTrend.length === 0) return 0;
+  return Math.max(...insights.value.dailyTrend.map((item) => item.duration));
+});
+
+const getTrendHeight = (duration: number) => {
+  if (duration <= 0 || maxDailyDuration.value === 0) return "12%";
+  return `${Math.max(18, Math.round((duration / maxDailyDuration.value) * 100))}%`;
 };
+
+const peakBlockLabel = computed(() => {
+  let bestDay = 0;
+  let bestHourIndex = 0;
+  let bestValue = 0;
+
+  heatmapBlocks.value.forEach((day, dayIndex) => {
+    day.forEach((value, hourIndex) => {
+      if (value > bestValue) {
+        bestDay = dayIndex;
+        bestHourIndex = hourIndex;
+        bestValue = value;
+      }
+    });
+  });
+
+  const startHour = hourLabels[bestHourIndex] ?? 0;
+  return {
+    label: `${dayLabels[bestDay]} ${startHour}:00-${startHour + 4}:00`,
+    value: bestValue > 0 ? prettyMs(bestValue, { compact: true }) : "No peak",
+  };
+});
+
+const totalChangeText = computed(() => {
+  if (insights.value.lastWeekTotal === 0) return "No baseline";
+  return `${insights.value.changePercent >= 0 ? "+" : ""}${Math.round(insights.value.changePercent)}%`;
+});
 
 const goBack = () => {
   router.back();
 };
 
+const goToPreviousWeek = () => {
+  selectedWeekStart.value = formatDate(addDays(weekStart.value, -7));
+};
+
+const goToNextWeek = () => {
+  if (!canGoNextWeek.value) return;
+
+  selectedWeekStart.value = formatDate(addDays(weekStart.value, 7));
+};
+
 // Week label for header
 const weekLabel = computed(() => {
-  const start = parseDate(startStr);
-  const end = parseDate(endStr);
+  const start = parseDate(startStr.value);
+  const end = parseDate(endStr.value);
   const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return `${fmt(start)} – ${fmt(end)}`;
 });
+
+const weekStatusLabel = computed(() => (isCurrentWeek.value ? "This week" : "Past week"));
 </script>
 
 <template>
-  <div class="flex flex-col min-h-0 bg-base-100">
-    <!-- Navbar -->
-    <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
-      <div class="navbar-start w-1/4">
-        <button class="btn btn-ghost btn-circle btn-sm" aria-label="Back" @click="goBack">
-          <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-      </div>
-      <div class="navbar-center w-2/4 justify-center">
-        <div class="flex flex-col items-center">
-          <div class="font-bold text-lg">Insights</div>
-          <div class="text-xs text-base-content/50">{{ weekLabel }}</div>
-        </div>
-      </div>
-      <div class="navbar-end w-1/4"></div>
-    </div>
+  <div class="flex h-full min-h-0 flex-col bg-base-100 text-base-content">
+    <InspectorHeader title="Insights" subtitle="Pattern review" @back="goBack" />
 
-    <!-- Main Content -->
-    <motion.div
-      class="flex-1 p-4 space-y-4 overflow-y-auto"
-      :variants="contentVariants"
-      initial="hidden"
-      animate="show"
+    <section
+      class="flex shrink-0 items-center justify-between border-b border-base-300 bg-surface-lowest px-3 py-2"
     >
-      <!-- Overview Card -->
-      <motion.div :variants="cardVariant" class="card bg-base-200 shadow-sm border border-base-300">
-        <div class="card-body p-4 items-center text-center">
-          <div class="text-base-content/60 text-xs font-bold uppercase tracking-widest">
-            This Week
+      <div class="flex items-center gap-1">
+        <InspectorIconButton icon="chevron-left" label="Previous week" @click="goToPreviousWeek" />
+        <InspectorIconButton
+          icon="chevron-right"
+          label="Next week"
+          :disabled="!canGoNextWeek"
+          @click="goToNextWeek"
+        />
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="font-mono text-[13px] leading-4">{{ weekLabel }}</span>
+        <span class="rounded border border-base-300 bg-surface-low px-2 py-0.5 text-[11px]">
+          {{ weekStatusLabel }}
+        </span>
+      </div>
+    </section>
+
+    <main class="custom-scrollbar flex-1 overflow-y-auto overflow-x-hidden pb-10">
+      <section class="border-b border-base-300 px-3 py-4">
+        <div class="mb-3 flex items-center justify-between">
+          <span class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+            Active hours
+          </span>
+          <div class="flex items-center gap-1 text-[10px] leading-3 text-outline">
+            <span>Low</span>
+            <span class="size-3 rounded-sm bg-primary/15"></span>
+            <span class="size-3 rounded-sm bg-primary/40"></span>
+            <span class="size-3 rounded-sm bg-primary/70"></span>
+            <span class="size-3 rounded-sm bg-primary"></span>
+            <span>High</span>
           </div>
-          <div class="text-3xl font-black text-primary font-mono">
-            {{
-              insights.thisWeekTotal > 0
-                ? prettyMs(insights.thisWeekTotal, { secondsDecimalDigits: 0 })
-                : "0s"
-            }}
+        </div>
+
+        <div class="flex gap-2">
+          <div class="flex flex-col justify-between pt-5 pb-1 font-mono text-[11px] text-outline">
+            <span v-for="(day, dayIndex) in dayLabels" :key="`day-${dayIndex}`">{{ day }}</span>
           </div>
-          <div v-if="insights.lastWeekTotal > 0" class="text-sm mt-1">
-            <span class="text-base-content/50">vs last week: </span>
-            <span
-              :class="insights.changePercent >= 0 ? 'text-error' : 'text-success'"
-              class="font-semibold"
-            >
-              {{ insights.changePercent >= 0 ? "↑" : "↓"
-              }}{{ Math.abs(Math.round(insights.changePercent)) }}%
+          <div class="min-w-0 flex-1">
+            <div class="mb-1 grid grid-cols-6 px-1 font-mono text-[11px] text-outline">
+              <span v-for="hour in hourLabels" :key="hour">{{ hour }}</span>
+            </div>
+            <div class="grid grid-cols-6 gap-1 gap-y-1.5">
+              <template v-for="(day, dayIndex) in heatmapBlocks" :key="`day-${dayIndex}`">
+                <div
+                  v-for="(value, hourIndex) in day"
+                  :key="`${dayIndex}-${hourIndex}`"
+                  class="h-4 rounded-sm border border-transparent"
+                  :class="{ 'border-primary/40': value === maxHeatmapBlock && value > 0 }"
+                  :style="getHeatmapStyle(value)"
+                  :title="`${dayLabels[dayIndex]} ${hourLabels[hourIndex]}:00 - ${prettyMs(value, { compact: true })}`"
+                ></div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="border-b border-base-300 px-3 py-4">
+        <div class="mb-2 text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+          Observations
+        </div>
+        <div class="border-y border-base-300">
+          <div class="flex items-center justify-between border-b border-base-300 px-1 py-2">
+            <span class="text-[13px] leading-4">Peak block {{ peakBlockLabel.label }}</span>
+            <span class="font-mono text-[13px] leading-4 text-primary">
+              {{ peakBlockLabel.value }}
             </span>
           </div>
-          <div v-else class="text-xs text-base-content/40 mt-1">No previous week data</div>
-        </div>
-      </motion.div>
-
-      <!-- Daily Trend -->
-      <motion.div :variants="cardVariant" class="card bg-base-100 shadow-sm border border-base-200">
-        <div class="card-body p-2">
-          <div class="text-xs font-bold text-base-content/40 uppercase px-2 pt-1">Daily Trend</div>
-          <TrendChart :items="chartItems" />
-        </div>
-      </motion.div>
-
-      <!-- Heatmap -->
-      <motion.div :variants="cardVariant" class="card bg-base-100 shadow-sm border border-base-200">
-        <div class="card-body p-3">
-          <div class="text-xs font-bold text-base-content/40 uppercase mb-2">Active Hours</div>
-          <ArtHeatmap :data="insights.heatmap" :day-labels="dayLabels" :hour-labels="hourLabels" />
-        </div>
-      </motion.div>
-
-      <!-- Site Changes -->
-      <motion.div :variants="cardVariant" class="flex flex-col gap-2">
-        <div class="text-xs font-bold text-base-content/40 uppercase px-2">
-          Top Sites vs Last Week
-        </div>
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            v-if="insights.topSitesComparison.length === 0"
-            key="empty"
-            :initial="{ opacity: 0 }"
-            :animate="{ opacity: 0.6 }"
-            :exit="{ opacity: 0 }"
-            class="flex flex-col items-center justify-center py-4 gap-2"
-          >
-            <svg
-              class="size-12 text-base-content/30"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div class="flex items-center justify-between border-b border-base-300 px-1 py-2">
+            <span class="text-[13px] leading-4">Week-over-week change</span>
+            <span
+              class="font-mono text-[13px] leading-4"
+              :class="insights.changePercent >= 0 ? 'text-primary' : 'text-tertiary'"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              {{ totalChangeText }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between px-1 py-2">
+            <span class="text-[13px] leading-4">Sites compared</span>
+            <span class="font-mono text-[13px] leading-4 text-outline">
+              {{ insights.topSitesComparison.length }}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="px-3 py-4">
+        <div class="mb-3 flex items-end justify-between">
+          <span class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+            Site movement
+          </span>
+          <div class="flex h-6 items-end gap-1">
+            <div
+              v-for="item in insights.dailyTrend"
+              :key="item.date"
+              class="w-3 rounded-t-sm bg-primary/60"
+              :class="{ 'bg-primary': item.duration === maxDailyDuration && item.duration > 0 }"
+              :style="{ height: getTrendHeight(item.duration) }"
+              :title="prettyMs(item.duration, { compact: true })"
+            ></div>
+          </div>
+        </div>
+
+        <div v-if="siteMovement.length === 0" class="py-6 text-center text-xs text-outline">
+          Browse some sites to see comparisons here.
+        </div>
+
+        <div v-else class="border-y border-base-300">
+          <div
+            v-for="site in siteMovement"
+            :key="site.hostname"
+            class="grid grid-cols-[1fr_auto_58px] items-center gap-3 border-b border-base-300 px-1 py-2 last:border-b-0"
+          >
+            <span class="truncate text-[13px] leading-4">{{ site.hostname }}</span>
+            <span class="font-mono text-[13px] leading-4 text-outline">
+              {{ prettyMs(site.thisWeek, { compact: true }) }}
+            </span>
+            <span
+              class="flex items-center justify-end gap-1 font-mono text-[12px] leading-4"
+              :class="site.changePercent >= 0 ? 'text-primary' : 'text-tertiary'"
+            >
+              <InspectorIcon
+                :name="site.changePercent >= 0 ? 'arrow-right' : 'minus'"
+                size="size-3"
               />
-            </svg>
-            <div class="text-sm font-medium">No site data this week</div>
-            <div class="text-xs">Browse some sites to see comparisons here.</div>
-          </motion.div>
+              {{ getSiteChangeText(site) }}
+            </span>
+          </div>
+        </div>
+      </section>
+    </main>
 
-          <motion.div
-            v-else
-            key="list"
-            class="flex flex-col gap-1"
-            :variants="listContainerVariants"
-            initial="hidden"
-            animate="show"
-          >
-            <motion.div
-              v-for="site in insights.topSitesComparison"
-              :key="site.hostname"
-              :variants="listItemVariants"
-              class="flex items-center gap-3 p-3 rounded-box bg-base-200/30"
-            >
-              <div class="flex flex-col flex-1 min-w-0 gap-0.5">
-                <div class="flex justify-between items-center gap-2">
-                  <span class="font-medium truncate text-sm">{{ site.hostname }}</span>
-                  <span class="badge badge-sm" :class="getSiteChangeBadgeClass(site)">
-                    {{ getSiteChangeText(site) }}
-                  </span>
-                </div>
-                <div class="flex justify-between text-xs text-base-content/50">
-                  <span>This week: {{ prettyMs(site.thisWeek, { compact: true }) }}</span>
-                  <span v-if="site.lastWeek > 0"
-                    >Last week: {{ prettyMs(site.lastWeek, { compact: true }) }}</span
-                  >
-                  <span v-else class="italic">New this week</span>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </AnimatePresence>
-      </motion.div>
-    </motion.div>
+    <InspectorFooter text="Insights computed locally - No sync" icon="database" />
   </div>
 </template>

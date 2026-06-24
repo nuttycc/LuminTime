@@ -1,5 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "wxt";
+import { defineConfig, type WxtViteConfig } from "wxt";
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -13,7 +13,8 @@ export default defineConfig({
     homepage_url: "https://github.com/nuttycc/LuminTime",
     permissions: ["tabs", "storage", "webNavigation", "idle", "alarms"],
   },
-  vite: () => ({
-    plugins: [tailwindcss()],
-  }),
+  vite: () =>
+    ({
+      plugins: tailwindcss(),
+    }) as WxtViteConfig,
 });

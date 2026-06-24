@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { motion } from "motion-v";
 import { exportAllData, importData, type IExportData } from "@/db/exportImport";
 import { getDatabaseStats, type IDbStats } from "@/db/diagnostics";
 import { getRawRetentionDays, setRawRetentionDays } from "@/db/retention";
@@ -11,16 +10,9 @@ import {
   removeFromBlocklist,
   notifyBlocklistUpdate,
 } from "@/db/blocklist";
-
-const contentVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1 } },
-};
-
-const sectionVariant = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-};
+import InspectorFooter from "@/components/popup/InspectorFooter.vue";
+import InspectorHeader from "@/components/popup/InspectorHeader.vue";
+import InspectorIcon from "@/components/popup/InspectorIcon.vue";
 
 const router = useRouter();
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -33,6 +25,8 @@ const statsError = ref<string | null>(null);
 
 const retentionDays = ref(7);
 const retentionOptions = [7, 14, 30, 90];
+const projectUrl = "https://github.com/nuttycc/LuminTime";
+const projectDisplayUrl = "github.com/nuttycc/LuminTime";
 
 // --- Blocklist ---
 const blocklist = ref<string[]>([]);
@@ -89,15 +83,12 @@ const handleFileChange = async (event: Event) => {
     await importData(data);
     message.value = { text: "Import successful!", type: "success" };
 
-    // Refresh stats after import
     await loadStats();
-
-    // Clear input to allow re-selecting same file if needed
-    target.value = "";
   } catch (e) {
     console.error("Import failed", e);
     message.value = { text: "Import failed: " + (e as Error).message, type: "error" };
   } finally {
+    target.value = "";
     importing.value = false;
   }
 };
@@ -159,241 +150,205 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-col min-h-0 bg-base-100">
-    <!-- Navbar -->
-    <div class="navbar bg-base-100 min-h-12 border-b border-base-200 px-2">
-      <div class="navbar-start w-1/4">
-        <button class="btn btn-ghost btn-circle btn-sm" aria-label="Go back" @click="goBack">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+  <div class="flex h-full min-h-0 flex-col bg-base-100 text-base-content">
+    <InspectorHeader title="Settings" subtitle="Local data controls" @back="goBack" />
+
+    <main class="custom-scrollbar flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-3 pb-4">
+      <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
+        <div
+          class="flex items-center justify-between border-b border-base-300 bg-base-200 px-3 py-2"
+        >
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+            Data Management
+          </h2>
+        </div>
+
+        <div class="divide-y divide-base-300 p-2">
+          <button
+            class="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            @click="handleExport"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
+            <span class="text-sm leading-5">Export backup</span>
+            <InspectorIcon name="download" size="size-4 text-primary" />
+          </button>
+
+          <button
+            class="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50"
+            :disabled="importing"
+            @click="triggerImport"
+          >
+            <span class="text-sm leading-5">{{
+              importing ? "Importing backup" : "Import backup"
+            }}</span>
+            <span
+              v-if="importing"
+              class="size-3 animate-pulse rounded-full border border-primary bg-primary/20"
+            ></span>
+            <InspectorIcon v-else name="upload" size="size-4 text-primary" />
+          </button>
+
+          <input
+            type="file"
+            ref="fileInput"
+            accept=".json"
+            class="hidden"
+            @change="handleFileChange"
+          />
+        </div>
+
+        <div
+          v-if="message"
+          class="border-t border-base-300 px-3 py-2 text-xs"
+          :class="message.type === 'success' ? 'text-primary' : 'text-error'"
+        >
+          {{ message.text }}
+        </div>
+      </section>
+
+      <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
+        <div class="border-b border-base-300 bg-base-200 px-3 py-2">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+            Retention
+          </h2>
+        </div>
+        <div class="flex items-start justify-between gap-3 p-3">
+          <div class="min-w-0">
+            <div class="text-sm font-semibold leading-5">Raw history logs</div>
+            <div class="mt-0.5 text-xs leading-4 text-base-content/60">
+              Aggregate older logs into hourly summaries
+            </div>
+          </div>
+          <select
+            class="w-24 shrink-0 rounded border border-base-300 bg-base-100 px-2 py-1 font-mono text-xs text-base-content focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            :value="retentionDays"
+            @change="handleRetentionChange"
+          >
+            <option v-for="opt in retentionOptions" :key="opt" :value="opt">{{ opt }} days</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
+        <div class="border-b border-base-300 bg-base-200 px-3 py-2">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+            Blocked Sites
+          </h2>
+        </div>
+
+        <div class="space-y-2 p-2">
+          <form class="flex gap-2" @submit.prevent="handleAddBlock">
+            <input
+              v-model="newBlockHostname"
+              type="text"
+              class="min-w-0 flex-1 rounded border border-base-300 bg-base-100 px-2 py-1 font-mono text-xs text-base-content placeholder:text-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Add hostname..."
             />
-          </svg>
-        </button>
-      </div>
-      <div class="navbar-center w-2/4 justify-center">
-        <div class="font-bold text-lg">Settings</div>
-      </div>
-      <div class="navbar-end w-1/4"></div>
-    </div>
-
-    <!-- Content -->
-    <motion.div
-      class="flex-1 p-4 space-y-6"
-      :variants="contentVariants"
-      initial="hidden"
-      animate="show"
-    >
-      <!-- Data Management Section -->
-      <motion.div class="flex flex-col gap-2" :variants="sectionVariant">
-        <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Data Management</h2>
-
-        <div class="card bg-base-200 shadow-sm border border-base-300">
-          <div class="card-body p-4 gap-4">
-            <p class="text-sm opacity-80">
-              Backup your history and statistics to a JSON file, or restore from a previous backup.
-            </p>
-
-            <div class="flex flex-col gap-3">
-              <button class="btn btn-primary w-full" @click="handleExport">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Export Data
-              </button>
-
-              <button class="btn btn-outline w-full" @click="triggerImport" :disabled="importing">
-                <span v-if="importing" class="loading loading-spinner loading-sm mr-2"></span>
-                <svg
-                  v-else
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-                Import Data
-              </button>
-
-              <input
-                type="file"
-                ref="fileInput"
-                accept=".json"
-                class="hidden"
-                @change="handleFileChange"
-              />
-            </div>
-
-            <!-- Feedback Message -->
-            <div
-              v-if="message"
-              :class="[
-                'alert text-sm py-2',
-                message.type === 'success' ? 'alert-success' : 'alert-error',
-              ]"
+            <button
+              type="submit"
+              class="flex size-7 shrink-0 items-center justify-center rounded border border-base-300 text-primary transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-40"
+              :disabled="!newBlockHostname.trim()"
+              aria-label="Add blocked hostname"
             >
-              <span>{{ message.text }}</span>
-            </div>
+              <InspectorIcon name="plus" />
+            </button>
+          </form>
+
+          <div v-if="blocklist.length === 0" class="py-2 text-center text-xs text-outline">
+            No blocked sites yet.
           </div>
-        </div>
-      </motion.div>
 
-      <!-- Data Retention Section -->
-      <motion.div class="flex flex-col gap-2" :variants="sectionVariant">
-        <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Data Retention</h2>
-
-        <div class="card bg-base-200 shadow-sm border border-base-300">
-          <div class="card-body p-4 gap-3">
-            <div class="flex items-center justify-between">
-              <div class="flex flex-col gap-0.5">
-                <span class="text-sm font-medium">Raw History Logs</span>
-                <span class="text-xs opacity-60"
-                  >Older logs are aggregated into hourly summaries</span
-                >
-              </div>
-              <select
-                class="select select-sm select-bordered w-28"
-                :value="retentionDays"
-                @change="handleRetentionChange"
-              >
-                <option v-for="opt in retentionOptions" :key="opt" :value="opt">
-                  {{ opt }} days
-                </option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      <!-- Blocked Sites Section -->
-      <motion.div class="flex flex-col gap-2" :variants="sectionVariant">
-        <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Blocked Sites</h2>
-
-        <div class="card bg-base-200 shadow-sm border border-base-300">
-          <div class="card-body p-4 gap-3">
-            <p class="text-xs opacity-60">
-              Sites in this list will not be tracked. You can enter a URL or hostname directly.
-            </p>
-
-            <!-- Add new -->
-            <form class="flex gap-2" @submit.prevent="handleAddBlock">
-              <input
-                v-model="newBlockHostname"
-                type="text"
-                class="input input-sm input-bordered flex-1"
-                placeholder="e.g. facebook.com or https://example.com"
-              />
+          <ul v-else class="max-h-28 overflow-y-auto rounded border border-base-300 bg-base-100">
+            <li
+              v-for="host in blocklist"
+              :key="host"
+              class="group flex items-center justify-between gap-2 border-b border-base-300 px-2 py-1.5 last:border-b-0 hover:bg-base-200"
+            >
+              <span class="truncate font-mono text-[13px] leading-4">{{ host }}</span>
               <button
-                type="submit"
-                class="btn btn-sm btn-primary"
-                :disabled="!newBlockHostname.trim()"
+                class="flex size-6 shrink-0 items-center justify-center rounded text-outline transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error"
+                aria-label="Remove blocked hostname"
+                @click="handleRemoveBlock(host)"
               >
-                Add
+                <InspectorIcon name="close" size="size-3.5" />
               </button>
-            </form>
+            </li>
+          </ul>
+        </div>
+      </section>
 
-            <!-- List -->
-            <div v-if="blocklist.length === 0" class="text-xs opacity-50 text-center py-2">
-              No blocked sites yet.
+      <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
+        <div class="border-b border-base-300 bg-base-200 px-3 py-2">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+            Database Stats
+          </h2>
+        </div>
+
+        <div v-if="statsLoading" class="flex items-center justify-center py-4">
+          <span
+            class="size-3 animate-pulse rounded-full border border-primary bg-primary/20"
+          ></span>
+        </div>
+        <div v-else-if="statsError" class="px-3 py-2 text-xs text-error">
+          Failed to load stats: {{ statsError }}
+        </div>
+        <div v-else-if="dbStats" class="grid grid-cols-2 gap-px bg-base-300 p-px">
+          <div class="bg-surface-low p-2 text-center">
+            <div class="text-[10px] font-bold tracking-wider text-outline uppercase">
+              History rows
             </div>
-            <ul v-else class="flex flex-col gap-1 max-h-40 overflow-y-auto">
-              <li
-                v-for="host in blocklist"
-                :key="host"
-                class="flex items-center justify-between gap-2 px-2 py-1.5 bg-base-100 rounded-box"
-              >
-                <span class="text-sm font-mono truncate">{{ host }}</span>
-                <button
-                  class="btn btn-ghost btn-xs text-error"
-                  aria-label="Remove"
-                  @click="handleRemoveBlock(host)"
-                >
-                  <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </li>
-            </ul>
+            <div class="mt-1 font-mono text-[13px] leading-4 text-primary">
+              {{ dbStats.historyCount.toLocaleString() }}
+            </div>
+          </div>
+          <div class="bg-surface-low p-2 text-center">
+            <div class="text-[10px] font-bold tracking-wider text-outline uppercase">Site rows</div>
+            <div class="mt-1 font-mono text-[13px] leading-4 text-primary">
+              {{ dbStats.sitesCount.toLocaleString() }}
+            </div>
+          </div>
+          <div class="bg-surface-low p-2 text-center">
+            <div class="text-[10px] font-bold tracking-wider text-outline uppercase">Page rows</div>
+            <div class="mt-1 font-mono text-[13px] leading-4 text-primary">
+              {{ dbStats.pagesCount.toLocaleString() }}
+            </div>
+          </div>
+          <div class="bg-surface-low p-2 text-center">
+            <div class="text-[10px] font-bold tracking-wider text-outline uppercase">Storage</div>
+            <div class="mt-1 font-mono text-[13px] leading-4 text-primary">
+              {{ formatBytes(dbStats.storageUsage) }}
+            </div>
           </div>
         </div>
-      </motion.div>
+        <div v-else class="px-3 py-2 text-xs text-outline">No stats available.</div>
+      </section>
 
-      <!-- Advanced Section -->
-      <motion.div class="flex flex-col gap-2" :variants="sectionVariant">
-        <h2 class="text-sm font-bold text-base-content/50 uppercase px-1">Advanced</h2>
-
-        <div class="card bg-base-200 shadow-sm border border-base-300">
-          <div class="card-body p-4 gap-4">
-            <!-- Stats -->
-            <div v-if="statsLoading" class="flex justify-center py-4">
-              <span class="loading loading-spinner loading-md opacity-50"></span>
-            </div>
-            <div v-else-if="statsError" class="alert alert-error text-sm py-2">
-              <span>Failed to load stats: {{ statsError }}</span>
-            </div>
-            <div v-else-if="dbStats" class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col">
-                <span class="text-xs opacity-60">History Rows</span>
-                <span class="font-mono text-lg font-bold">{{
-                  dbStats.historyCount.toLocaleString()
-                }}</span>
-              </div>
-              <div class="flex flex-col">
-                <span class="text-xs opacity-60">Sites Rows</span>
-                <span class="font-mono text-lg font-bold">{{
-                  dbStats.sitesCount.toLocaleString()
-                }}</span>
-              </div>
-              <div class="flex flex-col">
-                <span class="text-xs opacity-60">Pages Rows</span>
-                <span class="font-mono text-lg font-bold">{{
-                  dbStats.pagesCount.toLocaleString()
-                }}</span>
-              </div>
-              <div class="flex flex-col">
-                <span class="text-xs opacity-60">Storage Usage</span>
-                <span class="font-mono text-lg font-bold">{{
-                  formatBytes(dbStats.storageUsage)
-                }}</span>
-                <span class="text-[10px] opacity-40">Origin Total</span>
-              </div>
-            </div>
-            <div v-else class="text-sm opacity-60">No stats available.</div>
-          </div>
+      <section class="overflow-hidden rounded border border-base-300 bg-surface-low">
+        <div class="border-b border-base-300 bg-base-200 px-3 py-2">
+          <h2 class="text-[10px] font-bold leading-3 tracking-wider text-outline uppercase">
+            About
+          </h2>
         </div>
-      </motion.div>
-    </motion.div>
+
+        <a
+          :href="projectUrl"
+          target="_blank"
+          rel="noreferrer"
+          class="flex items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <span class="flex min-w-0 items-center gap-2">
+            <InspectorIcon name="github" size="size-4 shrink-0 text-base-content/70" />
+            <span class="min-w-0">
+              <span class="block text-sm leading-5">GitHub</span>
+              <span class="block truncate font-mono text-[11px] leading-4 text-base-content/55">
+                {{ projectDisplayUrl }}
+              </span>
+            </span>
+          </span>
+          <InspectorIcon name="external-link" size="size-3.5 shrink-0 text-outline" />
+        </a>
+      </section>
+    </main>
+
+    <InspectorFooter text="Settings stored locally - No sync" icon="database" />
   </div>
 </template>

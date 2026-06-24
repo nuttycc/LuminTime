@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { motion, stagger } from "motion-v";
 
 export interface ChartItem {
   key: string;
@@ -15,22 +14,6 @@ const props = defineProps<{
   items: ChartItem[];
 }>();
 
-const containerVariants = {
-  hidden: {},
-  show: {
-    transition: { delayChildren: stagger(0.02) },
-  },
-};
-
-const barVariants = {
-  hidden: { scaleY: 0, opacity: 0 },
-  show: {
-    scaleY: 1,
-    opacity: 1,
-    transition: { duration: 0.4, type: "spring" as const, bounce: 0.15 },
-  },
-};
-
 const maxDuration = computed(() => {
   if (props.items.length === 0) return 0;
   return Math.max(...props.items.map((d) => d.value));
@@ -42,7 +25,6 @@ const getHeight = (duration: number) => {
   return `${(duration / maxDuration.value) * 100}%`;
 };
 
-// 计算标签显示间隔，避免重叠
 const labelStep = computed(() => {
   const len = props.items.length;
   if (len <= 7) return 1;
@@ -52,59 +34,53 @@ const labelStep = computed(() => {
 
 const shouldShowLabel = (index: number) => {
   const len = props.items.length;
-  // 始终显示第一个和最后一个
   if (index === 0 || index === len - 1) return true;
   return index % labelStep.value === 0;
 };
 </script>
 
 <template>
-  <motion.div
-    class="w-full h-26 flex items-end justify-between gap-1 px-2 pt-3 pb-3"
+  <div
+    class="flex h-24 w-full items-end justify-between gap-1 px-1 pt-3 pb-3"
     role="list"
     aria-label="Activity trend chart"
-    :variants="containerVariants"
-    initial="hidden"
-    animate="show"
   >
     <div
       v-for="(item, index) in items"
       :key="item.key"
-      class="flex flex-col items-center flex-1 h-full justify-end group relative rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      class="group relative flex h-full flex-1 flex-col items-center justify-end rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
       role="listitem"
       tabindex="0"
       :aria-label="item.ariaLabel || item.tooltip"
     >
-      <!-- Tooltip -->
-      <div class="absolute bottom-full mb-1 hidden group-hover:block z-10 w-max max-w-[150px]">
+      <div
+        class="absolute bottom-full z-10 mb-1 hidden w-max max-w-37.5 group-hover:block group-focus-within:block"
+      >
         <div
-          class="bg-neutral text-neutral-content text-xs rounded py-1 px-2 shadow text-center wrap-break-word"
+          class="rounded bg-neutral px-2 py-1 text-center text-xs wrap-break-word text-neutral-content shadow"
         >
           {{ item.tooltip }}
         </div>
       </div>
 
-      <!-- Bar -->
-      <motion.div
-        :variants="barVariants"
-        class="w-full rounded-t min-w-1 origin-bottom"
+      <div
+        class="min-w-1 w-full rounded-sm border transition-[height,opacity] duration-200 ease-out motion-reduce:transition-none"
         :class="[
-          item.value > 0 ? 'bg-primary' : 'bg-base-300',
+          item.value > 0 ? 'border-primary/30 bg-primary/35' : 'border-base-300 bg-base-300/60',
           item.active
-            ? 'opacity-100 ring-2 ring-primary ring-offset-1'
+            ? 'bg-primary opacity-100 ring-1 ring-primary ring-offset-1 ring-offset-base-100'
             : 'opacity-80 hover:opacity-100',
         ]"
         :style="{ height: getHeight(item.value) }"
       />
 
-      <!-- Label -->
       <div
         v-if="item.label && shouldShowLabel(index)"
-        class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-base-content/50 select-none whitespace-nowrap"
+        class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] whitespace-nowrap text-base-content/50 select-none"
         aria-hidden="true"
       >
         {{ item.label }}
       </div>
     </div>
-  </motion.div>
+  </div>
 </template>
