@@ -120,7 +120,6 @@ const goToDetail = (hostname: string) => {
 const goToHistory = () => {
   navigateTo("/history", { view: view.value, date: date.value });
 };
-
 </script>
 
 <template>
