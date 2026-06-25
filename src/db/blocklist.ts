@@ -1,3 +1,4 @@
+import { browser } from "wxt/browser";
 import { db } from "./index";
 
 const META_KEY_BLOCKLIST = "blocklist.hostnames";

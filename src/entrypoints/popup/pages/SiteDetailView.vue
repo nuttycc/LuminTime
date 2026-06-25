@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { browser } from "wxt/browser";
 import { ref, computed, nextTick, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import prettyMs from "pretty-ms";

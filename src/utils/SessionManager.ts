@@ -1,3 +1,4 @@
+import { browser } from "wxt/browser";
 import { AsyncQueuer } from "@tanstack/pacer";
 import type { EventSource } from "@/db/types";
 

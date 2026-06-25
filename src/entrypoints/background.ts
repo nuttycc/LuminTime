@@ -1,5 +1,8 @@
 // oxlint-disable max-lines
 // oxlint-disable no-magic-numbers
+import { browser } from "wxt/browser";
+import { defineBackground } from "wxt/utils/define-background";
+import { storage } from "wxt/utils/storage";
 import { recordActivity } from "@/db/service";
 import { runRetentionJob } from "@/db/retention";
 import { getBlocklist, isHostnameBlocked } from "@/db/blocklist";
