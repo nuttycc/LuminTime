@@ -38,16 +38,11 @@ describe("SessionManager", () => {
     mockStorageData = session;
   };
 
-  const flushMicrotasks = async () => {
-    for (let i = 0; i < 10; i++) {
-      await Promise.resolve();
-    }
+  const advanceDebounceTimer = async () => {
+    await vi.advanceTimersByTimeAsync(DEBOUNCE_MS);
   };
 
-  const flushDebouncedQueue = async () => {
-    await vi.advanceTimersByTimeAsync(DEBOUNCE_MS);
-    await flushMicrotasks();
-  };
+  const waitForExpectation = (assertion: () => void) => vi.waitFor(assertion, { interval: 0 });
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -93,8 +88,8 @@ describe("SessionManager", () => {
 
   it("should start tracking when a switch event occurs", async () => {
     manager.handleEvent("switch", { url: "https://example.com", title: "Example" });
-    await flushDebouncedQueue();
-    expect(mockStorage.setValue).toHaveBeenCalledTimes(1);
+    await advanceDebounceTimer();
+    await waitForExpectation(() => expect(mockStorage.setValue).toHaveBeenCalledTimes(1));
     expect(mockStorage.setValue).toHaveBeenCalledWith(
       expect.objectContaining({
         url: "https://example.com",
@@ -113,7 +108,15 @@ describe("SessionManager", () => {
     });
 
     manager.handleEvent("switch", { url: "https://new.com", title: "New" });
-    await flushDebouncedQueue();
+    await advanceDebounceTimer();
+    await waitForExpectation(() =>
+      expect(mockStorage.setValue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: "https://new.com",
+          title: "New",
+        }),
+      ),
+    );
 
     expect(mockRecordActivity).toHaveBeenCalledWith(
       "https://old.com",
@@ -121,12 +124,6 @@ describe("SessionManager", () => {
       "Old",
       BASE_TIME - 10000,
       undefined,
-    );
-    expect(mockStorage.setValue).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: "https://new.com",
-        title: "New",
-      }),
     );
   });
 
@@ -137,7 +134,7 @@ describe("SessionManager", () => {
     await vi.advanceTimersByTimeAsync(200);
     manager.handleEvent("switch", { url: "https://c.com" });
     await vi.advanceTimersByTimeAsync(600);
-    await flushMicrotasks();
+    await waitForExpectation(() => expect(mockStorage.setValue).toHaveBeenCalledTimes(1));
 
     expect(mockStorage.setValue).toHaveBeenCalledTimes(1);
     expect(mockStorage.setValue).toHaveBeenCalledWith(
@@ -159,7 +156,17 @@ describe("SessionManager", () => {
     vi.setSystemTime(BASE_TIME + 60_000);
 
     manager.handleEvent("alarm");
-    await flushMicrotasks();
+    await waitForExpectation(() =>
+      expect(mockStorage.setValue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: "https://active.com",
+          title: "Active",
+          startTime: BASE_TIME + 60_000,
+          lastUpdateTime: BASE_TIME + 60_000,
+          eventSource: "alarm",
+        }),
+      ),
+    );
 
     expect(mockRecordActivity).toHaveBeenCalledWith(
       "https://active.com",
@@ -169,15 +176,6 @@ describe("SessionManager", () => {
       undefined,
     );
     expect(mockStorage.removeValue).toHaveBeenCalled();
-    expect(mockStorage.setValue).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: "https://active.com",
-        title: "Active",
-        startTime: BASE_TIME + 60_000,
-        lastUpdateTime: BASE_TIME + 60_000,
-        eventSource: "alarm",
-      }),
-    );
   });
 
   it("should stop tracking when idle event occurs", async () => {
@@ -191,7 +189,7 @@ describe("SessionManager", () => {
     vi.setSystemTime(BASE_TIME + 30_000);
 
     manager.handleEvent("idle", { url: null });
-    await flushMicrotasks();
+    await waitForExpectation(() => expect(mockStorage.removeValue).toHaveBeenCalled());
 
     expect(mockRecordActivity).toHaveBeenCalledWith(
       "https://active.com",
@@ -200,7 +198,6 @@ describe("SessionManager", () => {
       BASE_TIME,
       undefined,
     );
-    expect(mockStorage.removeValue).toHaveBeenCalled();
     expect(mockStorage.setValue).not.toHaveBeenCalled();
   });
 
@@ -212,7 +209,7 @@ describe("SessionManager", () => {
       title: "Resume",
       eventSource: "idle_resume",
     });
-    await flushMicrotasks();
+    await waitForExpectation(() => expect(mockStorage.setValue).toHaveBeenCalled());
 
     expect(mockRecordActivity).not.toHaveBeenCalled();
     expect(mockStorage.setValue).toHaveBeenCalledWith({
@@ -233,7 +230,7 @@ describe("SessionManager", () => {
       title: "Blocked",
       eventSource: "window_focus",
     });
-    await flushMicrotasks();
+    await waitForExpectation(() => expect(mockStorage.getValue).toHaveBeenCalled());
 
     expect(mockRecordActivity).not.toHaveBeenCalled();
     expect(mockStorage.setValue).not.toHaveBeenCalled();
