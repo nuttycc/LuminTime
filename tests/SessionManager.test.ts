@@ -1,32 +1,70 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vite-plus/test";
 import {
   SessionManager,
-  SessionDependencies,
-  ActiveSessionData,
+  type SessionDependencies,
+  type ActiveSessionData,
 } from "../src/utils/SessionManager";
 
 describe("SessionManager", () => {
+  const BASE_TIME = new Date(2025, 0, 15, 10, 0, 0).getTime();
+  const DEBOUNCE_MS = 500;
+
   let manager: SessionManager;
   let mockStorageData: ActiveSessionData;
   let mockStorage: SessionDependencies["storage"];
   let mockRecordActivity: SessionDependencies["recordActivity"];
+  let mockAlarmGet: ReturnType<typeof vi.fn>;
+  let mockAlarmCreate: ReturnType<typeof vi.fn>;
+  let mockAlarmClear: ReturnType<typeof vi.fn>;
 
-  // Helper to ensure async queue tasks have processed
-  const flushQueue = async () => {
-    // Trigger debounce and wait for promises
-    await vi.advanceTimersByTimeAsync(1000);
+  const emptySession = (): ActiveSessionData => ({
+    url: "",
+    title: "",
+    startTime: 0,
+    lastUpdateTime: 0,
+    duration: 0,
+  });
+
+  const createManager = (overrides: Partial<SessionDependencies> = {}) =>
+    new SessionManager({
+      storage: mockStorage,
+      recordActivity: mockRecordActivity,
+      alarmName: "test-alarm",
+      alarmPeriodInMinutes: 1,
+      ...overrides,
+    });
+
+  const setStoredSession = (session: ActiveSessionData) => {
+    mockStorageData = session;
+  };
+
+  const flushMicrotasks = async () => {
+    for (let i = 0; i < 10; i++) {
+      await Promise.resolve();
+    }
+  };
+
+  const flushDebouncedQueue = async () => {
+    await vi.advanceTimersByTimeAsync(DEBOUNCE_MS);
+    await flushMicrotasks();
   };
 
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.setSystemTime(BASE_TIME);
 
-    mockStorageData = {
-      url: "",
-      title: "",
-      startTime: 0,
-      lastUpdateTime: 0,
-      duration: 0,
-    };
+    mockAlarmGet = vi.fn(() => Promise.resolve(undefined));
+    mockAlarmCreate = vi.fn(() => Promise.resolve());
+    mockAlarmClear = vi.fn(() => Promise.resolve(true));
+    vi.stubGlobal("browser", {
+      alarms: {
+        get: mockAlarmGet,
+        create: mockAlarmCreate,
+        clear: mockAlarmClear,
+      },
+    });
+
+    mockStorageData = emptySession();
 
     mockStorage = {
       getValue: vi.fn(() => Promise.resolve({ ...mockStorageData })),
@@ -35,13 +73,7 @@ describe("SessionManager", () => {
         return Promise.resolve();
       }),
       removeValue: vi.fn(() => {
-        mockStorageData = {
-          url: "",
-          title: "",
-          startTime: 0,
-          lastUpdateTime: 0,
-          duration: 0,
-        };
+        mockStorageData = emptySession();
         return Promise.resolve();
       }),
     };
@@ -51,21 +83,17 @@ describe("SessionManager", () => {
       return Promise.resolve();
     }) as SessionDependencies["recordActivity"];
 
-    manager = new SessionManager({
-      storage: mockStorage,
-      recordActivity: mockRecordActivity,
-      alarmName: "test-alarm",
-      alarmPeriodInMinutes: 1,
-    });
+    manager = createManager();
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
   it("should start tracking when a switch event occurs", async () => {
     manager.handleEvent("switch", { url: "https://example.com", title: "Example" });
-    await flushQueue();
+    await flushDebouncedQueue();
     expect(mockStorage.setValue).toHaveBeenCalledTimes(1);
     expect(mockStorage.setValue).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -76,24 +104,22 @@ describe("SessionManager", () => {
   });
 
   it("should end previous session and record activity when switching to a new url", async () => {
-    const startTime = Date.now();
-    mockStorageData = {
+    setStoredSession({
       url: "https://old.com",
       title: "Old",
-      startTime: startTime - 10000,
-      lastUpdateTime: startTime - 10000,
+      startTime: BASE_TIME - 10000,
+      lastUpdateTime: BASE_TIME - 10000,
       duration: 5000,
-    };
+    });
 
     manager.handleEvent("switch", { url: "https://new.com", title: "New" });
-    vi.setSystemTime(startTime + 2000);
-    await flushQueue();
+    await flushDebouncedQueue();
 
     expect(mockRecordActivity).toHaveBeenCalledWith(
       "https://old.com",
-      expect.any(Number),
+      5_000 + 10_000 + DEBOUNCE_MS,
       "Old",
-      expect.any(Number),
+      BASE_TIME - 10000,
       undefined,
     );
     expect(mockStorage.setValue).toHaveBeenCalledWith(
@@ -106,12 +132,12 @@ describe("SessionManager", () => {
 
   it("should debounce rapid tab switches", async () => {
     manager.handleEvent("switch", { url: "https://a.com" });
-    vi.advanceTimersByTime(200);
+    await vi.advanceTimersByTimeAsync(200);
     manager.handleEvent("switch", { url: "https://b.com" });
-    vi.advanceTimersByTime(200);
+    await vi.advanceTimersByTimeAsync(200);
     manager.handleEvent("switch", { url: "https://c.com" });
-    vi.advanceTimersByTime(600);
-    await flushQueue();
+    await vi.advanceTimersByTimeAsync(600);
+    await flushMicrotasks();
 
     expect(mockStorage.setValue).toHaveBeenCalledTimes(1);
     expect(mockStorage.setValue).toHaveBeenCalledWith(
@@ -119,25 +145,27 @@ describe("SessionManager", () => {
         url: "https://c.com",
       }),
     );
+    expect(mockRecordActivity).not.toHaveBeenCalled();
   });
 
   it("should handle alarm ticks by restarting the current session", async () => {
-    mockStorageData = {
+    setStoredSession({
       url: "https://active.com",
       title: "Active",
-      startTime: 1000,
-      lastUpdateTime: 1000,
+      startTime: BASE_TIME,
+      lastUpdateTime: BASE_TIME,
       duration: 0,
-    };
+    });
+    vi.setSystemTime(BASE_TIME + 60_000);
 
     manager.handleEvent("alarm");
-    await flushQueue();
+    await flushMicrotasks();
 
     expect(mockRecordActivity).toHaveBeenCalledWith(
       "https://active.com",
-      expect.any(Number),
+      60_000,
       "Active",
-      expect.any(Number),
+      BASE_TIME,
       undefined,
     );
     expect(mockStorage.removeValue).toHaveBeenCalled();
@@ -145,36 +173,81 @@ describe("SessionManager", () => {
       expect.objectContaining({
         url: "https://active.com",
         title: "Active",
+        startTime: BASE_TIME + 60_000,
+        lastUpdateTime: BASE_TIME + 60_000,
         eventSource: "alarm",
       }),
     );
   });
 
   it("should stop tracking when idle event occurs", async () => {
-    mockStorageData = {
+    setStoredSession({
       url: "https://active.com",
       title: "Active",
-      startTime: 1000,
-      lastUpdateTime: 1000,
+      startTime: BASE_TIME,
+      lastUpdateTime: BASE_TIME,
       duration: 0,
-    };
+    });
+    vi.setSystemTime(BASE_TIME + 30_000);
 
     manager.handleEvent("idle", { url: null });
-    await flushQueue();
+    await flushMicrotasks();
 
-    expect(mockRecordActivity).toHaveBeenCalled();
+    expect(mockRecordActivity).toHaveBeenCalledWith(
+      "https://active.com",
+      30_000,
+      "Active",
+      BASE_TIME,
+      undefined,
+    );
     expect(mockStorage.removeValue).toHaveBeenCalled();
     expect(mockStorage.setValue).not.toHaveBeenCalled();
   });
 
+  it("should start a new session when active state resumes with a url", async () => {
+    vi.setSystemTime(BASE_TIME + 45_000);
+
+    manager.handleEvent("idle", {
+      url: "https://resume.com",
+      title: "Resume",
+      eventSource: "idle_resume",
+    });
+    await flushMicrotasks();
+
+    expect(mockRecordActivity).not.toHaveBeenCalled();
+    expect(mockStorage.setValue).toHaveBeenCalledWith({
+      url: "https://resume.com",
+      title: "Resume",
+      startTime: BASE_TIME + 45_000,
+      lastUpdateTime: BASE_TIME + 45_000,
+      duration: 0,
+      eventSource: "idle_resume",
+    });
+  });
+
+  it("should not start tracking a blocked url", async () => {
+    manager = createManager({ isUrlBlocked: () => true });
+
+    manager.handleEvent("idle", {
+      url: "https://blocked.com",
+      title: "Blocked",
+      eventSource: "window_focus",
+    });
+    await flushMicrotasks();
+
+    expect(mockRecordActivity).not.toHaveBeenCalled();
+    expect(mockStorage.setValue).not.toHaveBeenCalled();
+    expect(mockAlarmCreate).not.toHaveBeenCalled();
+  });
+
   it("should handle concurrent events serially without race conditions", async () => {
-    mockStorageData = {
+    setStoredSession({
       url: "https://initial.com",
       title: "Initial",
       startTime: 1000,
       lastUpdateTime: 1000,
       duration: 0,
-    };
+    });
 
     const originalGetValue = mockStorage.getValue;
     mockStorage.getValue = vi.fn(async () => {
