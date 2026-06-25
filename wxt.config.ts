@@ -5,6 +5,7 @@ import { defineConfig, type WxtViteConfig } from "wxt";
 export default defineConfig({
   srcDir: "./src",
   modules: ["@wxt-dev/module-vue", "@wxt-dev/auto-icons"],
+  imports: false,
   webExt: {
     disabled: true,
   },
