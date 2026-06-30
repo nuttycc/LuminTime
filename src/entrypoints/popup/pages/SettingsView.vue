@@ -165,7 +165,7 @@ onMounted(async () => {
 
         <div class="divide-y divide-base-300 p-2">
           <button
-            class="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            class="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-base-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             @click="handleExport"
           >
             <span class="text-sm leading-5">Export backup</span>
@@ -173,7 +173,7 @@ onMounted(async () => {
           </button>
 
           <button
-            class="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50"
+            class="flex w-full items-center justify-between rounded px-2 py-2 text-left transition-colors hover:bg-base-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50"
             :disabled="importing"
             @click="triggerImport"
           >
@@ -219,7 +219,7 @@ onMounted(async () => {
             </div>
           </div>
           <select
-            class="w-24 shrink-0 rounded border border-base-300 bg-base-100 px-2 py-1 font-mono text-xs text-base-content focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            class="w-24 shrink-0 rounded border border-base-300 bg-base-100 px-2 py-1 font-mono text-xs text-base-content transition-colors hover:border-outline-variant hover:bg-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             :value="retentionDays"
             @change="handleRetentionChange"
           >
@@ -240,12 +240,12 @@ onMounted(async () => {
             <input
               v-model="newBlockHostname"
               type="text"
-              class="min-w-0 flex-1 rounded border border-base-300 bg-base-100 px-2 py-1 font-mono text-xs text-base-content placeholder:text-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              class="min-w-0 flex-1 rounded border border-base-300 bg-base-100 px-2 py-1 font-mono text-xs text-base-content placeholder:text-outline transition-colors hover:border-outline-variant hover:bg-base-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Add hostname..."
             />
             <button
               type="submit"
-              class="flex size-7 shrink-0 items-center justify-center rounded border border-base-300 text-primary transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-40"
+              class="flex size-7 shrink-0 items-center justify-center rounded border border-base-300 text-primary transition-colors hover:border-outline-variant hover:bg-base-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-40"
               :disabled="!newBlockHostname.trim()"
               aria-label="Add blocked hostname"
             >
@@ -261,7 +261,7 @@ onMounted(async () => {
             <li
               v-for="host in blocklist"
               :key="host"
-              class="group flex items-center justify-between gap-2 border-b border-base-300 px-2 py-1.5 last:border-b-0 hover:bg-base-200"
+              class="group flex items-center justify-between gap-2 border-b border-base-300 px-2 py-1.5 last:border-b-0 transition-colors hover:bg-base-300"
             >
               <span class="truncate font-mono text-[13px] leading-4">{{ host }}</span>
               <button
@@ -333,7 +333,7 @@ onMounted(async () => {
           :href="projectUrl"
           target="_blank"
           rel="noreferrer"
-          class="flex items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          class="flex items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-base-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <span class="flex min-w-0 items-center gap-2">
             <InspectorIcon name="github" size="size-4 shrink-0 text-base-content/70" />
