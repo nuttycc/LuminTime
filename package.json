@@ -49,9 +49,5 @@
     "vue-tsc": "^3.3.10",
     "wxt": "^0.20.27"
   },
-  "overrides": {
-    "vite": "catalog:",
-    "vitest": "catalog:"
-  },
   "packageManager": "pnpm@11.8.0"
 }
