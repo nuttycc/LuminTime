@@ -26,14 +26,14 @@
   },
   "dependencies": {
     "@tabler/icons-vue": "^3.46.0",
-    "@tanstack/pacer": "^0.21.1",
+    "@tanstack/pacer": "^0.22.0",
     "@vueuse/core": "^14.4.0",
     "arktype": "^2.2.3",
     "dexie": "^4.4.5",
     "es-toolkit": "^1.51.0",
     "motion-v": "^2.4.0",
     "pretty-ms": "^9.3.0",
-    "tldts": "^7.4.10",
+    "tldts": "^7.4.11",
     "vue": "^3.5.41",
     "vue-router": "^5.2.0"
   },
@@ -41,13 +41,13 @@
     "@tailwindcss/vite": "^4.3.3",
     "@wxt-dev/auto-icons": "^1.1.2",
     "@wxt-dev/module-vue": "^1.0.3",
-    "daisyui": "^5.7.19",
+    "daisyui": "^5.7.22",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "vite-plus": "latest",
     "vitest": "4.1.9",
-    "vue-tsc": "^3.3.10",
-    "wxt": "^0.20.27"
+    "vue-tsc": "^3.3.11",
+    "wxt": "^0.21.4"
   },
   "packageManager": "pnpm@11.8.0"
 }
